@@ -1,0 +1,288 @@
+# Build Log
+
+Chronological record of what was built, what was tested, and what the results were.
+Reasoning behind design choices lives in [DECISIONS.md](DECISIONS.md).
+
+---
+
+## Phase 0 — SubSim (the simulator)
+
+**Goal (plan §12):** a subscription-churn simulator emitting ground-truth
+counterfactuals, able to generate data where a churn-score-ranked policy provably
+loses money.
+
+**Why first:** everything else is blocked on it. It is also paper 1.
+
+---
+
+### Step 0.1 — Repo scaffold
+
+Created the package layout from plan §11 (`sim/`, `models/`, `policy/`,
+`experiments/`, `core/`, `ingest/`), `pyproject.toml`, and a `tests/` tree.
+
+Dependency policy: Phase 0 runs on numpy + pandas + scipy only. The causal stack
+(econml, causalml, pymc), survival stack (lifelines, scikit-survival, lightgbm) and
+BTYD stack (pymc-marketing) are optional extras, pulled in by the phase that needs
+them. Rationale in D-008.
+
+Environment check: Python 3.13.9 (anaconda), numpy 2.3.5, pandas 2.3.3, scipy 1.16.3,
+sklearn 1.7.2. lightgbm **not** installed — a Phase 3 concern, not a blocker.
+
+---
+
+### Step 0.2 — Configuration and latent customer model
+
+`keel/sim/config.py` — every generative parameter, named and documented with its sign
+convention. Nothing is a magic number inside the simulation loop, because paper 1's
+contribution *is* the calibration of these values.
+
+`keel/sim/latents.py` — eight per-customer latent traits with Beta marginals.
+`attention` and `engagement_base` are drawn correlated through a Gaussian copula
+(D-002); this is the mechanism that makes the whole project necessary.
+
+**One thing redone:** the first version hand-rolled an incomplete-beta series and an
+`erf` approximation to stay dependency-free. It was buggy and pointless — scipy was
+already present. Replaced with `scipy.stats.norm.cdf` + `scipy.stats.beta.ppf`, which
+is both correct and the defensible thing to cite in a paper.
+
+---
+
+### Step 0.3 — Lifecycle and hazard engine
+
+`keel/sim/hazard.py` — the monthly churn-hazard logit, isolated so that the stochastic
+historical simulation and the semi-analytic counterfactual window share one definition.
+If those two ever diverged, every causal result in the project would be silently wrong.
+
+`keel/sim/subsim.py` — month-by-month simulation emitting a person-period panel of
+**observable features only** (sessions, engagement trend, features used, support
+tickets, payment failures, seat activity, price-to-median). Voluntary and involuntary
+churn are separate processes (D-001).
+
+**First run — out of calibration:**
+
+```
+monthly voluntary churn      13.41%   (target 3-7%)
+involuntary share of churn   19.9%    (target 20-40%)
+still active at 24mo          3.0%
+```
+
+Diagnosis: engagement decayed geometrically toward zero, so by month 12 every customer
+had ~3% engagement, saturating the dominant hazard term. Everyone became high-risk and
+almost nobody survived — which also destroyed the right-censoring the project needs.
+
+---
+
+### Step 0.4 — Calibration harness
+
+`keel/sim/calibration.py` — explicit targets sourced from published 2026 SMB-SaaS
+benchmarks, a `check()` that verifies them, `sweep_seeds()` for stability, and
+`calibrate_intercept()` which *solves* for the hazard intercept by bisection rather
+than letting anyone hand-tune it (D-005).
+
+Building this before tuning was the right call: it turned an open-ended fiddling
+exercise into a solve, and it immediately exposed a real bug in the targets themselves.
+
+**Fixes applied:**
+
+| Fix | Change | Effect |
+|---|---|---|
+| D-003 | Engagement decays to a habit-set floor, not zero | voluntary churn 13.4% → 9.3% |
+| — | `engagement_decay` mean 0.21 → 0.051/month | (same) |
+| — | Payment failure rate 5.5% → 3.5%, passive recovery 38% → 42% | involuntary share into mid-band |
+| D-005 | Intercept solved by bisection: −3.1 → **−3.8125** | voluntary churn → 4.5% |
+| D-004 | `habit_strength` left-skewed Beta(2.2, 1.6) | retention curve flattens realistically |
+| D-006 | Retention target widened [0.30,0.60] → [0.22,0.50] | targets became jointly satisfiable |
+
+**D-006 is the notable one.** The original targets were *mutually inconsistent* — 40%
+retention at 24 months implies ~3.75% total monthly churn, which contradicts a 3–7%
+voluntary band before involuntary is even added. No parameterisation could have
+satisfied them. This is invisible if you tune one target at a time, and it is a
+genuinely useful methodological point for paper 1.
+
+**Final calibration — all targets met:**
+
+```
+[PASS] monthly_voluntary_churn        0.045   target [0.030, 0.070]
+[PASS] involuntary_share_of_churn     0.299   target [0.200, 0.400]
+[PASS] month_24_retention             0.237   target [0.220, 0.500]
+[PASS] early_late_hazard_ratio        2.031   target [1.150, 3.000]
+```
+
+**Stability across 8 seeds** (a simulator calibrated on one lucky seed is not
+calibrated):
+
+```
+monthly_voluntary_churn        0.0452 +/- 0.0008
+monthly_involuntary_churn      0.0205 +/- 0.0010
+involuntary_share_of_churn     0.3116 +/- 0.0086
+month_24_retention             0.2270 +/- 0.0095
+early_late_hazard_ratio        2.0484 +/- 0.0775
+```
+
+Caveat recorded: 24-month retention sits ~1.8 seed-sd above its lower bound. Tight.
+Revisit if hazard coefficients change.
+
+---
+
+### Step 0.5 — Test suite
+
+`tests/test_simulator.py` — **11 tests, all passing** (0.75s).
+
+The two that matter most are fairness tests, not realism tests:
+
+- `test_latents_do_not_leak_into_panel` — no latent may appear as an observable. A
+  simulator whose panel carries its own latents is an answer key, not a test bench.
+- `test_no_observable_is_a_perfect_proxy_for_attention` — asserts r < 0.95 between
+  every observable and `attention`. If one observable recovered `attention` exactly,
+  spotting sleeping dogs would be trivial and the simulator would have assumed away
+  the problem it exists to pose.
+
+The rest cover determinism under seed, seed sensitivity, all calibration targets,
+seed stability, voluntary/involuntary disjointness, censoring existence and flagging,
+declining hazard with tenure, engagement predicting churn, and at-risk-only panel rows.
+
+---
+
+### Step 0.6 — Counterfactual intervention response
+
+`keel/sim/counterfactual.py` — the reason SubSim exists. Emits **exact** ground-truth
+treatment effects, in two deliberately separate regimes (D-009):
+
+- **Analytic τ**: the forward window evolves state along its *expected* trajectory, so
+  survival probabilities and therefore τ are closed-form with zero Monte Carlo error.
+  This is what an uplift model should be scored against.
+- **Realised Y(0), Y(1)**: the same uniform draws are applied to both arms (common
+  random numbers), giving correctly *paired* outcomes — what a perfect experiment
+  would have observed.
+
+Treatment effect = two opposing forces with **different timing** (D-010):
+saveability is protective and holds through the discount period; salience is harmful,
+and spikes immediately then fades — the damage from contacting a dormant payer happens
+at the moment of contact.
+
+Also added the offer ladder (`LADDER`), 6 rungs ordered by margin cost, from
+`feature_nudge` to `discount_40_6mo`.
+
+**First run — all four quadrants present, but a problem:**
+
+```
+persuadable 43.6%   sleeping_dog 30.0%   sure_thing 26.1%   lost_cause 0.3%
+mean tau = +0.0044
+```
+
+30% sleeping dogs is **not credible** — the uplift literature reports them as a
+minority segment. Getting the headline result at that setting would have invited
+exactly the charge D-005 exists to prevent. Ran a sensitivity sweep over
+`salience_scale` and moved to the *harder* case (D-011).
+
+---
+
+### Step 0.7 — Quadrant calibration
+
+Added `QUADRANT_TARGETS` and `check_quadrants()` so the quadrant mix is a calibration
+gate rather than an assumption. `salience_scale` 2.6 → **1.8**.
+
+```
+[PASS] sleeping_dog_share         0.1676   target [0.080, 0.220]
+[PASS] persuadable_share          0.5341   target [0.250, 0.650]
+[PASS] mean_tau                  -0.0100   target [-0.050, 0.000]
+```
+
+The `mean_tau` target is the important one and it is deliberately *adverse to the
+thesis*: it forces the average treatment effect to be **beneficial**. A blanket
+campaign helps on average. So any money churn-score targeting loses must come purely
+from bad targeting, not from a bad offer.
+
+---
+
+### Step 0.8 — THE KILL TEST ✅
+
+`keel/experiments/kill_test.py`. Plan §14.3 gate. Three choices make it honest:
+
+1. The churn model is real — `HistGradientBoostingClassifier` on **observable features
+   only**, trained with a **strictly temporal split** (months < T, predict at T).
+   Holdout AUC ≈ **0.70**, a decent model. Using true probabilities would be a
+   strawman; the claim is not "churn models are inaccurate", it is "**even an accurate
+   churn model is the wrong targeting rule**".
+2. The offer's average effect is beneficial (enforced above).
+3. Value is measured against **doing nothing** — the real alternative, and the baseline
+   vendor case studies quietly omit.
+
+**Result at 20% budget, n=6,000, 3,589 eligible:**
+
+| policy | n treated | expected value | realised | saved | harmed |
+|---|---:|---:|---:|---:|---:|
+| do_nothing | 0 | 0 | 0 | 0 | 0 |
+| treat_all | 3,589 | **−89,869** | −80,144 | 83 | 44 |
+| random_20pct | 718 | **−17,035** | −23,296 | 15 | 9 |
+| churn_score_top20pct | 718 | **−22,123** | −16,858 | 21 | 19 |
+| oracle_uplift_top20pct | 718 | **+5,877** | +2,736 | 27 | 0 |
+| oracle_uplift_abstain | 209 | **+8,610** | +6,876 | 11 | 0 |
+
+**Robustness — 6 seeds, unanimous:**
+
+- churn-score targeting loses money **6/6**
+- churn-score targeting is **worse than random 6/6** (mean −26,903 vs −16,949)
+- oracle abstention is profitable **6/6** (mean +9,742)
+
+**Three findings worth writing up:**
+
+1. **Churn-score targeting is worse than random.** Random targeting is merely
+   uninformed; a churn score is *anti-informative* for this decision, because it
+   actively sorts toward sleeping dogs. This is stronger than the plan predicted.
+2. **Abstention beats ranking.** `oracle_uplift_abstain` treats 209 customers and
+   earns more than `oracle_uplift_top20pct` treating 718 — **more money, 29% of the
+   contacts**. Direct support for the plan's §7.5 abstention thesis.
+3. **Every policy that treats everyone loses badly.** `treat_all` at −89,869 is the
+   real-world default for most SMBs running a blanket win-back campaign.
+
+---
+
+### Step 0.9 — Figure 1
+
+`keel/experiments/figures.py` → `papers/figures/fig01_kill_test.png`. Two panels,
+because an outcome without a mechanism reads as a simulation artifact:
+
+- **Left (outcome):** expected value vs budget, averaged over 6 seeds with ±1 sd
+  bands. Churn-score sits below random at every budget. The curves converge at 100%
+  budget by construction (all rankings treat everyone) — asserted in tests.
+- **Right (mechanism):** true quadrant composition by *predicted*-risk decile.
+
+**The mechanism panel is the finding: sleeping dogs are 48% of decile 1 (targeted
+first) vs 2% of decile 10.** That single contrast explains the entire left panel.
+
+---
+
+### Step 0.10 — Edge-case coverage
+
+`tests/test_edge_cases.py`. **58 tests total, all passing** (8.6s).
+
+Degenerate inputs (n=0, n=1, zero months, single month, empty snapshot, horizon=1),
+boundary correlations (0.0, ±0.5, 0.95, 1.0 → must not NaN via `sqrt(1-ρ²)`), extreme
+intervention scales (3×3 grid), extreme hazard intercepts, zero/total payment failure,
+`expit` at ±1e4, every ladder rung, and small-n (300) kill-test runs.
+
+Sign-invariant tests that pin the mechanism:
+
+- `salience_scale=0` ⟹ τ ≤ 0 everywhere and **no sleeping dogs can exist**
+- `saveability_scale=0` ⟹ τ ≥ 0 everywhere and **no persuadables can exist**
+- under common random numbers with salience off, **nobody can be harmed** — the
+  property that makes paired outcomes valid
+- oracle abstention **never loses money** and **never selects a sleeping dog**
+
+**One test failure worth recording**, because it caught a misunderstanding of mine
+rather than a bug: `test_extreme_hazard_intercepts` asserted that with the voluntary
+hazard switched off (intercept −20) every customer would be censored. It failed —
+customers still churned **involuntarily**, since payment failure is an independent
+process. The code was right and the assertion was wrong. Replaced with
+`test_involuntary_churn_survives_zero_voluntary_hazard`, which now asserts the
+separation positively. This is D-001 made testable.
+
+---
+
+## Phase 0 status: **COMPLETE** — gate passed
+
+The plan's week-3 kill test was the go/no-go on the entire thesis. It passes
+unanimously, and at *conservative* parameter settings chosen to make the claim harder
+rather than easier. Phase 1 (canonical schema, point-in-time feature store, Stripe
+ingest, leakage suite) is unblocked.

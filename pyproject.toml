@@ -1,0 +1,49 @@
+[project]
+name = "keel"
+version = "0.1.0"
+description = "Causal retention decision engine for small subscription businesses"
+readme = "README.md"
+requires-python = ">=3.11"
+
+# Phase 0 (SubSim + kill test) needs only these. Heavy ML deps are extras so the
+# motivating experiment runs immediately without a long install.
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+# Phase 3 — survival models
+survival = [
+    "lifelines>=0.28",
+    "scikit-survival>=0.22",
+    "lightgbm>=4.3",
+    "scikit-learn>=1.4",
+]
+# Phase 4 — causal / uplift baselines and the hierarchical model
+causal = [
+    "econml>=0.15",
+    "causalml>=0.14",
+    "pymc>=5.16",
+    "arviz>=0.18",
+]
+# Phase 2 (e-commerce) — BTYD. Note: `lifetimes` is unmaintained; pymc-marketing
+# is the successor and gives credible intervals, which the small-n thesis needs.
+btyd = ["pymc-marketing>=0.9"]
+viz = ["matplotlib>=3.8"]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["keel"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
