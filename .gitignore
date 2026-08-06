@@ -15,6 +15,10 @@ venv/
 # OS
 .DS_Store
 
+# Machine-local agent settings. Covered by many users' global gitignore, but
+# repeated here so the protection travels with the repository.
+.claude/settings.local.json
+
 # Note: papers/figures/*.png and explainer/figures/*.png ARE committed.
 # They are referenced by README.md and explainer/05-the-evidence.md, and are
 # regenerable via `python -m keel.experiments.figures`.
