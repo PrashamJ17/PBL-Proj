@@ -6,6 +6,61 @@ each choice in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
+## Phase 1 — Canonical schema, point-in-time features, ingest
+
+**Making it structurally impossible to train on information that did not exist yet.**
+
+### Added
+
+- **Canonical schema** (`keel/core/schema.py`) — six timestamp-native tables. Every
+  fact carries both `occurred_at` (when it happened) and `available_at` (when it became
+  knowable). Includes `interventions`, the holdout ledger no competitor keeps.
+- **Point-in-time feature store** (`keel/core/features.py`) — 15 features, with the
+  leakage guarantee enforced structurally: one gate function, no other path to the data.
+- **Leakage suite** (`keel/core/leakage.py`) — availability audit, time-travel
+  consistency, and adversarial canary injection.
+- **Ingest adapters** — Stripe (pure, fixture-tested, no API key), CSV (the Churn
+  Autopsy path), and SubSim → canonical for end-to-end testing.
+
+### Results — the leakage penalty
+
+Same features, built three ways:
+
+| vintage | apparent AUC | what it is |
+|---|---:|---|
+| `correct` | **0.603** | filters on `available_at` |
+| `occurred_only` | 0.613 | ignores settlement lag — the subtle bug |
+| `no_filter` | **0.954** | no temporal filter — the catastrophic bug |
+
+**0.954 vs 0.603.** "Total sessions ever" looks innocent, but a customer who churned in
+month 4 generates no rows afterwards, so the feature encodes the outcome. The model
+appears excellent and has learned only who stopped producing data.
+
+That 0.35 gap is not performance. It is how far a backtest would have overstated the
+model before production — and the number a business would have staked a budget on.
+
+### Notable
+
+- **The leakage suite is required to have teeth** (D-017). It must *fail* on
+  deliberately leaked vintages and *catch* a planted canary, while not flagging honest
+  features. A suite that has never caught a leak is evidence of nothing.
+- Unsafe feature modes exist **on purpose** (D-016), so the safeguard's value is
+  measured rather than asserted. Default is safe; a test enforces it.
+- Stripe mapping handles the three things that are quietly wrong everywhere:
+  zero-decimal currencies, interval normalisation, and `canceled_at` ≠ `ended_at`.
+
+### Fixed
+
+- `scikit-learn` was declared only in an optional extra despite being imported by the
+  Phase 0 kill test — a fresh install would have failed.
+- Tests only passed under `python -m pytest`; bare `pytest` could not import the
+  package.
+
+**137 tests passing.** CI gained a leakage gate alongside the calibration and kill-test
+gates.
+
+---
+
 ## Phase 0 — SubSim and the kill test
 
 **The founding claim was tested and survived.**

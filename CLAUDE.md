@@ -17,19 +17,21 @@ small-sample causal uncertainty**. Keel decides *who to treat, with what, at wha
 random*. Abstention beats ranking (209 treated > 718 treated). Sleeping dogs = 48% of
 top risk decile vs 2% of bottom.
 
+**Proven (Phase 1):** point-in-time features prevent a **0.35 AUC inflation**
+(correct 0.603 · occurred-only 0.613 · unfiltered 0.954).
+
 ---
 
 ## Status
 
-**Phase 0 COMPLETE.** 58 tests passing. Both calibration gates green.
-**Next: Phase 1** — canonical schema, point-in-time feature store, Stripe ingest,
-leakage test suite.
+**Phases 0-1 COMPLETE.** 137 tests passing. All three CI gates green.
+**Next: Phase 2** — dunning / involuntary churn. The first thing that earns money.
 
 | # | Phase | Status | Gate |
 |---|---|---|---|
 | 0 | SubSim + kill test | ✅ **done** | churn-score policy provably loses money |
-| 1 | Canonical schema, PIT feature store, Stripe ingest | ⬜ **next** | leakage suite green in CI |
-| 2 | Dunning / involuntary churn + retry-timing model | ⬜ | **first revenue — get a paying client** |
+| 1 | Canonical schema, PIT feature store, ingest | ✅ **done** | leakage suite green in CI |
+| 2 | Dunning / involuntary churn + retry-timing model | ⬜ **next** | **first revenue — get a paying client** |
 | 3 | Discrete-time survival hazard + CLV | ⬜ | beats Cox/RSF/DeepSurv on public data; calibrated |
 | 4 | Hierarchical Bayesian CATE + abstention | ⬜ | **paper 2**; beats baselines on net revenue at small n |
 | 5 | Offer-ladder optimizer + reason codes + dashboard | ⬜ | owner can act without asking us |
@@ -55,72 +57,64 @@ leakage test suite.
 7. **Phase 0 deps = numpy/pandas/scipy only.** Heavy ML libs are `pyproject` extras.
 8. Read `docs/DECISIONS.md` before changing a modelling choice — it may already be
    settled and the reasoning may be adverse to the obvious move.
+9. **Every fact carries `occurred_at` AND `available_at`.** Features filter on
+   `available_at`, never `occurred_at`. `FeatureStore._visible` is the only path to
+   source data — never read a canonical table directly in a feature.
+10. **`FeatureStore` unsafe modes are for measurement only.** Nothing in the production
+    path may pass `mode=`. Default is `SAFE`; a test enforces it.
 
 ---
 
 ## Map
 
 ```
-keel/sim/config.py         all generative params (documented, sign conventions)
-keel/sim/latents.py        8 latent traits; attention~engagement via Gaussian copula
-keel/sim/hazard.py         monthly hazard logit — ONE definition, two regimes
-keel/sim/subsim.py         lifecycle → person-period panel (observables only)
-keel/sim/counterfactual.py exact τ + paired Y(0),Y(1) via common random numbers; LADDER
-keel/sim/calibration.py    targets, check(), check_quadrants(), calibrate_intercept()
-keel/experiments/kill_test.py  the gate: policies, budget_curve, train_churn_model
-keel/experiments/figures.py    figure 1
-tests/test_simulator.py    11 tests — fairness + realism
-tests/test_edge_cases.py   47 tests — degenerate inputs, boundaries, sign invariants
+keel/core/schema.py        canonical tables; occurred_at + available_at on every fact
+keel/core/features.py      PIT feature store; _visible() is the ONLY path to data
+keel/core/leakage.py       availability audit, time-travel, canary injection
+keel/ingest/               stripe.py (pure, fixture-tested) · csv_ingest.py · subsim_adapter.py
+keel/sim/                  config · latents (copula) · hazard (ONE defn, two regimes)
+                           subsim (panel) · counterfactual (exact τ, CRN, LADDER)
+                           calibration (check, check_quadrants, calibrate_intercept)
+keel/experiments/          kill_test · leakage_penalty · figures
+tests/                     137 tests — fairness, realism, edge cases, leakage gate
 explainer/                 10 docs for non-technical evaluators/investors (see protocol)
 ```
 
 ## Commands
 
 ```bash
-make check      # lint + 58 tests + both calibration gates — run before every commit
+make check      # lint + 137 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
 ```
-Remote: `origin` → https://github.com/PrashamJ17/PBL-Proj (branch `main`).
-CI re-runs tests, calibration gates, **and the kill test** on every push.
+Remote: `origin` → https://github.com/PrashamJ17/PBL-Proj (`main`). CI gates on every
+push: tests (3.11-3.13) · calibration · **leakage** · **kill test**.
 
 ---
 
 ## Update protocol
 
-When finishing a work session:
+Every session: **this file** — flip phase status, move **next**, add ONE checkpoint
+line; add an invariant only if something must never break again.
+**Detail elsewhere:** `docs/BUILDLOG.md` (what happened + tested) · `docs/DECISIONS.md`
+(why — append D-0NN, never edit past entries).
 
-**Always — this file:**
-1. Flip the phase row's status; move **next** marker.
-2. Add one CHECKPOINT line below (one line — this file must stay short).
-3. Add a new invariant only if something must never be broken again.
-
-**Always — detail elsewhere:** `docs/BUILDLOG.md` (what happened, what was tested),
-`docs/DECISIONS.md` (why — append D-0NN, never edit past entries).
-
-**On phase completion — `explainer/` (non-technical: evaluators + investors):**
-- `explainer/09-status-and-roadmap.md` — flip the phase row, append a change-log entry.
-  **Always update this one.**
-- Update others only when the phase changes what they claim:
-  `05-the-evidence.md` (new results — and update the honest-status section too),
-  `04-what-we-are-building.md` (architecture changed), `06-the-business-case.md`
-  (pricing/competitors/traction), `07-risks-and-limitations.md` (risk resolved or found),
-  `08-glossary.md` (new term introduced anywhere).
-- **Rules for `explainer/`:** zero assumed knowledge, define every term at first use, no
-  unexplained jargon, and never claim more than was demonstrated. Overstating there is
-  worse than saying nothing — it is read by people who cannot check us.
+**On phase completion — `explainer/`** (non-technical: evaluators + investors):
+always update `09-status-and-roadmap.md` (flip row + append change-log). Update others
+only if the phase changed what they claim: `05` new results (incl. honest-status),
+`04` architecture, `06` pricing/competitors, `07` risks, `08` new terms.
+*Rules:* zero assumed knowledge, define every term, **never claim more than was
+demonstrated** — those readers cannot check us.
 
 **Then commit and push — every checkpoint, no exceptions:**
 ```bash
-make check                                   # must pass BEFORE committing
-git add -A && git commit && git push origin main
+make check && git add -A && git commit && git push origin main
 ```
-- Commit message: lead with what the change **establishes or fixes**, not files touched.
-  Put moved numbers in the body. Reference decision IDs (`D-011`) where relevant.
-- On phase completion, add a `CHANGELOG.md` entry first (newest first).
-- Never commit with failing tests or red calibration gates. If blocked, commit the work
-  with the failure described in the message rather than leaving it uncommitted.
+Message leads with what it **establishes or fixes**, not files touched; moved numbers
+in the body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first (newest
+first). Never commit on red — if blocked, commit *with the failure described* rather
+than leaving work uncommitted.
 
 Keep this file under ~120 lines. If it grows, cut history, not invariants.
 
@@ -130,4 +124,7 @@ Keep this file under ~120 lines. If it grows, cut history, not invariants.
 
 - **CP-01** — Phase 0 complete. SubSim calibrated (4.5% monthly voluntary churn, 30%
   involuntary share, 17% sleeping dogs, mean τ=−0.010), kill test passed 6/6 seeds,
-  figure 1 generated, 58 tests green. Next: Phase 1 canonical schema + PIT store.
+  figure 1 generated, 58 tests green.
+- **CP-02** — Phase 1 complete. Canonical schema, PIT feature store, leakage suite,
+  Stripe/CSV/SubSim ingest. Leakage penalty measured: 0.603 correct vs 0.954
+  unfiltered. 137 tests green, 4 CI gates. Next: Phase 2 dunning — first revenue.

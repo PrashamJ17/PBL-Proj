@@ -286,3 +286,112 @@ The plan's week-3 kill test was the go/no-go on the entire thesis. It passes
 unanimously, and at *conservative* parameter settings chosen to make the claim harder
 rather than easier. Phase 1 (canonical schema, point-in-time feature store, Stripe
 ingest, leakage suite) is unblocked.
+
+---
+
+## Phase 1 — Canonical schema, point-in-time feature store, ingest
+
+**Goal (plan §12):** connect to real billing data and make it structurally impossible
+to train on information that did not exist at prediction time.
+**Gate:** leakage suite green in CI.
+
+---
+
+### Step 1.1 — Canonical schema
+
+`keel/core/schema.py` — six tables: `customers`, `subscriptions`, `invoices`, `events`,
+`tickets`, `interventions`.
+
+Two decisions shaped everything downstream:
+
+- **Timestamp-native, not period-indexed** (D-018). SubSim adapts *upward* into
+  timestamps rather than the schema adapting down into months.
+- **Every fact carries `occurred_at` AND `available_at`** (D-014). Validation rejects
+  `available_at < occurred_at` — a fact cannot be knowable before it happens, and that
+  invariant is what every point-in-time guarantee rests on.
+
+`interventions` is the table no competitor keeps: every retention action *including
+deliberate non-actions* (`arm='holdout'`). Without a record of what was tried, on whom,
+and who was held back, causal effects cannot be estimated at all.
+
+### Step 1.2 — Point-in-time feature store
+
+`keel/core/features.py`. 15 standard features across billing, engagement, support, and
+contact fatigue.
+
+The guarantee is **structural, not procedural** (D-015): every feature reads source
+rows through exactly one function, `_visible`, which applies the temporal filter. There
+is no other path to the data, so a feature that bypasses it cannot be written.
+
+Features are declarative (`FeatureSpec`) rather than lambdas so they can be *audited* —
+we can ask which rows a feature may touch without running it.
+
+### Step 1.3 — SubSim → canonical adapter
+
+`keel/ingest/subsim_adapter.py`. Expands aggregate counts into individual timestamped
+rows and injects **realistic availability lag** (0.24–6h for events, 0.5–2 days for
+decline codes). Without that lag the point-in-time machinery would be untested —
+filtering on either timestamp would give identical answers.
+
+### Step 1.4 — Leakage suite
+
+`keel/core/leakage.py`. Three independent checks: availability audit (structural),
+time-travel consistency (behavioural), and canary injection (adversarial).
+
+**The suite is required to have teeth** (D-017). It must *fail* on deliberately leaked
+vintages and *catch* a planted canary, while *not* flagging honest features. A leakage
+suite that has never caught a leak is evidence of nothing.
+
+### Step 1.5 — Leakage penalty measured ⭐
+
+`keel/experiments/leakage_penalty.py`. Built the same features three ways:
+
+| vintage | apparent AUC | inflation | what it is |
+|---|---:|---:|---|
+| `correct` | **0.603** | — | filters on `available_at` |
+| `occurred_only` | 0.613 | +0.010 | ignores settlement/upload lag — the subtle bug |
+| `no_filter` | **0.954** | **+0.351** | no temporal filter — the catastrophic bug |
+
+**0.954 versus 0.603.** A model that looks near-perfect and is worthless.
+
+The mechanism is worth stating plainly: "total sessions ever" looks like an innocent
+activity feature, but a customer who churned in month 4 generates no rows in months
+5–24. The feature encodes the outcome almost perfectly. The model appears excellent and
+has learned only who stopped producing data.
+
+That 0.35 gap is not performance — it is the amount by which a backtest would have
+overstated the model, and the number a business would have staked a budget on.
+
+### Step 1.6 — Stripe and CSV adapters
+
+`keel/ingest/stripe.py` — pure functions over fetched JSON, no API key needed, so the
+logic most likely to be quietly wrong (money and time) is actually covered. Handles
+zero-decimal currencies (JPY 2000 is ¥2000, not ¥20), interval normalisation (an annual
+plan must not look 12× more valuable), and the `canceled_at` vs `ended_at` distinction
+— a customer who cancels on the 1st with service until the 31st has *not* churned yet.
+
+`keel/ingest/csv_ingest.py` — the Churn Autopsy delivery path. Forgiving about shape
+(alias table for column names), unforgiving about meaning. Assumes a **conservative
+lag** rather than none (D-019), because a CSV cannot tell us when facts became knowable
+and assuming zero would be a lie the feature store cannot detect.
+
+### Step 1.7 — Tests
+
+**137 total, all passing** (9.5s). Phase 1 added 79:
+
+- `test_schema.py` (23) — validation catches impossible timestamps, duplicate keys,
+  orphan references; nullable `ended_at` is *right*, not missing data.
+- `test_leakage.py` (24) — the gate. Includes the adversarial pair above.
+- `test_stripe_ingest.py` (23) — money and time edge cases.
+- `test_csv_ingest.py` (22) — aliasing, lag defaults, error quality.
+
+CI gained a **leakage job** that fails if the correct vintage ever looks implausibly
+good, or if the gap to the unfiltered vintage closes — either would mean the safeguard
+or the demonstration stopped working, and we need to know which.
+
+---
+
+## Phase 1 status: **COMPLETE** — gate passed
+
+Leakage suite green in CI. Phase 2 (dunning / involuntary churn — first revenue) is
+unblocked.

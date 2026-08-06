@@ -256,3 +256,122 @@ meaningful baseline is the counterfactual where you ran no campaign at all.
 `do_nothing` is therefore a first-class policy in the comparison, pinned to exactly
 0.0 by construction and asserted in tests. Every other policy is reported as a
 difference from it.
+
+---
+
+## D-014 — Every fact carries `occurred_at` AND `available_at`
+
+**Alternative rejected:** one timestamp per fact, as nearly every churn dataset uses.
+
+**Reason:** they answer different questions. `occurred_at` is when something happened
+in the world; `available_at` is when we could first have *known* about it. A card
+decline settles up to two days after the attempt. A nightly sentiment batch scores
+yesterday's tickets this morning. Mobile clients upload events hours late.
+
+Training on `occurred_at` while serving on data that arrives with lag gives the model a
+look ahead that it will not have in production. The backtest looks excellent and the
+deployment collapses — and because the error makes results *better*, nobody
+investigates it.
+
+`keel.core.features` filters on `available_at`, never on `occurred_at`.
+
+**Consequence:** `available_at` is required, not optional. Where a source genuinely has
+no lag the adapter sets it equal to `occurred_at` *explicitly*. Making it implicit
+invites people to forget it exists. Schema validation rejects any row where
+`available_at < occurred_at`, since a fact cannot be knowable before it occurs — that
+invariant is what every point-in-time guarantee rests on.
+
+---
+
+## D-015 — The leakage guarantee is structural, not procedural
+
+**Alternative rejected:** a documented convention that feature authors filter correctly.
+
+**Reason:** guarantees that depend on remembering to do the right thing are not
+guarantees. Every feature in `keel.core.features` reads its source rows through exactly
+one function, `_visible`, which applies the temporal filter. There is no other path to
+the data, so a feature that bypasses the filter cannot be written.
+
+Features are also *declarative* (`FeatureSpec`) rather than lambdas, specifically so
+they can be **audited** — we can ask which source rows a feature is permitted to touch
+without executing it. A lambda cannot be interrogated that way.
+
+---
+
+## D-016 — Unsafe feature modes exist on purpose
+
+**Alternative rejected:** only implementing the correct path.
+
+**Reason:** "we have leakage safeguards" is an assertion. `FeatureStore` therefore
+supports two deliberately incorrect modes — `UNSAFE_OCCURRED_ONLY` (ignores
+availability lag) and `UNSAFE_NO_FILTER` (no temporal filter at all) — so the cost of
+getting it wrong can be *measured* rather than claimed.
+
+Measured result: correct **0.603 AUC**, occurred-only **0.613**, unfiltered **0.954**.
+
+The 0.35 gap is not performance. It is the amount by which a backtest would have
+overstated the model before it reached production, and it is the number a business
+would have staked a retention budget on.
+
+**The risk this creates, and how it is contained:** an unsafe mode is a footgun. The
+default is `SAFE`, `test_default_mode_is_safe` asserts it, and nothing in the
+production path may construct a store any other way. Judged worth it — a safeguard
+whose value is only asserted tends to get removed by someone optimising later.
+
+---
+
+## D-017 — The leakage suite must be proven to have teeth
+
+**Alternative rejected:** checks that verify correct behaviour only.
+
+**Reason:** **a leakage suite that has never caught a leak is evidence of nothing.** It
+might be working, or it might be checking a condition that is trivially true. There is
+no way to tell from a passing run.
+
+So the suite is adversarial in both directions:
+
+- `test_audit_catches_unsafe_modes` — the audit must **fail** on the deliberately
+  leaked vintages.
+- `test_canary_is_caught` — a planted feature built from the outcome must be flagged.
+  The canary has 10% of its labels flipped, because a perfect copy would be caught by
+  even a broken detector.
+- `test_clean_features_are_not_flagged` — the complement. Without it, a detector that
+  flags everything would pass the canary test.
+
+---
+
+## D-018 — Canonical schema is timestamp-native; SubSim adapts upward
+
+**Alternative rejected:** letting the canonical layer use period indices, since that is
+what the simulator produces and it would have been less work.
+
+**Reason:** real billing data arrives as timestamped events. If the schema spoke in
+months because the simulator does, every real integration would have to fight it, and
+the convenience of a test fixture would have shaped the production data model.
+
+The adapter therefore expands *upward*: `sessions_30d = 12` becomes twelve individual
+`session_start` rows spread across that month.
+
+It also injects **realistic availability lag**. Without it, filtering on `available_at`
+and on `occurred_at` would give identical answers, the point-in-time machinery would be
+untested, and a bug in it could never surface.
+
+---
+
+## D-019 — CSV ingest assumes a conservative lag rather than none
+
+**Alternative rejected:** setting `available_at = occurred_at` for CSV exports.
+
+**Reason:** a CSV carries no record of when facts became knowable. Assuming zero lag is
+a lie the feature store has no way to detect — it would pass every audit while training
+on information that arrived late in reality.
+
+`DEFAULT_LAG` applies a conservative uniform lag per table (2 days for invoices, 6
+hours for events), overridable when a tenant knows their real settlement delay. The
+assumption is recorded in the data rather than hidden in it.
+
+The ingest layer is deliberately **forgiving about shape and unforgiving about
+meaning**: column names are guessed at through an alias table, because exports arrive as
+"Customer ID", "customer-id", and "CUSTOMER_ID" with equal frequency. But a missing
+required column is refused outright, with the columns actually present listed in the
+error — the person reading it is a founder looking at their own export.

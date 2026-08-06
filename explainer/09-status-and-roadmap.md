@@ -3,14 +3,14 @@
 **This document is updated as the project progresses. Everything else in this folder is
 relatively stable; this is the living record.**
 
-**Last updated:** Phase 0 complete.
+**Last updated:** Phase 1 complete.
 
 ---
 
 ## Where we are in one line
 
-**The founding claim has been tested and survived. Nothing has been built for real
-customers yet.**
+**The founding claim has been tested and survived, and the data plumbing that keeps
+future results honest is built. Nothing has been sold to a real customer yet.**
 
 ---
 
@@ -20,9 +20,10 @@ customers yet.**
 |---|---|---|
 | **The core claim tested** | ✅ Done | Standard approach loses money, 6/6 runs — [05](05-the-evidence.md) |
 | **Realistic business simulator** | ✅ Done | Calibrated to published benchmarks, stable across 8 variations |
-| **Quality controls** | ✅ Done | 58 automated tests, all passing |
+| **Connecting to real billing data** | ✅ Done | Stripe and CSV adapters; one common data shape |
+| **Guard against using future information** | ✅ Done | Measured: prevents a 0.35 inflation in apparent accuracy |
+| **Quality controls** | ✅ Done | 137 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
-| Connecting to real billing data | ⬜ Not started | — |
 | Failed-payment recovery | ⬜ Not started | — |
 | Production prediction models | ⬜ Not started | — |
 | **The practical version of our method** | ⬜ Not started | **The main research risk** |
@@ -30,8 +31,36 @@ customers yet.**
 | Proof with a real business | ⬜ Not started | — |
 | Paying customers | ⬜ **None** | — |
 
-**Read that table honestly: one row of nine is complete.** It happens to be the row that
-determines whether the other eight are worth doing.
+**Six rows of twelve.** But note *which* six: everything complete so far is
+groundwork and evidence. Nothing yet earns anyone money.
+
+---
+
+## What Phase 1 was about, in plain terms
+
+There is a failure mode in this field that ruins projects quietly. A model is
+accidentally given information that would not have existed at the moment it had to make
+its prediction — for example, counting a customer's activity across their *whole*
+history, including months after the decision point. The model then looks superb in
+testing and fails completely in real use.
+
+It is dangerous precisely because it makes results look **better**. Nobody investigates
+a number that improved.
+
+Phase 1 built machinery that makes this structurally impossible, and then **measured
+what it is worth**. The same features, computed correctly and incorrectly:
+
+| how the features were built | apparent accuracy |
+|---|---|
+| Correctly | **0.60** |
+| Ignoring reporting delays (subtle error) | 0.61 |
+| With no time filter at all (common error) | **0.95** |
+
+That 0.95 is a mirage. A business shown that number would reasonably conclude the
+system works almost perfectly, and would allocate a retention budget accordingly.
+
+We also built the connections to real billing systems, so the work from here runs on the
+same data shape a real customer would provide.
 
 ---
 
@@ -43,8 +72,8 @@ force early failure rather than late failure.
 | Phase | What | Gate | Status |
 |---|---|---|---|
 | **0** | **Build the simulator; test the founding claim** | Standard approach provably loses money | ✅ **Passed** |
-| **1** | Connect to real billing data; guard against using future information | Automated checks pass | ⬜ Next |
-| **2** | **Failed-payment recovery** | **First paying client** | ⬜ |
+| **1** | **Connect to real billing data; guard against using future information** | Automated checks pass | ✅ **Passed** |
+| **2** | **Failed-payment recovery** | **First paying client** | ⬜ **Next** |
 | **3** | Prediction models for who leaves and what they're worth | Beat established methods on public data | ⬜ |
 | **4** | **The practical version of our method** | Beat existing approaches on money earned, at small scale | ⬜ |
 | **5** | Decision engine, plain-language explanations, dashboard | An owner can act without asking us | ⬜ |
@@ -81,9 +110,10 @@ technical problem in the project.
 
 ## Next immediate steps
 
-1. **Phase 1** — connect to real billing data, build the safeguards against using
-   future information.
-2. **Draft paper 1** while Phase 0 results are fresh.
+1. **Phase 2 — failed-payment recovery.** The first thing that earns money. It is 20–40%
+   of all churn, needs almost no sophisticated technology, and produces immediately
+   attributable revenue.
+2. **Draft paper 1** while the Phase 0 results are fresh.
 3. **In parallel, start talking to businesses.** Twenty conversations with subscription
    founders will reshape this plan more than twenty more pages of it. This does not
    depend on the product existing.
@@ -120,6 +150,27 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### Phase 1 — complete
+
+Built the connections to real billing systems (Stripe, and plain CSV exports for
+businesses that would rather email a file than connect an account), and translated
+everything into one common shape so nothing downstream needs to know where data came
+from.
+
+The substantive work was preventing a specific, quiet failure: giving a model
+information that would not have existed when it had to predict. We made that
+structurally impossible rather than a matter of care, then **measured what it is
+worth** — computing the same features incorrectly inflated apparent accuracy from 0.60
+to 0.95.
+
+Two things worth noting about how this was verified. First, the safeguard is enforced in
+a single place that all features must pass through, so a feature that bypasses it cannot
+be written. Second, the leak *detector* is itself tested adversarially: we plant known
+leaks and require it to catch them. A detector that has never caught anything might be
+working, or might be checking nothing — there is no way to tell from a passing run.
+
+79 new automated tests (137 total).
 
 ### Phase 0 — complete
 

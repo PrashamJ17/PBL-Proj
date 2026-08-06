@@ -70,6 +70,54 @@ jobs:
           sys.exit(0 if ok else 1)
           PY
 
+  leakage:
+    name: Leakage gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[viz]"
+
+      # Phase 1's gate. Verifies that the point-in-time feature store keeps models
+      # honest, by building the same features correctly and incorrectly and
+      # requiring the incorrect vintage to be visibly inflated. If the gap ever
+      # closes, either the safeguard stopped working or the unsafe path stopped
+      # being unsafe -- and we need to know which.
+      - name: Point-in-time features must prevent inflation
+        run: |
+          python - <<'PY'
+          import sys
+          from keel.experiments.leakage_penalty import run, report
+
+          vintages, comparison = run()
+          print(report(vintages, comparison))
+
+          by = {v.name: v.auc for v in vintages}
+          failures = []
+          if by["correct"] > 0.85:
+              failures.append(
+                  f"correct vintage AUC {by['correct']:.3f} is implausibly high -- "
+                  "a leak may have entered the safe path"
+              )
+          if by["no_filter"] - by["correct"] < 0.15:
+              failures.append(
+                  f"unfiltered features were only {by['no_filter'] - by['correct']:.3f} "
+                  "better; the leakage demonstration has stopped demonstrating anything"
+              )
+          if failures:
+              print("\nFAILED:")
+              print("\n".join("  " + f for f in failures))
+              sys.exit(1)
+          print("\nLeakage gate holds.")
+          PY
+
   kill-test:
     name: Kill test still holds
     runs-on: ubuntu-latest
