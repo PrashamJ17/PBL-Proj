@@ -1,5 +1,9 @@
 # Keel
 
+[![CI](https://github.com/PrashamJ17/PBL-Proj/actions/workflows/ci.yml/badge.svg)](https://github.com/PrashamJ17/PBL-Proj/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-green.svg)](LICENSE)
+
 **Causal retention decisioning for small subscription businesses.**
 
 > Churn prediction is solved. Retention *decisioning under small-sample causal
@@ -52,7 +56,10 @@ attributable to targeting, not to a bad offer.
 ## Quickstart
 
 ```bash
-pip install -e .
+git clone https://github.com/PrashamJ17/PBL-Proj.git
+cd PBL-Proj
+make install     # or: pip install -e ".[dev,viz]"
+make check       # lint + 58 tests + calibration gates
 ```
 
 ```python
@@ -80,7 +87,7 @@ python -m pytest tests/ -q
 
 ---
 
-## What's here
+## Repository layout
 
 ```
 keel/
@@ -91,16 +98,34 @@ keel/
 │   ├── subsim.py           lifecycle → person-period panel of OBSERVABLES only
 │   ├── counterfactual.py   exact ground-truth τ + paired Y(0), Y(1)
 │   └── calibration.py      targets, checks, and the intercept solver
-├── experiments/
-│   ├── kill_test.py        the go/no-go gate
-│   └── figures.py          figure 1
+└── experiments/
+    ├── kill_test.py        the go/no-go gate
+    └── figures.py          figure generation
+
+tests/                      58 tests — fairness, realism, edge cases
 docs/
 ├── BUILDLOG.md             what was built, what was tested, what happened
 └── DECISIONS.md            why each modelling choice was made (D-001 … D-013)
+explainer/                  10 documents for non-technical evaluators & investors
+papers/figures/             generated figures
+CHANGELOG.md                checkpoint history, newest first
+CLAUDE.md                   project state + working protocol
 ```
 
-**Status: Phase 0 complete.** 58 tests passing. Next: canonical schema, point-in-time
-feature store, Stripe ingest, leakage suite (plan §12 Phase 1).
+### Commands
+
+| | |
+|---|---|
+| `make check` | lint + tests + calibration gates — **run before every commit** |
+| `make killtest` | re-run the founding experiment |
+| `make figures` | regenerate figures (syncs the explainer copy) |
+| `make help` | everything else |
+
+CI re-runs the tests, the calibration gates, **and the kill test** on every push.
+If the founding claim ever stops holding, the build fails.
+
+**Status: Phase 0 complete.** Next: canonical schema, point-in-time feature store,
+Stripe ingest, leakage suite. See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

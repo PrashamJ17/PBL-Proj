@@ -15,7 +15,7 @@ import pytest
 
 from keel.experiments.kill_test import budget_curve, run, train_churn_model
 from keel.sim import SimConfig, simulate
-from keel.sim.counterfactual import LADDER, REFERENCE_OFFER, potential_outcomes
+from keel.sim.counterfactual import LADDER, potential_outcomes
 from keel.sim.hazard import expit
 
 BASE = SimConfig(n_customers=400, n_months=12, seed=7)

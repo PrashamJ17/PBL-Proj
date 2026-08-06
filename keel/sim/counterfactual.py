@@ -112,7 +112,6 @@ def _expected_forward_states(
     propagated as *expectations* rather than sampled, which is what makes the
     resulting tau exact.
     """
-    hp = cfg.hazard
     champion_lost = champion_lost0.copy()
     budget_shock = budget_shock0.copy()
     support_pain = support_pain0.copy()

@@ -11,6 +11,9 @@ dependencies = [
     "numpy>=1.26",
     "pandas>=2.1",
     "scipy>=1.11",
+    # Required by the Phase 0 kill test: the churn baseline must be a real model,
+    # not a strawman (see docs/DECISIONS.md D-012).
+    "scikit-learn>=1.4",
 ]
 
 [project.optional-dependencies]
@@ -19,7 +22,6 @@ survival = [
     "lifelines>=0.28",
     "scikit-survival>=0.22",
     "lightgbm>=4.3",
-    "scikit-learn>=1.4",
 ]
 # Phase 4 — causal / uplift baselines and the hierarchical model
 causal = [
@@ -47,3 +49,7 @@ target-version = "py311"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Lets `pytest` run from the repo root without an editable install. Without this,
+# bare `pytest` fails while `python -m pytest` works -- a confusing discrepancy,
+# since only the latter puts the CWD on sys.path.
+pythonpath = ["."]

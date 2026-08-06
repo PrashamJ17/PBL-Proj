@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,viz]"
+
+      - name: Lint
+        run: ruff check keel tests
+
+      - name: Test
+        run: pytest tests/ -q
+
+  calibration:
+    name: Calibration gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[viz]"
+
+      # The simulator must stay inside published benchmark ranges, and the
+      # quadrant mix must stay credible. In particular `mean_tau` must remain
+      # NEGATIVE -- the offer has to help on average, so that any money lost by
+      # churn-score targeting is attributable to targeting alone rather than to a
+      # bad offer. See docs/DECISIONS.md D-011.
+      - name: Verify calibration
+        run: |
+          python - <<'PY'
+          import sys
+          from keel.sim import simulate, SimConfig
+          from keel.sim.calibration import check, check_quadrants
+
+          r = simulate(SimConfig(n_customers=4000, n_months=24, seed=7))
+          ok = check(r) & check_quadrants(r)
+          sys.exit(0 if ok else 1)
+          PY
+
+  kill-test:
+    name: Kill test still holds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[viz]"
+
+      # The founding claim of the project, re-verified on every change. If this
+      # ever fails, either the thesis is wrong or someone has broken the
+      # simulator -- both warrant stopping the build.
+      - name: Churn-score targeting must still lose money
+        run: |
+          python - <<'PY'
+          import sys
+          from dataclasses import replace
+          from keel.sim import simulate, SimConfig
+          from keel.experiments.kill_test import run
+
+          base = SimConfig(n_customers=4000, n_months=24, seed=7)
+          failures = []
+          for s in range(3):
+              res, _, auc = run(simulate(replace(base, seed=7 + s)), seed=s)
+              by = {r.name: r for r in res}
+              cs = next(v for k, v in by.items() if k.startswith("churn_score"))
+              rand = next(v for k, v in by.items() if k.startswith("random"))
+              abst = by["oracle_uplift_abstain"]
+
+              print(f"seed {7+s}: auc={auc:.3f} churn_score={cs.expected_value:,.0f} "
+                    f"random={rand.expected_value:,.0f} abstain={abst.expected_value:,.0f}")
+
+              if cs.expected_value >= 0:
+                  failures.append(f"seed {7+s}: churn-score targeting did not lose money")
+              if cs.expected_value >= rand.expected_value:
+                  failures.append(f"seed {7+s}: churn-score was not worse than random")
+              if abst.expected_value <= 0:
+                  failures.append(f"seed {7+s}: abstention policy was not profitable")
+
+          if failures:
+              print("\nFAILED:")
+              print("\n".join("  " + f for f in failures))
+              sys.exit(1)
+          print("\nKill test holds across all seeds.")
+          PY

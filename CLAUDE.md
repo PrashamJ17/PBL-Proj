@@ -77,11 +77,13 @@ explainer/                 10 docs for non-technical evaluators/investors (see p
 ## Commands
 
 ```bash
-python -m pytest tests/ -q              # 58 tests, ~9s
-python -m keel.experiments.figures      # regenerate figure 1
-# calibration gates:
-python -c "from keel.sim import simulate,SimConfig; from keel.sim.calibration import check,check_quadrants; r=simulate(SimConfig(4000,24,7)); check(r); check_quadrants(r)"
+make check      # lint + 58 tests + both calibration gates — run before every commit
+make killtest   # re-run the founding experiment
+make figures    # regenerate figures, auto-syncs explainer/figures/
+make help       # everything else
 ```
+Remote: `origin` → https://github.com/PrashamJ17/PBL-Proj (branch `main`).
+CI re-runs tests, calibration gates, **and the kill test** on every push.
 
 ---
 
@@ -108,6 +110,17 @@ When finishing a work session:
 - **Rules for `explainer/`:** zero assumed knowledge, define every term at first use, no
   unexplained jargon, and never claim more than was demonstrated. Overstating there is
   worse than saying nothing — it is read by people who cannot check us.
+
+**Then commit and push — every checkpoint, no exceptions:**
+```bash
+make check                                   # must pass BEFORE committing
+git add -A && git commit && git push origin main
+```
+- Commit message: lead with what the change **establishes or fixes**, not files touched.
+  Put moved numbers in the body. Reference decision IDs (`D-011`) where relevant.
+- On phase completion, add a `CHANGELOG.md` entry first (newest first).
+- Never commit with failing tests or red calibration gates. If blocked, commit the work
+  with the failure described in the message rather than leaving it uncommitted.
 
 Keep this file under ~120 lines. If it grows, cut history, not invariants.
 

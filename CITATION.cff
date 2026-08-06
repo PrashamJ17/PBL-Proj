@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+title: "Keel: causal retention decisioning for small subscription businesses"
+message: "If you use this software or the SubSim benchmark, please cite it."
+type: software
+authors:
+  - given-names: Prasham
+    family-names: J
+repository-code: "https://github.com/PrashamJ17/PBL-Proj"
+abstract: >-
+  Churn prediction is a solved commodity; retention decisioning under
+  small-sample causal uncertainty is not. This repository contains SubSim, a
+  subscription-churn simulator calibrated to published SMB-SaaS benchmarks that
+  emits exact ground-truth counterfactuals, and an experiment demonstrating that
+  targeting retention offers by churn score destroys value -- performing worse
+  than random targeting -- because the customers a churn model ranks highest are
+  disproportionately those an intervention harms.
+keywords:
+  - churn prediction
+  - uplift modelling
+  - causal inference
+  - customer retention
+  - treatment effect heterogeneity
+  - subscription business
+license: Apache-2.0
