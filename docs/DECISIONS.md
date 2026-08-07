@@ -629,3 +629,31 @@ project: a truncated Hillstrom CSV (caught by row count), a partial Criteo gzip 
 control arm (caught by `check_representative`), and now this. **Presence is not
 validity.** Any external artifact needs a completeness check, and "the file is there" is
 never one.
+
+---
+
+## D-030 — Tests must not assert on library-version-specific behaviour
+
+**The failure.** `test_dates_are_parsed_from_strings` asserted
+`dtype == "datetime64[ns]"`. It passed locally on pandas 2.3 and failed in CI on
+pandas 3, which infers **microsecond** resolution when parsing `"2024-01-01"`.
+
+**This is D-028 again in different clothing.** Both CI failures came from the same
+structure: a `>=` dependency floor, CI resolving to something newer than the local
+install, and a check that was sensitive to the difference. The linter case was fixed by
+pinning behaviour; this one is fixed by *not depending on the behaviour at all*.
+
+**Why the test was wrong rather than the dependency.** Nothing in this project depends
+on timestamp resolution. Comparisons, ordering, and the schema's
+`available_at >= occurred_at` invariant all work across units — verified directly. The
+assertion was testing pandas' internals, not our behaviour. It now uses
+`pd.api.types.is_datetime64_any_dtype` plus a value check.
+
+**Runtime dependencies stay permissive on purpose.** Pinning `pandas` tightly would be
+wrong for a library other people install. The correct discipline is that tests assert on
+*our* semantics and never on a dependency's incidental representation.
+
+**Residual risk, stated plainly:** local and CI still resolve different dependency
+versions, so `make check` passing is not proof CI will pass. The mitigation is
+discipline, not machinery — if a future failure is again a version divergence rather
+than a real defect, a constraints file for CI becomes worth the complexity.

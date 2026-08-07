@@ -122,8 +122,19 @@ def test_lag_never_produces_an_impossible_fact():
 
 
 def test_dates_are_parsed_from_strings():
+    """Date strings must become real datetimes.
+
+    Checked with `is_datetime64_any_dtype` rather than an exact dtype comparison,
+    because the *resolution* is not something this project depends on and it is not
+    stable across pandas versions: pandas 2 parses "2024-01-01" to nanoseconds,
+    pandas 3 infers microseconds. An exact `== "datetime64[ns]"` assertion passed
+    locally on pandas 2.3 and failed in CI on pandas 3. Comparisons, ordering, and
+    the schema's available_at >= occurred_at invariant all work across resolutions,
+    so the resolution is genuinely not our business.
+    """
     out = load_table(_customers_frame(), CUSTOMERS)
-    assert out["created_at"].dtype == "datetime64[ns]"
+    assert pd.api.types.is_datetime64_any_dtype(out["created_at"])
+    assert out["created_at"].iloc[0] == pd.Timestamp("2024-01-01")
 
 
 def test_missing_required_column_is_rejected():
