@@ -12,23 +12,21 @@ small-sample causal uncertainty**. Keel decides *who to treat, with what, at wha
 — and **abstains** when the CATE posterior is too wide. Vertical: subscription
 (contractual) first; e-commerce/BTYD is Phase 7.
 
-**Proven (Phase 0, 6/6 seeds):** churn-score targeting loses money and is *worse than
-random*. Abstention beats ranking (209 treated > 718 treated). Sleeping dogs = 48% of
-top risk decile vs 2% of bottom.
+**Proven (Phase 0, 6/6 seeds):** churn-score targeting loses money, *worse than random*;
+abstention beats ranking (209 > 718 treated); sleeping dogs 48% of top risk decile vs 2%
+of bottom. **(Phase 1):** PIT features prevent a **0.35 AUC inflation** (0.603 vs 0.954).
 
-**Proven (Phase 1):** point-in-time features prevent a **0.35 AUC inflation**
-(correct 0.603 · occurred-only 0.613 · unfiltered 0.954).
-
-**Real-data check (Hillstrom RCT):** uplift > outcome models ✅. Worse-than-random
-**did NOT replicate** — no sleeping dogs in that data, so the claim is SCOPED to
-populations containing them (D-020). NEW: uplift beats random on only **75% of seeds at
-n=500**, 100% at n=2000 (D-023). Prior art: Ascarza, JMR 2018.
+**Real-data checks (Hillstrom + Criteo RCTs).** Worse-than-random did NOT replicate
+(D-020). **Governing quantity = corr(τ, propensity)** (D-026): Criteo +0.61 → uplift
+adds 0.6%; Hillstrom +0.07 → 3.9%; churn −0.19 → **+107%**. When orderings coincide the
+outcome model wins (easier estimand). Retention is the adversarial case. Small-n: uplift
+beats random on only **75% of seeds at n=500** (D-023). Prior art: Ascarza, JMR 2018.
 
 ---
 
 ## Status
 
-**Phases 0-1 COMPLETE + external validation.** 160 tests passing.
+**Phases 0-1 COMPLETE + external validation (Hillstrom, Criteo).** 167 tests.
 **Next: Phase 2** — dunning / involuntary churn. The first thing that earns money.
 
 | # | Phase | Status | Gate |
@@ -79,15 +77,16 @@ keel/sim/                  config · latents (copula) · hazard (ONE defn, two r
                            subsim (panel) · counterfactual (exact τ, CRN, LADDER)
                            calibration (check, check_quadrants, calibrate_intercept)
 keel/experiments/          kill_test · leakage_penalty · figures
-keel/benchmarks/           datasets (RCT) · models · evaluate · small_n · figures
-tests/                     160 tests — fairness, realism, edge cases, leakage gate
+keel/benchmarks/           datasets (Hillstrom, Criteo) · models · evaluate · small_n
+                           spectrum (when uplift pays) · figures
+tests/                     167 tests — fairness, realism, edge cases, leakage gate
 explainer/                 10 docs for non-technical evaluators/investors (see protocol)
 ```
 
 ## Commands
 
 ```bash
-make check      # lint + 160 tests + calibration gates — run before every commit
+make check      # lint + 167 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
@@ -134,5 +133,8 @@ Keep this file under ~120 lines. If it grows, cut history, not invariants.
   unfiltered. 137 tests green, 4 CI gates.
 - **CP-03** — External validation on Hillstrom RCT. Worse-than-random did not replicate
   (no sleeping dogs in that data) → claim scoped, D-020. New real-data finding: uplift
-  unreliable below n≈2000 (75% win rate at n=500) → D-023, figure 2. 160 tests green.
+  unreliable below n≈2000 (75% win rate at n=500) → D-023, figure 2.
+- **CP-04** — Criteo added. Uplift LOSES to outcome models there; reconciled by
+  corr(τ,propensity) as the governing quantity (D-026, figure 3). Criteo file is
+  treatment-sorted — prefix reads invalid (D-024). 167 tests green.
   Next: Phase 2 dunning — first revenue.

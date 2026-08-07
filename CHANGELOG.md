@@ -6,6 +6,65 @@ each choice in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
+## Criteo benchmark — and the quantity that reconciles everything
+
+**Second real dataset, an apparently contradictory result, and the principle that
+explains both.**
+
+### Added
+
+- `load_criteo` — 13.98M-row advertising RCT, 85/15 assignment.
+- `keel/benchmarks/spectrum.py` + figure 3 — when uplift modelling is worth it.
+
+### The contradiction
+
+| dataset | uplift vs outcome models |
+|---|---|
+| Hillstrom | uplift clearly **wins** (Qini 168 vs 36) |
+| Criteo | uplift clearly **loses**, at every training size (3617 vs 2811 at n=500) |
+
+### The reconciliation — `corr(treatment effect, outcome propensity)`
+
+| setting | corr | uplift's advantage | % predicted negative |
+|---|---:|---:|---:|
+| Hillstrom (mens) | +0.63 | +4.7% | 0.2% |
+| Criteo | +0.61 | +0.6% | 19.2% |
+| Hillstrom (womens) | +0.07 | +3.9% | 10.2% |
+| **SubSim (churn)** | **−0.19** | **+106.8%** | 25.7% |
+
+An outcome model ranks by likelihood of responding; an uplift model by how much
+treatment *changes* the response. **When those orderings coincide the outcome model
+wins** — it solves an easier estimation problem, and at small n that variance advantage
+dominates.
+
+This reframes the claim: not "uplift modelling is better" (false in advertising, and we
+can show it), but **retention has an adversarial structure that advertising does not**.
+
+It also refines D-020: sleeping dogs existing is *not sufficient*. Criteo has more
+predicted-negative customers than Hillstrom-womens and uplift still adds nothing. What
+matters is whether they sit where the outcome model ranks **highest**.
+
+### Two traps caught, both by guards written before the data arrived
+
+- **Criteo's file is sorted by treatment.** The first 251,999 rows are 100% treated, so
+  a prefix read yields data on which uplift is *undefined*. `check_representative`
+  caught it within minutes (D-024). The loader now always reads fully and subsamples
+  randomly.
+- **`exposure` is post-randomisation** and is excluded from covariates — using it would
+  silently convert the RCT into observational data.
+
+### Fixed
+
+- `check_representative` was too permissive to catch a 100% treatment rate on its own
+  (0.15 sits inside a 20% relative band around 0.85). Degenerate rates are now a
+  categorical failure — surfaced by a test that failed on first run.
+- Spectrum measurement corrected to use the T-learner: `ClassTransform`'s score is
+  scale-dependent under imbalance and produced a spurious `corr = 1.00` (D-027).
+
+**167 tests passing.**
+
+---
+
 ## External validation — Hillstrom benchmark
 
 **First test of the thesis against real randomised data rather than our own simulator.**

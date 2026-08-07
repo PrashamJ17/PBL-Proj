@@ -12,7 +12,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from keel.benchmarks.datasets import DATA_DIR, RCT, load_hillstrom
+from keel.benchmarks.datasets import (
+    CRITEO_REFERENCE,
+    DATA_DIR,
+    RCT,
+    check_representative,
+    load_criteo,
+    load_hillstrom,
+)
 from keel.benchmarks.evaluate import (
     abstention_sweep,
     evaluate_policy,
@@ -23,9 +30,12 @@ from keel.benchmarks.evaluate import (
     uplift_of_set,
 )
 from keel.benchmarks.models import ALL_TARGETERS, ClassTransform, SLearner, TLearner
+from keel.benchmarks.run import split
 
 HAS_DATA = (DATA_DIR / "hillstrom.csv").exists()
+HAS_CRITEO = (DATA_DIR / "criteo-uplift-v2.1.csv.gz").exists()
 needs_data = pytest.mark.skipif(not HAS_DATA, reason="hillstrom.csv not downloaded")
+needs_criteo = pytest.mark.skipif(not HAS_CRITEO, reason="criteo not downloaded (297MB)")
 
 
 # --- synthetic RCT with known truth -----------------------------------------
@@ -217,3 +227,86 @@ def test_subsample_preserves_balance():
     small = rct.subsample(1000, seed=0)
     assert 900 < len(small) < 1100
     assert abs(small.treatment.mean() - rct.treatment.mean()) < 0.05
+
+
+# --- Criteo -----------------------------------------------------------------
+
+
+def test_representativeness_check_rejects_single_arm():
+    """The guard that saved us. Criteo's file is sorted by treatment, so a prefix
+    read yields 100% treated rows and uplift becomes undefined -- not noisy,
+    undefined. This must be caught, not averaged over."""
+    all_treated = pd.DataFrame({
+        "treatment": np.ones(1000, dtype=int),
+        "visit": np.zeros(1000),
+        "conversion": np.zeros(1000),
+    })
+    checks = check_representative(all_treated, CRITEO_REFERENCE)
+    assert checks["treatment_rate"][0] == 1.0
+    assert not checks["treatment_rate"][2], "a single-arm sample must fail the check"
+
+
+def test_representativeness_check_accepts_a_valid_sample():
+    """Complement: the check must not reject good data, or it is useless."""
+    rng = np.random.default_rng(0)
+    n = 200_000
+    good = pd.DataFrame({
+        "treatment": (rng.random(n) < 0.85).astype(int),
+        "visit": (rng.random(n) < 0.047).astype(float),
+        "conversion": (rng.random(n) < 0.0029).astype(float),
+    })
+    assert all(ok for _, _, ok in check_representative(good, CRITEO_REFERENCE).values())
+
+
+@needs_criteo
+def test_criteo_loads_with_expected_shape():
+    rct = load_criteo(sample_rows=200_000, seed=0)
+    assert len(rct) == 200_000
+    assert set(np.unique(rct.treatment)) == {0, 1}
+    assert 0.80 < rct.treatment.mean() < 0.90, "Criteo is 85/15, not balanced"
+
+
+@needs_criteo
+def test_criteo_excludes_exposure_from_covariates():
+    """`exposure` records whether the ad was actually served -- decided AFTER
+    randomisation and correlated with behaviour. Using it as a feature silently
+    converts a clean RCT into observational data."""
+    rct = load_criteo(sample_rows=50_000, seed=0)
+    assert "exposure" not in rct.X.columns
+    assert {"visit", "conversion", "treatment"}.isdisjoint(set(rct.X.columns))
+    assert list(rct.X.columns) == [f"f{i}" for i in range(12)]
+
+
+@needs_criteo
+def test_criteo_sampling_is_random_not_prefix():
+    """Two different seeds must give different rows. If sampling were a prefix,
+    every seed would return the same (all-treated) block."""
+    a = load_criteo(sample_rows=100_000, seed=0)
+    b = load_criteo(sample_rows=100_000, seed=1)
+    assert not np.array_equal(a.X.to_numpy(), b.X.to_numpy())
+    for r in (a, b):
+        assert 0.80 < r.treatment.mean() < 0.90
+
+
+@needs_criteo
+def test_criteo_treatment_effect_is_positive():
+    rct = load_criteo(sample_rows=1_000_000, seed=0)
+    ate = rct.outcome[rct.treatment == 1].mean() - rct.outcome[rct.treatment == 0].mean()
+    assert 0.005 < ate < 0.020
+
+
+@needs_criteo
+def test_criteo_uplift_is_coupled_to_propensity():
+    """Regression test on the organising finding.
+
+    On Criteo, estimated treatment effect correlates strongly with outcome
+    propensity, so both rank the same customers and uplift modelling adds little.
+    This is the opposite of the churn setting and it is why the claim needed
+    scoping."""
+    rct = load_criteo(sample_rows=400_000, seed=0)
+    train, test = split(rct, seed=0)
+    from keel.benchmarks.models import OutcomePropensity
+
+    tau = TLearner(seed=0).fit(train.X, train.treatment, train.outcome).score(test.X)
+    prop = OutcomePropensity(seed=0).fit(train.X, train.treatment, train.outcome).score(test.X)
+    assert np.corrcoef(tau, prop)[0, 1] > 0.3

@@ -520,3 +520,101 @@ skip when the download is absent, keeping the suite runnable offline.
 | Evidence: simulator only | Simulator **and** real RCT, with the boundary between them mapped |
 
 Every affected claim in `explainer/` was rewritten, including the honest-status section.
+
+---
+
+## Criteo benchmark — and the quantity that reconciles the results
+
+### Step C.1 — Getting the data
+
+Two problems before a single number was computed.
+
+**Throughput.** Criteo's blob mirror ran at ~16 KB/s — ≈5 hours for 297MB. The
+HuggingFace mirror ran at ~1.3 MB/s, **80× faster**, completing in 3m16s byte-identical.
+Sixty seconds of probing saved five hours (D-025).
+
+**The file is sorted by treatment.** While the slow download ran, the loader was built to
+read a *prefix* of the partial gzip — legitimate in principle, since gzip is a stream
+format. `check_representative` immediately reported `treatment_rate = 1.0000`. Confirmed
+directly: the first 251,999 rows are all `treatment=1`.
+
+This is worse than ordinary sampling bias — a prefix contains **no control group at
+all**, so uplift is *undefined* rather than noisy, and every downstream number would have
+looked plausible and meant nothing. The loader now always reads fully and subsamples
+randomly (D-024).
+
+The check was written speculatively, on the general principle that a subset should be
+verified against published statistics before use. It caught a fatal problem within
+minutes of first contact.
+
+### Step C.2 — Main result: the opposite of Hillstrom
+
+```
+criteo[visit] n=2,000,000  treated 85.0%  ATE +0.0104 (+27.3%)
+
+policy                targeted  uplift/1000  incremental             95% CI    qini
+treat_all              1000000        10.96      10958.4                 --      --
+t_learner               300000        30.44       9133.1   [8344.4, 9893.9]  3502.1
+outcome_propensity      300000        30.28       9083.8  [7936.9, 10146.0]  3627.6
+class_transform         300000        30.18       9054.5  [7985.1, 10103.2]  3665.9
+response_model          300000        30.03       9009.6  [7887.6, 10123.2]  3628.7
+s_learner               300000        29.89       8965.7   [7886.2, 9986.8]  3627.5
+random                  300000        11.04       3313.3   [2885.4, 3757.4]     0.0
+```
+
+**Every method is tied.** Best to worst spans 1.9%, intervals overlap almost entirely,
+and `outcome_propensity` has a *higher* Qini than `t_learner`.
+
+**Small-n sweep — uplift LOSES at every size:**
+
+| train n | outcome_prop | t_learner | s_learner |
+|---|---|---|---|
+| 500 | **3617±245** | 2811±778 | 2487±1321 |
+| 20,000 | **3761±236** | 2968±282 | 3028±1052 |
+
+Outcome models beat random on 100% of seeds at every size; `s_learner` manages 75–90%
+with a coefficient of variation above 50% at n=500.
+
+### Step C.3 — Reconciliation ⭐
+
+Hillstrom said uplift wins; Criteo says it loses. Both are real. The governing quantity
+is `corr(treatment effect, outcome propensity)` (D-026):
+
+| setting | corr | uplift's advantage | % predicted negative |
+|---|---:|---:|---:|
+| Hillstrom (mens) | +0.63 | +4.7% | 0.2% |
+| Criteo | +0.61 | +0.6% | 19.2% |
+| Hillstrom (womens) | +0.07 | +3.9% | 10.2% |
+| **SubSim (churn)** | **−0.19** | **+106.8%** | 25.7% |
+
+An outcome model ranks by likelihood of responding; an uplift model by how much treatment
+*changes* it. When the orderings coincide, the outcome model wins — it solves an easier
+estimation problem, and at small n the variance advantage dominates.
+
+**This refines D-020.** Sleeping dogs existing is not sufficient: Criteo has *more*
+predicted-negative customers than Hillstrom-womens (19.2% vs 10.2%) and uplift still adds
+nothing. What matters is whether they sit where the outcome model ranks **highest** —
+which is what a negative correlation measures.
+
+Figure 3 (`fig03_when_uplift_pays.png`). Stated as a contrast, not a fitted curve: with
+four points the ordering among the three positive-correlation settings is within noise,
+and the figure says so on its face. The signal is the order-of-magnitude gap at negative
+correlation.
+
+### Step C.4 — Two bugs found by tests
+
+**`check_representative` was too permissive.** |1.0 − 0.85| = 0.15 sits inside a 20%
+relative band around 0.85, so an all-treated sample passed the check on its own — only
+the separate `load_criteo` guard caught it. Degenerate rates are now categorical
+failures. Surfaced by `test_representativeness_check_rejects_single_arm`, which failed
+on first run.
+
+**Scale-dependent scores were compared across estimators.** The first spectrum run
+reported Criteo at `corr = 1.00`, "100% predicted negative". `ClassTransform` outputs
+`p/p_treat − (1−p)/(1−p_treat)`, negative unless `p > 0.85` under 85/15 assignment — so
+nearly everything scores negative while the *ranking* stays fine. Correlation and
+negative-share are now measured on the T-learner, whose output is a genuine probability
+difference (D-027).
+
+**167 tests passing.** Criteo tests lock in the treatment-sorting trap, the exclusion of
+`exposure` from covariates, and the coupling finding as regressions.

@@ -39,6 +39,22 @@ HILLSTROM_URL = (
 )
 HILLSTROM_ROWS = 64_000
 
+# HuggingFace first: measured ~1.3 MB/s against ~16 KB/s from the Criteo blob
+# mirror, i.e. minutes rather than hours for the same 297MB.
+CRITEO_URL = (
+    "https://huggingface.co/datasets/criteo/criteo-uplift/resolve/main/"
+    "criteo-research-uplift-v2.1.csv.gz"
+)
+CRITEO_MIRROR = (
+    "https://criteostorage.blob.core.windows.net/criteo-research-datasets/"
+    "criteo-uplift-v2.1.csv.gz"
+)
+CRITEO_BYTES = 311_422_618
+
+#: Published statistics for the full file, used to check that any subset we read is
+#: representative rather than a biased slice.
+CRITEO_REFERENCE = {"treatment_rate": 0.85, "visit_rate": 0.047, "conversion_rate": 0.0029}
+
 
 @dataclass
 class RCT:
@@ -115,6 +131,151 @@ def _download(url: str, dest: Path, expect_rows: int | None = None) -> Path:
 
 def checksum(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+
+
+def read_gzip_prefix(path: Path, max_rows: int) -> tuple[pd.DataFrame, bool]:
+    """Read up to `max_rows` from a gzipped CSV that may still be downloading.
+
+    gzip is a stream format, so a partially downloaded file decompresses cleanly up
+    to the point it was truncated. That makes a 300MB dataset usable long before the
+    download finishes -- which matters here, since the full file takes hours on a
+    slow link and the experiments only need a few million rows anyway.
+
+    Returns the frame and whether truncation was hit.
+    """
+    import gzip
+    import io
+
+    lines: list[str] = []
+    truncated = False
+
+    # Decompress line by line rather than handing the file to pandas. pandas reads
+    # in large blocks, so on a truncated file it raises partway through its first
+    # block and returns nothing at all -- even when megabytes of valid rows are
+    # sitting there. Controlling the decompression ourselves keeps everything up to
+    # the truncation point.
+    try:
+        with gzip.open(path, "rt") as fh:
+            for i, line in enumerate(fh):
+                if i > max_rows:  # +1 for the header
+                    break
+                lines.append(line)
+    except (EOFError, OSError):
+        truncated = True
+
+    if len(lines) < 2:
+        raise RuntimeError(
+            f"{path.name}: only {len(lines)} lines readable so far. "
+            "If a download is still in progress, wait for more data."
+        )
+
+    if truncated and not lines[-1].endswith("\n"):
+        lines.pop()  # a partial final row
+
+    frame = pd.read_csv(io.StringIO("".join(lines)))
+    return frame, truncated
+
+
+def check_representative(
+    frame: pd.DataFrame, reference: dict[str, float], tol: float = 0.20
+) -> dict[str, tuple[float, float, bool]]:
+    """Compare a subset's headline rates against the full dataset's published ones.
+
+    Reading a *prefix* of a file is only a valid sample if the file is not ordered
+    in a way that correlates with treatment or outcome. This cannot be proven from
+    the prefix alone, but a prefix whose rates match the published full-file rates
+    is strong evidence against a damaging ordering -- and a mismatch is a hard stop.
+    """
+    observed = {
+        "treatment_rate": float(frame["treatment"].mean()),
+        "visit_rate": float(frame["visit"].mean()),
+        "conversion_rate": float(frame["conversion"].mean()),
+    }
+    out = {}
+    for key, expected in reference.items():
+        got = observed[key]
+        ok = abs(got - expected) <= tol * expected
+        # A degenerate rate is a categorical failure, not a tolerance question.
+        # Relative tolerance alone is too permissive here: |1.0 - 0.85| = 0.15 sits
+        # inside a 20% band around 0.85, so an all-treated sample -- on which uplift
+        # is undefined -- would otherwise pass.
+        if key == "treatment_rate" and got in (0.0, 1.0):
+            ok = False
+        out[key] = (got, expected, ok)
+    return out
+
+
+def load_criteo(
+    outcome: str = "visit",
+    sample_rows: int | None = 4_000_000,
+    path: Path | None = None,
+    seed: int = 0,
+) -> RCT:
+    """Load the Criteo uplift dataset (v2.1) -- a large advertising incrementality
+    experiment. Users randomly assigned to see an ad or not; visits and conversions
+    recorded.
+
+    **The file is sorted by treatment, and this is a trap.** The first ~250,000 rows
+    are 100% treated, with no control group at all. A prefix read -- the obvious way
+    to sample a 297MB file, and the way a partial download gives you data -- produces
+    a set on which uplift is *undefined* rather than merely noisy. So the whole file
+    is always read, and `sample_rows` subsamples **randomly afterwards**. Verified in
+    `check_representative`, which refuses a single-arm sample outright.
+
+    Three further differences from Hillstrom, each consequential:
+
+    **Treatment is 85/15, not balanced.** The control arm is small, so uplift
+    intervals are much wider for the same total n, and `ClassTransform` would be
+    biased without its propensity correction.
+
+    **Outcomes are rare** -- 4.7% visits, 0.29% conversions. At n=500, a conversion
+    analysis expects roughly *one* event. `visit` is the only outcome usable for
+    small-sample work.
+
+    **There is an `exposure` column, and it is a second trap.** `treatment` is the
+    randomised assignment; `exposure` records whether the ad was actually served,
+    which happens *after* randomisation and correlates with user behaviour. Using it
+    as the treatment indicator, or as a feature, silently converts a clean RCT into
+    observational data. It is excluded from covariates, and `treatment` is always
+    the assignment.
+    """
+    path = path or (DATA_DIR / "criteo-uplift-v2.1.csv.gz")
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} not found. Download it first (297MB, ~4 min):\n"
+            f"  curl -L -o {path} {CRITEO_URL}"
+        )
+    if outcome not in ("visit", "conversion"):
+        raise ValueError(f"unknown outcome {outcome!r}; use 'visit' or 'conversion'")
+
+    usecols = [f"f{i}" for i in range(12)] + ["treatment", "visit", "conversion"]
+    dtypes = {c: "float32" for c in usecols[:12]}
+    dtypes.update({"treatment": "int8", "visit": "int8", "conversion": "int8"})
+
+    raw = pd.read_csv(path, compression="gzip", usecols=usecols, dtype=dtypes)
+
+    checks = check_representative(raw, CRITEO_REFERENCE)
+    bad = [k for k, (_, _, ok) in checks.items() if not ok]
+    if bad:
+        detail = ", ".join(f"{k}={checks[k][0]:.4f} vs {checks[k][1]:.4f}" for k in bad)
+        raise RuntimeError(
+            f"{path.name}: does not match published statistics on {bad} ({detail}). "
+            "The file may be incomplete -- Criteo is sorted by treatment, so a "
+            "partial download is not a valid sample."
+        )
+
+    if sample_rows is not None and sample_rows < len(raw):
+        # Random, never a prefix -- see the docstring.
+        raw = raw.sample(n=sample_rows, random_state=seed).reset_index(drop=True)
+
+    return RCT(
+        name=f"criteo[{outcome}]" + (f"[n={len(raw):,}]" if sample_rows else ""),
+        X=raw[[f"f{i}" for i in range(12)]],
+        treatment=raw["treatment"].to_numpy().astype(int),
+        outcome=raw[outcome].to_numpy().astype(float),
+        outcome_name=outcome,
+        spend=None,
+    )
 
 
 def load_hillstrom(

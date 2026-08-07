@@ -478,3 +478,110 @@ flip. Mean performance at that size looks respectable; reliability is close to a
 
 This is the strongest available evidence for the abstention thesis, and unlike everything
 before it, it comes from real data rather than our own simulator.
+
+---
+
+## D-024 — Criteo's file is sorted by treatment; prefix reads are invalid
+
+**What happened.** The 297MB download was running at ~16 KB/s (≈5 hours), so the loader
+was built to read a *prefix* of the partially-downloaded gzip — legitimate in principle,
+since gzip is a stream format.
+
+`check_representative` reported **`treatment_rate = 1.0000`** on the first 196,287 rows.
+Confirmed directly: the first 251,999 rows are *all* `treatment=1`.
+
+**Why this matters more than a normal sampling bias.** A prefix of Criteo is not a
+skewed sample — it contains **no control group at all**, so uplift is *undefined*, not
+merely noisy. Every downstream number would have been meaningless while looking
+perfectly plausible.
+
+**Resolution:** `load_criteo` always reads the full file and subsamples **randomly**
+afterwards. A single-arm sample is rejected outright.
+
+**The check earned its place.** It was written speculatively, on the general principle
+that a subset should be verified against published full-file statistics before use. It
+caught a fatal problem within minutes of first contact with the data.
+
+**Follow-on fix:** the relative-tolerance test was too permissive to catch this on its
+own — |1.0 − 0.85| = 0.15 sits inside a 20% band around 0.85. A degenerate rate (0 or 1)
+is now a categorical failure. This was surfaced by
+`test_representativeness_check_rejects_single_arm`, which failed on first run.
+
+---
+
+## D-025 — Mirror choice is a real engineering decision here
+
+Criteo's own blob mirror delivered ~16 KB/s (≈5 hours for 297MB). The HuggingFace
+mirror delivered ~1.3 MB/s — **80× faster**, completing in 3m16s, byte-identical
+(311,422,618 bytes).
+
+HuggingFace is therefore the primary URL and Criteo's blob store the fallback, with the
+measurement recorded in a comment so the ordering is not silently "corrected" later.
+
+Worth generalising: when a dataset download looks like it will dominate the work,
+**probe throughput on each mirror before committing to one**. Sixty seconds of measuring
+saved roughly five hours.
+
+---
+
+## D-026 — The correlation between treatment effect and outcome propensity is the
+## governing quantity
+
+**The problem.** Two real datasets appeared to contradict each other. On Hillstrom,
+uplift models clearly beat outcome models (Qini 168 vs 36). On Criteo, they clearly
+lost, at *every* training size (3617 vs 2811 incremental at n=500). Neither was a fluke.
+
+**The reconciliation.** Measure `corr(estimated treatment effect, estimated outcome
+propensity)`:
+
+| setting | corr | uplift's advantage | % predicted negative |
+|---|---:|---:|---:|
+| Hillstrom (mens) | +0.63 | +4.7% | 0.2% |
+| Criteo (advertising) | +0.61 | +0.6% | 19.2% |
+| Hillstrom (womens) | +0.07 | +3.9% | 10.2% |
+| **SubSim (churn)** | **−0.19** | **+106.8%** | 25.7% |
+
+An outcome model ranks by *likelihood of responding*; an uplift model ranks by *how much
+treatment changes the response*. **When those orderings coincide, the outcome model wins
+— not because it measures the right thing, but because it solves an easier estimation
+problem.** Estimating one probability is far more stable than estimating a difference
+between two, and at small n that variance advantage dominates.
+
+**This reframes the project's claim.** It is *not* "uplift modelling is better" — that is
+false in advertising, and we can now show it with real data. It is that **retention has
+an adversarial structure that advertising does not**.
+
+**A refinement to D-020.** Sleeping dogs existing is *not sufficient*. Criteo has 19.2%
+predicted-negative customers — more than Hillstrom-womens' 10.2% — and uplift still adds
+nothing. What matters is whether the harmed customers sit **where the outcome model ranks
+highest**, which is exactly what a negative correlation measures.
+
+**It also strengthens the abstention argument.** A practitioner cannot tell in advance
+which regime they occupy, and choosing wrongly is expensive in both directions. A method
+that quantifies its own uncertainty and declines to act is the honest response.
+
+**Stated honestly:** four settings is a contrast, not a fitted relationship. The ordering
+among the three positive-correlation points is within noise. The signal is the
+order-of-magnitude gap at negative correlation, and the figure says so explicitly.
+
+---
+
+## D-027 — Scale-dependent scores must not be compared across estimators
+
+**The bug.** The first spectrum run reported Criteo at `corr = 1.00` with "100% predicted
+negative" — nonsense, and it came from selecting whichever uplift model scored best and
+then correlating *its* raw scores against propensity.
+
+`ClassTransform` outputs `p/p_treat − (1−p)/(1−p_treat)`. Under Criteo's 85/15
+assignment that is negative unless `p > 0.85`, so nearly every customer scores negative
+even though the **ranking is perfectly good**. It is also a monotone function of a
+propensity-like quantity, hence the spurious correlation of 1.0.
+
+**Resolution:** correlation and "share predicted negative" are measured on the
+**T-learner specifically**, whose output is a difference of two probabilities and
+therefore lives on the treatment-effect scale, where "negative" means "predicted to be
+harmed". The ranking-quality comparison still uses the best of each family, since there
+only the ordering matters.
+
+**General rule:** only compare estimators on a quantity they all express on the same
+scale. Rankings are comparable across all of them; raw scores are not.
