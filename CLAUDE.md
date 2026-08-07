@@ -1,8 +1,7 @@
 # Keel — project state
 
 **Read this first. Do not re-explore the repo to rediscover state.**
-Everything needed to resume work is here. Deeper context only if the task requires it:
-`docs/DECISIONS.md` (why choices were made) · `docs/BUILDLOG.md` (what happened).
+Deeper context only if needed: `docs/DECISIONS.md` (why) · `docs/BUILDLOG.md` (what).
 
 ---
 
@@ -20,11 +19,16 @@ top risk decile vs 2% of bottom.
 **Proven (Phase 1):** point-in-time features prevent a **0.35 AUC inflation**
 (correct 0.603 · occurred-only 0.613 · unfiltered 0.954).
 
+**Real-data check (Hillstrom RCT):** uplift > outcome models ✅. Worse-than-random
+**did NOT replicate** — no sleeping dogs in that data, so the claim is SCOPED to
+populations containing them (D-020). NEW: uplift beats random on only **75% of seeds at
+n=500**, 100% at n=2000 (D-023). Prior art: Ascarza, JMR 2018.
+
 ---
 
 ## Status
 
-**Phases 0-1 COMPLETE.** 137 tests passing. All three CI gates green.
+**Phases 0-1 COMPLETE + external validation.** 160 tests passing.
 **Next: Phase 2** — dunning / involuntary churn. The first thing that earns money.
 
 | # | Phase | Status | Gate |
@@ -38,8 +42,8 @@ top risk decile vs 2% of bottom.
 | 6 | Holdout infra + incrementality reports + cancel widget | ⬜ | **real client ROI number**; paper 3 |
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
 
-**Papers:** 1) SubSim benchmark ⬜ draftable now · 2) small-*n* uplift w/ abstention ⬜
-· 3) margin-aware offer allocation ⬜
+**Papers:** merge 1+2 → small-*n* abstention (simulator as instrument, finding as lead;
+fig 2 is real-data support) · 3) margin-aware offer allocation.
 
 ---
 
@@ -68,22 +72,22 @@ top risk decile vs 2% of bottom.
 ## Map
 
 ```
-keel/core/schema.py        canonical tables; occurred_at + available_at on every fact
-keel/core/features.py      PIT feature store; _visible() is the ONLY path to data
-keel/core/leakage.py       availability audit, time-travel, canary injection
-keel/ingest/               stripe.py (pure, fixture-tested) · csv_ingest.py · subsim_adapter.py
+keel/core/                 schema (occurred_at+available_at) · features (_visible is the
+                           ONLY path to data) · leakage (audit, time-travel, canary)
+keel/ingest/               stripe (pure, fixture-tested) · csv_ingest · subsim_adapter
 keel/sim/                  config · latents (copula) · hazard (ONE defn, two regimes)
                            subsim (panel) · counterfactual (exact τ, CRN, LADDER)
                            calibration (check, check_quadrants, calibrate_intercept)
 keel/experiments/          kill_test · leakage_penalty · figures
-tests/                     137 tests — fairness, realism, edge cases, leakage gate
+keel/benchmarks/           datasets (RCT) · models · evaluate · small_n · figures
+tests/                     160 tests — fairness, realism, edge cases, leakage gate
 explainer/                 10 docs for non-technical evaluators/investors (see protocol)
 ```
 
 ## Commands
 
 ```bash
-make check      # lint + 137 tests + calibration gates — run before every commit
+make check      # lint + 160 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
@@ -127,4 +131,8 @@ Keep this file under ~120 lines. If it grows, cut history, not invariants.
   figure 1 generated, 58 tests green.
 - **CP-02** — Phase 1 complete. Canonical schema, PIT feature store, leakage suite,
   Stripe/CSV/SubSim ingest. Leakage penalty measured: 0.603 correct vs 0.954
-  unfiltered. 137 tests green, 4 CI gates. Next: Phase 2 dunning — first revenue.
+  unfiltered. 137 tests green, 4 CI gates.
+- **CP-03** — External validation on Hillstrom RCT. Worse-than-random did not replicate
+  (no sleeping dogs in that data) → claim scoped, D-020. New real-data finding: uplift
+  unreliable below n≈2000 (75% win rate at n=500) → D-023, figure 2. 160 tests green.
+  Next: Phase 2 dunning — first revenue.

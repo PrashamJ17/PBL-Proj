@@ -151,9 +151,11 @@ same trait that makes contacting them dangerous.
 
 ## Three findings worth stating separately
 
-**1. A churn score is worse than nothing for this decision.**
+**1. A churn score is worse than nothing for this decision — where sleeping dogs exist.**
 Random targeting is uninformed; it meets sleeping dogs at their natural 17% rate. A churn
-score is *anti-informed* — it seeks them out. This is stronger than we predicted.
+score is *anti-informed* — it seeks them out. **The scope condition matters**: this
+requires a harmed group that resembles the people the model ranks highest. The real-data
+test below shows what happens when no such group exists.
 
 **2. Knowing when to stop is worth more than knowing how to rank.**
 Contacting **209** customers earned **more** than contacting **718**. The extra 509
@@ -165,6 +167,106 @@ dogs. Teams optimising accuracy may be actively making their business worse — 
 explains why this problem has persisted despite enormous industry attention.
 
 ---
+
+## The real-data test — where the claim held, and where it broke
+
+Everything above comes from our simulation. The obvious objection is that we built the
+simulation, so of course it agrees with us. So we tested the claim against **real
+experimental data**: the Hillstrom email experiment, 64,000 customers randomly assigned
+to receive a marketing email or nothing, with their subsequent behaviour recorded.
+
+Because assignment was random, the untreated group is a genuine control. This is real
+evidence, not our own construction.
+
+**Before running it, we wrote down what we expected** — in the code, committed in
+advance. Specifically: that this is email marketing rather than subscription retention,
+that its potential for harm is much weaker, and that our "worse than random" finding
+**might well fail there**. Recording that first is the only reason our reading of the
+result afterwards is trustworthy rather than convenient.
+
+### What happened
+
+| Targeting method | Extra visits generated |
+|---|---:|
+| Contact everyone | 933 |
+| **Best uplift method** | **467** (from 30% of contacts) |
+| Standard outcome-model targeting | 416 |
+| Random targeting | 281 |
+
+Two findings, one confirming and one correcting:
+
+**Confirmed:** uplift-based targeting beat outcome-based targeting, and both beat
+random.
+
+**Not confirmed:** outcome-model targeting was **better** than random here, not worse.
+
+### Why it broke — and why that is useful
+
+We investigated rather than explained it away. Sorting customers by how much the model
+thought the email would help them, then checking what *actually* happened to each group:
+
+**Every single group benefited from the email.** Even the customers predicted to respond
+worst still visited more often when emailed. In the men's campaign, only 0.2% of
+customers were predicted to be harmed at all.
+
+**Hillstrom has no sleeping dogs.** There is nobody the email drives away. And when a
+treatment helps everyone, targeting the most responsive people naturally beats picking at
+random — being harmful is not merely unlikely, it is *structurally impossible*.
+
+### The corrected claim
+
+> Standard targeting is worse than random **when a group exists that the intervention
+> actively harms, and that group looks like the people the model ranks highest**. That
+> is the situation in subscription retention — you remind a dormant customer they are
+> paying you. It is not the situation in promotional email, where an unwanted message is
+> at worst ignored.
+
+This is narrower than what we claimed before, and considerably more defensible. It also
+explains why our simulator was necessary rather than merely convenient: **no public
+dataset contains the mechanism**, so the only way to study it was to build a setting
+where it exists and is measurable.
+
+---
+
+## The finding that matters most, and it is from real data
+
+Hillstrom cannot test the harm mechanism. But it can test the question this project
+actually exists to answer: **does any of this work when a business is small?**
+
+We shrank the amount of data the models could learn from — from 20,000 customers down to
+500 — while keeping the evaluation identical, so any difference is caused by scarcity
+alone. We repeated it across twenty different random splits.
+
+![Small-n reliability](figures/fig02_small_n_reliability.png)
+
+The left panel is how this is normally reported: average performance improves with more
+data. Unremarkable.
+
+**The right panel is the finding.** It asks a different question: *on what fraction of
+attempts did the method actually beat random?* A business does not get an average across
+twenty parallel universes. It gets one attempt.
+
+| Customers to learn from | Best method beats random |
+|---|---|
+| 500 | **75% of the time** |
+| 1,000 | 90% |
+| 2,000 | 100% |
+| 5,000+ | 100% |
+
+At 500 customers, the best method fails to beat random **one time in four**. One
+estimator managed only 55% — a coin flip. Yet its *average* performance looks perfectly
+respectable, which is exactly how a business ends up deploying something that does
+nothing.
+
+**Reliability arrives at roughly 2,000 customers.** Below that, deploying a conventional
+uplift model is closer to a gamble than a decision — and below that is precisely where
+the businesses we care about live.
+
+This is the strongest argument yet for the part of our approach nobody else builds:
+**when the evidence is too thin to know whether acting will help, say so and do
+nothing.** And unlike everything else in this document, it rests on real experimental
+data rather than our own simulation.
+
 
 ## How thoroughly this is checked
 
@@ -189,18 +291,33 @@ the two kinds of churn.
 
 ## Honest status — please read this
 
-**What we have proven:** in a benchmark-calibrated simulation, under settings chosen to
-make our claim harder rather than easier, the standard industry approach to retention
-targeting loses money and performs worse than random. A method that estimates causal
-effect and abstains under uncertainty is profitable on the same budget.
+**What we have proven:**
+
+- In a benchmark-calibrated simulation, under settings chosen to make our claim harder
+  rather than easier, the standard approach to retention targeting loses money and
+  performs worse than random — **given a population containing sleeping dogs**.
+- On **real randomised data**, uplift-based targeting beats outcome-based targeting.
+- On **real randomised data**, conventional uplift methods are **unreliable below about
+  2,000 customers** — beating random on only 75% of attempts at n=500. This is the
+  strongest support for our abstention approach and it does not come from our own
+  simulation.
 
 **What we have NOT proven:**
 
-- **Nothing has been validated on a real business.** No paying customers yet. The
-  mechanism is demonstrated; its magnitude in the real world is unknown.
+- **The worse-than-random result did not replicate on real email-campaign data**, because
+  that dataset contains no harmed customers at all. The claim is therefore *conditional*
+  on a mechanism we have demonstrated only in simulation. We believe it applies to
+  subscription retention on well-understood grounds, but we have not shown it on real
+  subscription data — and no public dataset exists that could.
+- **Nothing has been validated on a real business.** No paying customers yet.
 - The real-world share of sleeping dogs is uncertain. We used 17% based on published
   literature. If the true figure is far lower in a given business, the effect shrinks —
   though the *direction* of the argument holds at any non-zero level.
+- **The core idea is not new.** Eva Ascarza (*Journal of Marketing Research*, 2018)
+  established with field experiments that targeting the highest-risk customers is
+  ineffective, and that targeting on responsiveness works better. Our contribution is
+  characterising **when risk-based targeting becomes actively harmful rather than merely
+  ineffective**, and making the method work at small scale.
 - The comparison above uses a **perfect-knowledge** version of our method as the upper
   bound. Building a real method that approaches it, from limited data, is the actual
   research problem and is not yet solved. That is Phase 4.

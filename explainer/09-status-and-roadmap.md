@@ -3,7 +3,7 @@
 **This document is updated as the project progresses. Everything else in this folder is
 relatively stable; this is the living record.**
 
-**Last updated:** Phase 1 complete.
+**Last updated:** Phase 1 complete, plus first external validation on real data.
 
 ---
 
@@ -150,6 +150,28 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### External validation — first real-data test
+
+Tested our central claim against a real 64,000-customer randomised email experiment
+(Hillstrom, 2008) rather than our own simulation. Results in
+[05](05-the-evidence.md).
+
+**One claim was confirmed, one was corrected, and one new finding emerged.**
+
+Confirmed: targeting by estimated *effect* beats targeting by *likelihood of responding*.
+
+Corrected: our "worse than random" result did **not** replicate. We diagnosed why rather
+than explaining it away — that dataset contains no customers whom the email harms, so
+being worse than random is structurally impossible there. The claim is now stated with
+its scope condition attached: it requires a harmed group resembling the people a model
+ranks highest, which is a feature of subscription retention and not of promotional email.
+
+New, and the most important result so far: **below roughly 2,000 customers, conventional
+methods are unreliable.** At 500 customers the best method beats random on only 75% of
+attempts; one estimator managed 55%. Average performance looks fine, which is precisely
+how a small business ends up deploying something that does nothing. This is the
+strongest evidence yet for our abstention approach, and it comes from real data.
 
 ### Phase 1 — complete
 

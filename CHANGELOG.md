@@ -6,6 +6,54 @@ each choice in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
+## External validation — Hillstrom benchmark
+
+**First test of the thesis against real randomised data rather than our own simulator.**
+
+### Added
+
+- `keel/benchmarks/` — RCT loaders with integrity checks, five targeting models
+  (outcome propensity, response model, T/S-learner, class transform), policy evaluation
+  on RCT data with bootstrap intervals, Qini metrics, and an abstention sweep.
+- Figure 2 — small-n reliability (`papers/figures/fig02_small_n_reliability.png`).
+
+### Results
+
+| Claim | Outcome |
+|---|---|
+| Uplift beats outcome-model targeting | ✅ confirmed (467 vs 416 incremental visits) |
+| Outcome-model targeting is worse than random | ❌ **did not replicate** (416 vs 281) |
+| Uplift methods are unreliable at small n | ⭐ **new finding, real data** |
+
+**Why the second one failed, diagnosed rather than rationalised:** Hillstrom contains no
+sleeping dogs. Every decile of predicted uplift has positive true uplift; the mens
+campaign predicts only 0.2% of customers negative. When a treatment helps everyone,
+worse-than-random is structurally impossible. The claim is now scoped (D-020).
+
+**The new finding.** Holding evaluation fixed and shrinking only the training set, the
+probability a method beats random *on the same seed*:
+
+| train n | 500 | 1,000 | 2,000 | 5,000+ |
+|---|---|---|---|---|
+| best uplift method | **75%** | 90% | 100% | 100% |
+
+At n=500 the class-transform estimator wins on 55% of seeds — a coin flip — while its
+mean looks respectable. Reliability, not expectation, is what a single business
+experiences (D-023).
+
+### Notable
+
+- The expected outcome was **written into the code before the experiment ran** (D-021),
+  including that worse-than-random was likely to fail on this dataset. That is the only
+  reason the scoping interpretation is credible rather than convenient.
+- The primary metric carries **no prices** (D-022) — Hillstrom records neither a value
+  per visit nor a cost per email, so monetary conclusions would follow from our own
+  invented numbers.
+- Prior art acknowledged: Ascarza (*JMR* 2018) already established that risk-based
+  targeting is ineffective. Our contribution is narrower and better defined as a result.
+
+---
+
 ## Phase 1 — Canonical schema, point-in-time features, ingest
 
 **Making it structurally impossible to train on information that did not exist yet.**

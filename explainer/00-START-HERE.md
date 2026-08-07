@@ -26,9 +26,13 @@ had forgotten they were paying you.
 We built a system that answers the second question instead: **who should we actually
 help, with what, at what cost — and when should we do nothing at all?**
 
-We have proven the core claim in simulation. A retention campaign targeted the standard
+We have proven the core claim in simulation: a retention campaign targeted the standard
 way loses money, and loses *more than targeting customers completely at random*. Our
-approach turns that same budget profitable. See [the evidence](05-the-evidence.md).
+approach turns that same budget profitable.
+
+We have also tested it against real-world experimental data, where it **partly failed** —
+and understanding why sharpened the idea considerably. See
+[the evidence](05-the-evidence.md).
 
 ---
 
@@ -48,25 +52,29 @@ Everything else is consequence.
 
 ## The documents
 
-| # | Document | What it answers |
-|---|---|---|
-| 01 | [The problem](01-the-problem.md) | What is churn, why does it destroy businesses, how big is this |
-| 02 | [How the big companies do it](02-how-the-big-companies-do-it.md) | What Netflix, Spotify, Amazon and telecoms actually do — and where they are weak |
-| 03 | **[The core insight](03-the-core-insight.md)** | **Why predicting who leaves is the wrong question** |
-| 04 | [What we are building](04-what-we-are-building.md) | The product and how it works, in plain language |
-| 05 | [The evidence](05-the-evidence.md) | What we have proven so far, and why you should believe it |
-| 06 | [The business case](06-the-business-case.md) | Market, competitors, pricing, defensibility |
-| 07 | [Risks and limitations](07-risks-and-limitations.md) | What could go wrong and what we have *not* proven |
-| 08 | [Glossary](08-glossary.md) | Every term, defined plainly |
-| 09 | [Status and roadmap](09-status-and-roadmap.md) | Where we are today, what comes next |
+| #   | Document                                                         | What it answers                                                                  |
+| --- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 01  | [The problem](01-the-problem.md)                                 | What is churn, why does it destroy businesses, how big is this                   |
+| 02  | [How the big companies do it](02-how-the-big-companies-do-it.md) | What Netflix, Spotify, Amazon and telecoms actually do — and where they are weak |
+| 03  | **[The core insight](03-the-core-insight.md)**                   | **Why predicting who leaves is the wrong question**                              |
+| 04  | [What we are building](04-what-we-are-building.md)               | The product and how it works, in plain language                                  |
+| 05  | [The evidence](05-the-evidence.md)                               | What we have proven so far, and why you should believe it                        |
+| 06  | [The business case](06-the-business-case.md)                     | Market, competitors, pricing, defensibility                                      |
+| 07  | [Risks and limitations](07-risks-and-limitations.md)             | What could go wrong and what we have *not* proven                                |
+| 08  | [Glossary](08-glossary.md)                                       | Every term, defined plainly                                                      |
+| 09  | [Status and roadmap](09-status-and-roadmap.md)                   | Where we are today, what comes next                                              |
 
 ---
 
 ## Three things to hold onto
 
 **1. The industry is solving the wrong problem.** Nearly every churn tool ranks
-customers by likelihood of leaving. That ranking is not just unhelpful for deciding who
-to contact — we measured it to be *worse than random*.
+customers by likelihood of leaving. That ranking is the wrong basis for deciding who to
+contact — and in subscription retention specifically, we measured it to be *worse than
+targeting at random*. (We later tested this on a real-world email campaign and it did
+**not** hold there. Why, and what that means, is in [05](05-the-evidence.md) — the
+short version is that the harm requires a particular kind of customer that email
+campaigns do not have and subscriptions do.)
 
 **2. The hardest part is not the prediction.** It is deciding what to do, proving it
 worked, and doing both when you only have a few hundred customers to learn from. That

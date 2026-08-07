@@ -395,3 +395,128 @@ or the demonstration stopped working, and we need to know which.
 
 Leakage suite green in CI. Phase 2 (dunning / involuntary churn — first revenue) is
 unblocked.
+
+---
+
+## External validation — the Hillstrom benchmark
+
+**Goal:** test the thesis against real randomised data instead of our own simulator.
+Everything to this point was simulator-only, which is not evidence a referee would
+accept and should not be evidence we accept either.
+
+**Prediction recorded before running** (D-021, committed in `run.py`): Hillstrom is
+email marketing, not churn retention; its harm mechanism is weaker; worse-than-random
+might well fail there, and that would be a result about *scope* rather than a
+refutation.
+
+---
+
+### Step B.1 — Harness
+
+`keel/benchmarks/` — dataset loaders with row-count verification (a truncated CSV parses
+fine and silently changes every result; the first download attempt did in fact truncate
+at 907KB of 3.96MB), five targeting models, and policy evaluation on RCT data.
+
+The estimator: because treatment was randomised, the control group is a valid
+counterfactual for any subgroup selected on **pre-treatment covariates**. For a policy
+selecting set S, `uplift(S) = mean(Y|treated, S) - mean(Y|control, S)`, with bootstrap
+intervals. Randomisation does all the work, which is why `RCT.X` excludes anything
+measured after assignment — a test enforces it.
+
+Primary metric carries **no prices** (D-022).
+
+### Step B.2 — Main result
+
+```
+hillstrom[womens/visit]: n=42,693  treated 50.1%
+  ATE +0.0452 (+42.6% lift)
+
+policy                targeted  uplift/1000  incremental          95% CI   qini
+treat_all                21347        43.73        933.4              --     --
+s_learner                 6404        72.88        466.7  [356.9, 591.6]  167.8
+t_learner                 6404        71.15        455.6  [333.4, 577.5]  149.9
+response_model            6404        70.14        449.2  [324.7, 572.8]   84.9
+class_transform           6404        65.89        422.0  [313.8, 524.7]  159.8
+outcome_propensity        6404        64.91        415.7  [291.8, 532.6]   35.6
+random                    6404        43.92        281.3  [207.9, 363.2]    0.0
+```
+
+**Uplift beats outcome models — confirmed.** Qini roughly doubles (167.8 vs 35.6).
+
+**Worse-than-random — did NOT replicate.** Outcome-model targeting beat random, 416 vs
+281.
+
+### Step B.3 — Diagnosis, not rationalisation ⭐
+
+Sorted the test set into deciles of predicted uplift and measured *true* uplift in each:
+
+| campaign | ATE | % predicted negative | decile 1 | decile 5 | decile 10 |
+|---|---|---|---|---|---|
+| womens | +0.045 | 10.2% | +0.028 | +0.028 | +0.074 |
+| mens | +0.077 | **0.2%** | +0.096 | +0.067 | +0.098 |
+
+**Every decile has positive true uplift. Hillstrom has no sleeping dogs.** The mens
+campaign is worse still — decile 1 outperforms decile 5, so the ranking is close to
+noise.
+
+When a treatment helps everyone, any rule correlated with responsiveness beats random,
+and worse-than-random is *structurally impossible* regardless of model quality. The
+claim is now scoped (D-020): it requires a harmed segment correlated with outcome
+propensity, which subscription retention has and promotional email does not.
+
+This also converts the simulator from a convenience into a necessity — no public dataset
+contains the mechanism.
+
+### Step B.4 — Small-n reliability ⭐ the important one
+
+Hillstrom cannot test the harm mechanism, but it *can* test the question this project
+exists to answer. Evaluation set held fixed; only training size shrinks; 20 seeds.
+
+**Probability a method beats random on the same seed:**
+
+| train n | outcome_prop | response | t_learner | s_learner | class_transform |
+|---|---|---|---|---|---|
+| 500 | 70% | 60% | 70% | **75%** | **55%** |
+| 1,000 | 65% | 60% | 85% | 90% | 75% |
+| 2,000 | 75% | 90% | 95% | **100%** | 90% |
+| 5,000 | 95% | 95% | 100% | 100% | 90% |
+| 20,000 | 90% | 100% | 100% | 100% | 100% |
+
+Coefficient of variation falls from ~21% at n=500 to ~11% at n=20,000.
+
+**At n=500 the best method fails to beat random one time in four**, and class-transform
+is a coin flip — while its *mean* looks respectable. Reliability, not expectation, is
+what a single business experiences (D-023).
+
+Reliability arrives around **n=2,000**. Below that, deploying a conventional uplift model
+is closer to a gamble than a decision — and that is exactly the regime this project
+targets. Strongest support yet for abstention, and the first such evidence from real
+data.
+
+### Step B.5 — Figure 2 and tests
+
+`papers/figures/fig02_small_n_reliability.png`. Left panel: the conventional view (means
+rise with data). Right panel: win rate against random. The two tell different stories,
+and only the second is what a business experiences.
+
+`tests/test_benchmarks.py` — **23 tests**. Estimator correctness is tested on synthetic
+RCTs with known ground truth, including a `harm_fraction` parameter that creates the
+sleeping-dog segment Hillstrom lacks — so the machinery is verified on data that
+contains the phenomenon even though the real dataset does not. Dataset-dependent tests
+skip when the download is absent, keeping the suite runnable offline.
+
+`test_hillstrom_has_no_sleeping_dogs` locks in the scoping finding as a regression test.
+
+**160 tests total, all passing.**
+
+---
+
+### What this did to the claims
+
+| Before | After |
+|---|---|
+| "Churn-score targeting is worse than random" | "...**where a harmed segment exists that resembles the highest-ranked customers**" |
+| Novelty: risk-based targeting fails | Novelty: **when it becomes actively harmful**, plus small-n reliability (Ascarza 2018 established the former) |
+| Evidence: simulator only | Simulator **and** real RCT, with the boundary between them mapped |
+
+Every affected claim in `explainer/` was rewritten, including the honest-status section.

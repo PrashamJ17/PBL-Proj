@@ -22,3 +22,10 @@ venv/
 # Note: papers/figures/*.png and explainer/figures/*.png ARE committed.
 # They are referenced by README.md and explainer/05-the-evidence.md, and are
 # regenerable via `python -m keel.experiments.figures`.
+
+# Benchmark datasets are downloaded on demand (keel/benchmarks/datasets.py).
+# Not committed: multi-MB, and redistribution terms vary by source.
+data/
+
+# Editor workspace config (Obsidian vault settings, machine-local)
+.obsidian/

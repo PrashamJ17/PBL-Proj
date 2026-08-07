@@ -375,3 +375,106 @@ meaning**: column names are guessed at through an alias table, because exports a
 "Customer ID", "customer-id", and "CUSTOMER_ID" with equal frequency. But a missing
 required column is refused outright, with the columns actually present listed in the
 error — the person reading it is a founder looking at their own export.
+
+---
+
+## D-020 — The worse-than-random claim is SCOPED, not universal
+
+**What we believed:** Phase 0 showed churn-score targeting losing money and
+underperforming random selection, 6/6 seeds. The explainer stated this without
+qualification.
+
+**What the Hillstrom benchmark showed:** it does not replicate. On a real 64,000-customer
+randomised email experiment, outcome-model targeting **beats** random (416 vs 281
+incremental visits at 30% budget).
+
+**Why — and this is the useful part.** We diagnosed rather than rationalised. Hillstrom
+has **no sleeping dogs**. Sorting the test set into deciles of predicted uplift, *every
+decile has positive true uplift* — the lowest is +0.028 for the womens campaign. The
+mens campaign is more extreme: only 0.2% of customers are predicted negative, and the
+decile ordering is barely monotone at all.
+
+The treatment helps essentially everyone. When that is true, any rule correlated with
+responsiveness beats random by construction, and worse-than-random is **structurally
+impossible** regardless of what the model does.
+
+**The corrected claim:**
+
+> Outcome-model targeting is worse than random *when a negative-uplift segment exists
+> and is correlated with outcome propensity*. That condition holds in subscription
+> retention — dormant payers reminded that they are paying — and does **not** hold in
+> promotional email, where contact is at worst ignored.
+
+This is narrower and considerably more defensible. It also converts the simulator from a
+convenience into a necessity: no public dataset contains the mechanism, which is
+precisely why one had to be built.
+
+**Consequence:** every claim in `explainer/` was rewritten to carry the scope condition.
+Prior work (Ascarza 2018, *JMR*) already established that risk-based targeting is
+*ineffective*; our contribution is characterising **when it becomes actively harmful**,
+not asserting that it always is.
+
+---
+
+## D-021 — Prediction recorded in the code before the experiment ran
+
+**Alternative rejected:** running the benchmark, then writing up whatever came out.
+
+**Reason:** the outcome was genuinely uncertain, and the temptation to reinterpret a
+disappointing result afterwards is strongest exactly when it disappoints. So
+`keel/benchmarks/run.py` carries a docstring section, committed before the first run,
+stating that Hillstrom is email marketing rather than churn retention, that its harm
+mechanism is weaker, and that **worse-than-random was likely to fail there** — and that
+such a failure would be a result about scope rather than a refutation.
+
+That is what it turned out to be. Having written it down first is the only reason that
+reading is credible rather than convenient.
+
+**Worth repeating for every future benchmark:** state the expected outcome, and what
+each possible result would mean, before running it.
+
+---
+
+## D-022 — Primary benchmark metric carries no prices
+
+**Alternative rejected:** converting Hillstrom outcomes to money using an assumed value
+per visit and cost per email.
+
+**Reason:** Hillstrom records neither. Any monetary conclusion would follow from numbers
+we invented, and the headline would be a function of our own assumption rather than of
+the data.
+
+The primary metric is therefore **incremental outcome per thousand contacts**, which
+needs no economic assumptions at all. Economics enter separately as a *sweep* over
+break-even thresholds (`abstention_sweep`), so the reader sees how conclusions vary with
+price rather than being handed one.
+
+---
+
+## D-023 — Small-n reliability is measured by win rate, not by the mean
+
+**Alternative rejected:** reporting mean performance across seeds, as the uplift
+literature does.
+
+**Reason:** a mean across many hypothetical draws is not what a business experiences. It
+gets **one** draw. A method with a good average and a wide spread is a gamble, and
+averaging hides exactly the risk that matters.
+
+So the headline small-n metric is: **the proportion of seeds on which a method beats
+random**, paired on the same split.
+
+**Measured on Hillstrom** (real randomised data, evaluation set held fixed so only
+training size varies):
+
+| train n | best uplift beats random |
+|---|---|
+| 500 | **75%** |
+| 1,000 | 90% |
+| 2,000 | 100% |
+| 5,000+ | 100% |
+
+At n=500 the class-transform estimator wins on only **55%** of seeds — barely a coin
+flip. Mean performance at that size looks respectable; reliability is close to a gamble.
+
+This is the strongest available evidence for the abstention thesis, and unlike everything
+before it, it comes from real data rather than our own simulator.
