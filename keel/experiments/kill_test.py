@@ -144,7 +144,8 @@ def run(
         _evaluate("treat_all", po, np.ones(n, dtype=bool)),
         _evaluate(f"random_{int(budget_fraction*100)}pct", po, top_k(rng.random(n))),
         _evaluate(
-            f"churn_score_top{int(budget_fraction*100)}pct", po, top_k(po["predicted_risk"].to_numpy())
+            f"churn_score_top{int(budget_fraction*100)}pct",
+            po, top_k(po["predicted_risk"].to_numpy()),
         ),
         _evaluate(
             f"oracle_uplift_top{int(budget_fraction*100)}pct",

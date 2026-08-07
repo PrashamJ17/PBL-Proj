@@ -60,7 +60,9 @@ def test_rejects_available_before_occurred(dataset):
 
     This is the invariant the entire feature store depends on."""
     bad = dataset.invoices.copy()
-    bad.loc[bad.index[0], "available_at"] = bad.loc[bad.index[0], "attempted_at"] - pd.Timedelta(days=1)
+    bad.loc[bad.index[0], "available_at"] = (
+        bad.loc[bad.index[0], "attempted_at"] - pd.Timedelta(days=1)
+    )
     with pytest.raises(SchemaError, match="knowable before it occurs"):
         validate(bad, INVOICES)
 

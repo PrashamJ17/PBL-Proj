@@ -36,7 +36,7 @@ class Targeter(ABC):
     is_uplift: bool = False
 
     @abstractmethod
-    def fit(self, X: pd.DataFrame, t: np.ndarray, y: np.ndarray) -> "Targeter": ...
+    def fit(self, X: pd.DataFrame, t: np.ndarray, y: np.ndarray) -> Targeter: ...
 
     @abstractmethod
     def score(self, X: pd.DataFrame) -> np.ndarray:

@@ -60,7 +60,9 @@ def _quadrant_mix_by_decile(cfg: SimConfig, decision_month: int, horizon: int) -
     po = po.assign(risk=risk)
 
     # Decile 1 = highest predicted risk, i.e. who a churn-score campaign targets first.
-    po["decile"] = pd.qcut(po["risk"].rank(method="first", ascending=False), 10, labels=range(1, 11))
+    po["decile"] = pd.qcut(
+        po["risk"].rank(method="first", ascending=False), 10, labels=range(1, 11)
+    )
     mix = (
         po.groupby("decile", observed=True)["quadrant"]
         .value_counts(normalize=True)
@@ -141,7 +143,8 @@ def figure_1(
     }
     for q, colour in QUADRANT_COLOURS.items():
         vals = mix[q].to_numpy() * 100
-        ax2.bar(mix.index.astype(int), vals, bottom=bottom, color=colour, label=labels[q], width=0.82)
+        ax2.bar(mix.index.astype(int), vals, bottom=bottom, color=colour,
+                label=labels[q], width=0.82)
         bottom += vals
 
     ax2.set_xlabel("Predicted-churn-risk decile  (1 = targeted first)")

@@ -30,7 +30,8 @@ lag is a choice, not a fact.
 
 from __future__ import annotations
 
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import Any
 
 import pandas as pd
 
@@ -185,7 +186,8 @@ def map_invoices(objects: Iterable[dict[str, Any]]) -> pd.DataFrame:
         )
 
     frame = pd.DataFrame(rows, columns=[c.name for c in INVOICES.columns])
-    for col in ("invoice_id", "customer_id", "subscription_id", "currency", "status", "failure_code"):
+    for col in ("invoice_id", "customer_id", "subscription_id", "currency",
+                "status", "failure_code"):
         frame[col] = frame[col].astype("string")
     frame["attempt_number"] = frame["attempt_number"].astype("int64")
     return frame

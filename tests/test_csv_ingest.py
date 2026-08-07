@@ -64,7 +64,9 @@ def test_customer_id_aliases_are_recognised(alias):
 
 def test_matching_ignores_case_and_separators():
     """Exports arrive as 'Customer ID', 'customer-id', and 'CUSTOMER_ID' equally."""
-    frame = _customers_frame().rename(columns={"customer_id": "Customer ID", "created_at": "Signup-Date"})
+    frame = _customers_frame().rename(
+        columns={"customer_id": "Customer ID", "created_at": "Signup-Date"}
+    )
     out = normalise_columns(frame, CUSTOMERS)
     assert {"customer_id", "created_at"} <= set(out.columns)
 

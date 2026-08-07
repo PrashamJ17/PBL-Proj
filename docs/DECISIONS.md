@@ -585,3 +585,47 @@ only the ordering matters.
 
 **General rule:** only compare estimators on a quantity they all express on the same
 scale. Rankings are comparable across all of them; raw scores are not.
+
+---
+
+## D-028 — Lint rules are pinned explicitly; an unpinned linter makes CI non-reproducible
+
+**The failure.** CI went red on the test matrix across all three Python versions while
+the calibration, leakage and kill-test gates stayed green. `make check` passed locally.
+The failing step was **Lint**, not the tests.
+
+**Root cause.** `[tool.ruff]` set only `line-length` and `target-version`, so the *rule
+set* came from ruff's defaults — and those expand between releases. With `ruff>=0.5` in
+the dev extra, CI installed the newest release and linted a strictly larger rule set than
+a developer's pinned local install. Same command, same repo, different rules: 21 errors
+in CI, 0 locally (`RUF046/059/100/022`, `UP035/037`, `I001`).
+
+**Fix, in two parts:**
+
+1. **`[tool.ruff.lint] select`** is now explicit — `E, W, F, I, UP, B`. The rule set is a
+   property of the repository rather than of whichever ruff version got installed.
+   Adding `select` reproduced all 20 errors locally *on the old ruff*, confirming the
+   diagnosis: it was the rule set, not the version.
+2. **`ruff>=0.12,<0.13`** — belt and braces. Bumping it is a deliberate act.
+
+`RUF` is deliberately excluded: those are ruff's own opinions, they churn most between
+releases, and they were the bulk of the drift. Determinism is worth more than the nits.
+
+**Lesson worth generalising:** any tool that can fail a build must have its *behaviour*
+pinned, not just its presence. A version floor (`>=`) pins nothing.
+
+---
+
+## D-029 — Dataset test guards check completeness, not existence
+
+**The bug.** `HAS_LENTA = (DATA_DIR / "lenta_dataset.csv.gz").exists()` — five tests
+errored mid-session because a download in progress leaves a file that *exists*, passes
+the guard, and then fails to parse.
+
+**Fix:** guards compare `stat().st_size` against the known byte count.
+
+**Why this keeps recurring.** It is the third instance of the same mistake in this
+project: a truncated Hillstrom CSV (caught by row count), a partial Criteo gzip with no
+control arm (caught by `check_representative`), and now this. **Presence is not
+validity.** Any external artifact needs a completeness check, and "the file is there" is
+never one.

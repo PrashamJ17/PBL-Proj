@@ -103,7 +103,9 @@ def simulate(cfg: SimConfig | None = None) -> SimResult:
         adopted = lat.feature_adoption_breadth * (1.0 - np.exp(-(t + 1) / 3.0))
 
         # Champion turnover (B2B). Absorbing: once lost, stays lost.
-        champ_leaves = rng.random(n) < (cfg.champion_turnover_monthly * (1.0 - lat.champion_stability))
+        champ_leaves = rng.random(n) < (
+            cfg.champion_turnover_monthly * (1.0 - lat.champion_stability)
+        )
         champion_lost = np.maximum(champion_lost, champ_leaves.astype(float))
 
         # Budget shocks are transient but sticky for a few months.

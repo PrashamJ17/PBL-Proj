@@ -208,7 +208,8 @@ def figure_3(points: list[Point] | None = None, out: Path | None = None) -> Path
     ax.text(
         0.5, -0.19,
         "Four settings, not a fitted curve: the ordering among the three positive-correlation "
-        "points is within noise.\nThe signal is the order-of-magnitude gap at negative correlation.",
+        "points is within noise.\nThe signal is the order-of-magnitude gap at "
+        "negative correlation.",
         transform=ax.transAxes, ha="center", fontsize=8.5, color="#546E7A",
     )
 

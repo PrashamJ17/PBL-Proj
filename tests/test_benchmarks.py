@@ -13,12 +13,15 @@ import pandas as pd
 import pytest
 
 from keel.benchmarks.datasets import (
+    CRITEO_BYTES,
     CRITEO_REFERENCE,
     DATA_DIR,
+    LENTA_BYTES,
     RCT,
     check_representative,
     load_criteo,
     load_hillstrom,
+    load_lenta,
 )
 from keel.benchmarks.evaluate import (
     abstention_sweep,
@@ -32,10 +35,28 @@ from keel.benchmarks.evaluate import (
 from keel.benchmarks.models import ALL_TARGETERS, ClassTransform, SLearner, TLearner
 from keel.benchmarks.run import split
 
-HAS_DATA = (DATA_DIR / "hillstrom.csv").exists()
-HAS_CRITEO = (DATA_DIR / "criteo-uplift-v2.1.csv.gz").exists()
+
+def _complete(name: str, expect_bytes: int | None = None) -> bool:
+    """Is this dataset present AND fully downloaded?
+
+    Existence is not completeness. A download in progress leaves a file that exists,
+    passes `.exists()`, and then fails to parse -- which is exactly how these tests
+    started erroring mid-download. For the compressed sets the expected byte count is
+    known, so check it rather than trusting the path.
+    """
+    path = DATA_DIR / name
+    if not path.exists():
+        return False
+    return expect_bytes is None or path.stat().st_size == expect_bytes
+
+
+HAS_DATA = _complete("hillstrom.csv")
+HAS_CRITEO = _complete("criteo-uplift-v2.1.csv.gz", CRITEO_BYTES)
+HAS_LENTA = _complete("lenta_dataset.csv.gz", LENTA_BYTES)
+
 needs_data = pytest.mark.skipif(not HAS_DATA, reason="hillstrom.csv not downloaded")
-needs_criteo = pytest.mark.skipif(not HAS_CRITEO, reason="criteo not downloaded (297MB)")
+needs_criteo = pytest.mark.skipif(not HAS_CRITEO, reason="criteo not fully downloaded")
+needs_lenta = pytest.mark.skipif(not HAS_LENTA, reason="lenta not fully downloaded")
 
 
 # --- synthetic RCT with known truth -----------------------------------------
@@ -310,3 +331,45 @@ def test_criteo_uplift_is_coupled_to_propensity():
     tau = TLearner(seed=0).fit(train.X, train.treatment, train.outcome).score(test.X)
     prop = OutcomePropensity(seed=0).fit(train.X, train.treatment, train.outcome).score(test.X)
     assert np.corrcoef(tau, prop)[0, 1] > 0.3
+
+
+# --- Lenta ------------------------------------------------------------------
+
+
+@needs_lenta
+def test_lenta_loads_with_expected_shape():
+    rct = load_lenta(sample_rows=50_000, seed=0)
+    assert len(rct) == 50_000
+    assert set(np.unique(rct.treatment)) == {0, 1}
+    assert 0.70 < rct.treatment.mean() < 0.80, "Lenta is ~75/25"
+
+
+@needs_lenta
+def test_lenta_excludes_the_outcome_and_group_columns():
+    """`group` is the treatment assignment and `response_att` the outcome. Either
+    one leaking into X would make the whole thing circular."""
+    rct = load_lenta(sample_rows=20_000, seed=0)
+    forbidden = {"group", "response_att", "client_id", "CardHolder"}
+    assert forbidden.isdisjoint(set(rct.X.columns))
+
+
+@needs_lenta
+def test_lenta_features_are_finite():
+    """Lenta has many sparse purchase statistics; NaNs must not reach the learners."""
+    rct = load_lenta(sample_rows=20_000, seed=0)
+    assert np.isfinite(rct.X.to_numpy(dtype=float)).all()
+
+
+@needs_lenta
+def test_lenta_response_rate_matches_published():
+    rct = load_lenta(sample_rows=100_000, seed=0)
+    assert 0.05 < rct.outcome.mean() < 0.15, "published response rate is ~10%"
+
+
+@needs_lenta
+def test_lenta_feature_count_is_capped():
+    """Capped for cross-dataset comparability: Lenta has ~190 columns against
+    Criteo's 12, and letting it use all of them would confound 'more features'
+    with 'different domain' in the correlation comparison."""
+    rct = load_lenta(sample_rows=20_000, seed=0, max_features=30)
+    assert len(rct.X.columns) <= 30

@@ -77,9 +77,12 @@ LADDER: list[Offer] = [
     Offer("feature_nudge", 1, 0.00, 0, 0.10, saveability_multiplier=0.35, salience_multiplier=0.30),
     Offer("checkin_call", 2, 0.00, 0, 6.00, saveability_multiplier=0.70, salience_multiplier=0.55),
     Offer("pause_offer", 4, 0.00, 0, 0.50, saveability_multiplier=0.85, salience_multiplier=1.15),
-    Offer("downgrade_offer", 5, 0.00, 0, 0.50, saveability_multiplier=0.90, salience_multiplier=1.10),
-    Offer("discount_20_3mo", 7, 0.20, 3, 0.50, saveability_multiplier=1.00, salience_multiplier=1.00),
-    Offer("discount_40_6mo", 8, 0.40, 6, 0.50, saveability_multiplier=1.25, salience_multiplier=1.00),
+    Offer("downgrade_offer", 5, 0.00, 0, 0.50,
+          saveability_multiplier=0.90, salience_multiplier=1.10),
+    Offer("discount_20_3mo", 7, 0.20, 3, 0.50,
+          saveability_multiplier=1.00, salience_multiplier=1.00),
+    Offer("discount_40_6mo", 8, 0.40, 6, 0.50,
+          saveability_multiplier=1.25, salience_multiplier=1.00),
 ]
 
 REFERENCE_OFFER = LADDER[4]  # discount_20_3mo

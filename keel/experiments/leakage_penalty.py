@@ -80,7 +80,7 @@ def run(
 
     month_list = list(months)
     ts = month_timestamps(month_list)
-    customers_at = {t: at_risk_at(sim, m) for t, m in zip(ts, month_list)}
+    customers_at = {t: at_risk_at(sim, m) for t, m in zip(ts, month_list, strict=False)}
 
     labels = _outcome(sim, month_list, horizon=horizon)
     y = np.concatenate([labels[m] for m in month_list])
@@ -120,7 +120,7 @@ def report(vintages: list[Vintage], comparison: pd.DataFrame) -> str:
         f"{'vintage':<16}{'apparent AUC':>14}{'inflation':>12}   description",
         "-" * 72,
     ]
-    for v, (_, row) in zip(vintages, comparison.iterrows()):
+    for v, (_, row) in zip(vintages, comparison.iterrows(), strict=False):
         lines.append(
             f"{v.name:<16}{v.auc:>14.4f}{row['inflation_vs_correct']:>+12.4f}   {v.description}"
         )

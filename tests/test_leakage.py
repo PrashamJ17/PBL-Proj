@@ -44,7 +44,7 @@ def fixture():
     sim = simulate(CFG)
     ds = to_canonical(sim)
     ts = month_timestamps(MONTHS)
-    customers_at = {t: at_risk_at(sim, m) for t, m in zip(ts, MONTHS)}
+    customers_at = {t: at_risk_at(sim, m) for t, m in zip(ts, MONTHS, strict=False)}
     return sim, ds, ts, customers_at
 
 

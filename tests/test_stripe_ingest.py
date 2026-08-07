@@ -10,7 +10,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from keel.core.schema import validate, INVOICES, SUBSCRIPTIONS
+from keel.core.schema import INVOICES, SUBSCRIPTIONS, validate
 from keel.ingest.stripe import (
     map_customers,
     map_invoices,

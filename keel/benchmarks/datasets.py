@@ -342,3 +342,103 @@ def load_hillstrom(
         outcome_name=outcome,
         spend=keep["spend"].to_numpy().astype(float),
     )
+
+
+# --- Lenta ------------------------------------------------------------------
+
+LENTA_URL = "https://sklift.s3.eu-west-2.amazonaws.com/lenta_dataset.csv.gz"
+LENTA_BYTES = 144_735_744
+
+#: Published statistics, used the same way as CRITEO_REFERENCE.
+LENTA_REFERENCE = {"treatment_rate": 0.75, "response_rate": 0.10}
+
+
+def load_lenta(
+    sample_rows: int | None = None,
+    path: Path | None = None,
+    seed: int = 0,
+    max_features: int = 60,
+) -> RCT:
+    """Load the Lenta uplift dataset (BigTarget hackathon, Lenta x Microsoft, 2020).
+
+    687,029 supermarket customers randomly assigned to receive an SMS promotion or
+    not; `response_att` records whether they responded. Treatment is ~75/25.
+
+    This is the third real setting and the point of it is *prediction*: retail
+    promotion should sit between advertising (Criteo, corr +0.61) and subscription
+    retention (corr -0.19) on the axis that governs whether uplift modelling pays
+    (D-026). It is an out-of-sample test of the principle rather than another data
+    point supporting it.
+
+    Preprocessing is deliberately minimal and schema-adaptive: numeric columns pass
+    through, low-cardinality categoricals are ordinal-encoded, high-cardinality and
+    identifier-like columns are dropped. The aim is a fair comparison across
+    datasets, not the best possible Lenta model -- tuning features per dataset would
+    make the cross-dataset correlation numbers incomparable, which is the one thing
+    this experiment cannot afford.
+    """
+    path = path or (DATA_DIR / "lenta_dataset.csv.gz")
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} not found. Download it first (138MB):\n  curl -L -o {path} {LENTA_URL}"
+        )
+
+    raw = pd.read_csv(path, compression="gzip", low_memory=False)
+
+    if "group" not in raw.columns or "response_att" not in raw.columns:
+        raise RuntimeError(
+            f"{path.name}: expected columns 'group' and 'response_att'; "
+            f"found {sorted(raw.columns)[:12]}..."
+        )
+
+    treatment = (raw["group"].astype(str).str.lower() == "test").to_numpy().astype(int)
+    outcome = raw["response_att"].to_numpy().astype(float)
+
+    # Same guard as Criteo: a single-arm sample makes uplift undefined, not noisy.
+    rate = float(treatment.mean())
+    if rate in (0.0, 1.0):
+        raise RuntimeError(
+            f"{path.name}: only one treatment arm present (rate {rate:.2f}). "
+            "The file may be incomplete or sorted by treatment."
+        )
+
+    drop = {"group", "response_att", "client_id", "CardHolder"}
+    candidates = [c for c in raw.columns if c not in drop]
+
+    numeric, categorical = [], []
+    for col in candidates:
+        s = raw[col]
+        if pd.api.types.is_numeric_dtype(s):
+            numeric.append(col)
+        elif s.nunique(dropna=True) <= 12:
+            categorical.append(col)
+        # else: high-cardinality text / identifiers -- dropped
+
+    X = raw[numeric].astype("float32")
+    for col in categorical:
+        X[col] = raw[col].astype("category").cat.codes.astype("float32")
+
+    # NaNs are informative here (a missing purchase statistic usually means "none"),
+    # but the learners need finite values, so fill and move on.
+    X = X.fillna(0.0)
+
+    # Keep the widest-variance features for comparability and speed. Lenta has ~190
+    # columns against Criteo's 12; letting it use all of them would confound "more
+    # features" with "different domain".
+    if len(X.columns) > max_features:
+        keep = X.var().sort_values(ascending=False).head(max_features).index
+        X = X[list(keep)]
+
+    if sample_rows is not None and sample_rows < len(X):
+        idx = np.random.default_rng(seed).choice(len(X), size=sample_rows, replace=False)
+        idx.sort()
+        X, treatment, outcome = X.iloc[idx].reset_index(drop=True), treatment[idx], outcome[idx]
+
+    return RCT(
+        name="lenta[response]" + (f"[n={len(X):,}]" if sample_rows else ""),
+        X=X,
+        treatment=treatment,
+        outcome=outcome,
+        outcome_name="response_att",
+        spend=None,
+    )

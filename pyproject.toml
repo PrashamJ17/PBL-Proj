@@ -34,7 +34,10 @@ causal = [
 # is the successor and gives credible intervals, which the small-n thesis needs.
 btyd = ["pymc-marketing>=0.9"]
 viz = ["matplotlib>=3.8"]
-dev = ["pytest>=8.0", "ruff>=0.5"]
+# ruff is pinned to a minor range: its default rule set and autofix behaviour change
+# between releases, and an unpinned linter makes CI non-reproducible. Bumping this is
+# a deliberate act, not something that happens on a random Tuesday.
+dev = ["pytest>=8.0", "ruff>=0.12,<0.13"]
 
 [build-system]
 requires = ["hatchling"]
@@ -46,6 +49,30 @@ packages = ["keel"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
+# Pinned EXPLICITLY, and this is not cosmetic.
+#
+# Ruff's *default* rule set expands between releases. With only `line-length` and
+# `target-version` configured and `ruff>=0.5` in the dev extra, CI floated to the
+# newest release and linted a strictly larger rule set than a developer's pinned
+# local install -- so `make check` passed locally and the identical command failed
+# in CI with 21 errors (RUF046/059/100/022, UP035/037, I001).
+#
+# Selecting rules explicitly makes the rule set a property of the repository rather
+# than of whichever ruff version happened to get installed. The version range below
+# is belt-and-braces on top of that.
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes -- real bugs
+    "I",   # isort -- deterministic import order
+    "UP",  # pyupgrade -- keep idioms current with target-version
+    "B",   # flake8-bugbear -- genuine bug patterns
+]
+# `RUF` is deliberately excluded. Those are ruff's own opinions, they churn most
+# between releases, and they are the main source of the drift described above.
+# Excluding them buys determinism at the cost of some stylistic nits.
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

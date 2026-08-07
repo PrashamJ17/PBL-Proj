@@ -54,7 +54,9 @@ def win_rates(result: SmallNResult) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def figure_2(result: SmallNResult | None = None, n_seeds: int = 20, out: Path | None = None) -> Path:
+def figure_2(
+    result: SmallNResult | None = None, n_seeds: int = 20, out: Path | None = None
+) -> Path:
     result = result or run(n_seeds=n_seeds)
     summary = result.summary()
     summary = summary[summary["train_size"].notna()]
@@ -80,7 +82,9 @@ def figure_2(result: SmallNResult | None = None, n_seeds: int = 20, out: Path | 
     ax1.set_xscale("log")
     ax1.set_xlabel("Training-set size (customers)")
     ax1.set_ylabel("Incremental visits at 30% budget")
-    ax1.set_title("Mean performance rises with data\n(shaded: ±1 sd across seeds)", fontsize=12, pad=10)
+    ax1.set_title(
+        "Mean performance rises with data\n(shaded: ±1 sd across seeds)", fontsize=12, pad=10
+    )
     ax1.legend(frameon=False, fontsize=8.5, loc="lower right")
     ax1.grid(alpha=0.25, lw=0.6)
     ax1.set_axisbelow(True)
