@@ -881,3 +881,111 @@ light is the safe fallback when there is no signal.
 **Why a toggle at all,** given the earlier argument against building UI: it is fifteen
 lines of inline JavaScript with no network dependency, and it is the difference between
 a reader who can read the report and one who cannot. That is not a dashboard.
+
+---
+
+## D-040 — Reports before dashboards
+
+**The question:** should a business receive a report, or log into a dashboard?
+
+**Decision: reports, and not as a compromise.**
+
+Four reasons, in descending order of force:
+
+1. **Your differentiator is a decision, not a view.** This project's whole argument is
+   that the industry fails by stopping at "here's a risk score". A dashboard is the
+   canonical way to stop at a view. Building one first would place the product in the
+   exact category D-020 and D-026 criticise.
+2. **Sequencing.** A dashboard needs live data → which needs integration → which needs
+   trust not yet earned. A report needs a CSV export the customer can produce in ten
+   minutes. **The report is what earns the trust that makes the integration possible.**
+3. **Dashboards duplicate free incumbents.** Baremetrics and ProfitWell Metrics exist,
+   are good, and are checked roughly monthly. That is the one axis with no advantage.
+4. **The buyer has no analyst.** They do not want to explore data; they want to be told
+   what happened and what to do.
+
+**The form actually built:** a report that lives at a URL. Push the link, let them click
+through for detail. One artifact serving both jobs, no auth system, no uptime
+obligation.
+
+**Three jobs that must not be conflated:** the monthly push drives action; the detail
+page answers objections; the demo sells. A single dashboard attempting all three serves
+none.
+
+**The rule that prevents dashboard bloat:** every screen must answer a question someone
+actually asked. If the question cannot be named, the screen is not built.
+
+**What would change this:** ten Churn Autopsy conversations in which prospects say "I
+want to see it live". That is real signal. Building UI to answer an objection nobody has
+raised is the most expensive way to guess.
+
+---
+
+## D-041 — Three usage modes, and why dunning is the first rung of a trust ladder
+
+How a business actually uses this, in the order it can happen:
+
+**Mode 1 — the report** (built). Export three CSVs, receive a diagnostic with money
+attached. No integration, no engineer. They act manually.
+
+**Mode 2 — dunning autopilot** (not built). Connect Stripe once. On
+`invoice.payment_failed`: read the decline code, pick a schedule, retry via the API,
+hold back 5-10% to prove it worked. Needs a webhook receiver, a scheduler, write scope,
+and the holdout ledger — ordinary engineering, no research.
+
+**Mode 3 — the retention decision layer** (not built). Nightly scoring → hazard → CLV →
+uplift → offer ladder → act or abstain, written into the tools they already use. Needs
+Mode 2's *intervention history* first, and that is not a scheduling preference: treatment
+effects cannot be estimated without a record of treatments.
+
+**Why dunning goes first, beyond it being easy.** Retrying a failed payment is something
+the business *already does* — we simply do it better, using a decline code they already
+have. It asks nobody to trust an algorithm with their customer relationships on day one.
+By the time Mode 3 is proposed, six months of quietly recovering their money has built
+the standing to propose it. **Ordering by trust required, not by technical difficulty.**
+
+**Design principle for all three: the best version is invisible.** The failure mode of
+every analytics product is a dashboard nobody opens. If the owner must log in and
+interpret a churn score, the wrong thing was built. The product is a scheduled retry and
+a monthly number.
+
+**And: be the brain, not the pipes.** We never send the email ourselves; decisions are
+written into their existing marketing or CRM tool. Lower adoption friction, and no
+competing with commodity email vendors on price.
+
+---
+
+## D-042 — Research positioning: the novelty is small-n abstention, not "churn scores are bad"
+
+**The collision.** Ascarza, *"Retention Futility: Targeting High-Risk Customers Might Be
+Ineffective"* (Journal of Marketing Research, 2018; Paul E. Green Award) already
+established, with two field experiments, that the highest-churn-risk customers are not
+the best targets and that targeting on *sensitivity to intervention* beats risk-based
+targeting by up to 6.8pp. That is the core of what the Phase 0 kill test demonstrates.
+
+**Consequence:** a paper led by "churn-score targeting is the wrong rule" gets desk-
+rejected with that citation. The claim is not ours.
+
+**What survives, in descending order of strength:**
+
+1. **Abstention under posterior uncertainty at small n.** Not in Ascarza, not
+   productised anywhere. Supported by real data (D-023: 75% win rate at n=500).
+2. **The corr(τ, propensity) principle** (D-026), with an out-of-sample confirmation
+   (D-031). Ascarza shows risk-targeting is *ineffective*; this characterises **when it
+   becomes actively harmful**, which is a distinct and sharper claim.
+3. **Ground-truth individual treatment effects.** Field experiments give average
+   effects, never individual ones. The simulator can score CATE estimates against exact
+   per-customer truth.
+4. **Decision-quality evaluation under budget** — money earned, not Qini.
+
+**Paper structure:** merge the planned papers 1 and 2. The simulator is the *instrument*;
+the finding is the lead. A standalone "we built a simulator" resource paper lands in
+workshops — reviewers reward findings over tools.
+
+**Venues:** arXiv preprint immediately (priority, and it doubles as lead generation),
+then *EJOR* or *Decision Support Systems*, which have published this line. **Not** *JMR*
+— that is Ascarza's home turf and needs field experiments we do not have.
+
+**Also check before drafting:** Verbeke et al. on cost-sensitive causal classification
+and "To do or not to do: cost-sensitive causal decision-making" — close to the planned
+paper 3.

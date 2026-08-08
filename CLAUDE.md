@@ -16,20 +16,19 @@ small-sample causal uncertainty**. Keel decides *who to treat, with what, at wha
 abstention beats ranking (209 > 718). **(Phase 1):** PIT features prevent a 0.35 AUC
 inflation (0.603 vs 0.954).
 
-**Real-data checks (Hillstrom, Criteo, Lenta RCTs).** Worse-than-random did NOT
-replicate (D-020). **Governing quantity = corr(τ, propensity)** (D-026): Criteo +0.61 →
-uplift adds 0.6%; Lenta +0.18 → 10.4%; Hillstrom +0.07 → 3.9%; churn −0.19 → **+107%**.
-When orderings coincide the outcome model wins (easier estimand). Retention is the
-adversarial case. Lenta was an **out-of-sample prediction and it landed** (D-031),
-though underpowered to test the consequence. Small-n: uplift beats random on only
-**75% of seeds at n=500** (D-023). Prior art: Ascarza, JMR 2018.
+**Real data (Hillstrom, Criteo, Lenta RCTs).** Worse-than-random did NOT replicate →
+claim SCOPED (D-020). **Governing quantity = corr(τ, propensity)** (D-026): Criteo
++0.61→uplift adds 0.6% · Lenta +0.18→10.4% · Hillstrom +0.07→3.9% · churn −0.19→**+107%**.
+When orderings coincide the outcome model wins (easier estimand); retention is the
+adversarial case. Lenta was an out-of-sample prediction that **landed** (D-031), though
+underpowered. Small-n: uplift beats random on only **75% of seeds at n=500** (D-023).
 
 ---
 
 ## Status
 
 **Phases 0-1 done, 3 real-RCT validations, Phase 2 BUILT + Churn Autopsy report.**
-220 tests. CI green. Phase 2 gate (paying client) OPEN.
+223 tests. CI green. Phase 2 gate (paying client) OPEN.
 **Next: Phase 3** — survival hazard + CLV. Phase 2's gate needs a *client*, not code.
 
 | # | Phase | Status | Gate |
@@ -43,8 +42,13 @@ though underpowered to test the consequence. Small-n: uplift beats random on onl
 | 6 | Holdout infra + incrementality reports + cancel widget | ⬜ | **real client ROI number**; paper 3 |
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
 
-**Papers:** merge 1+2 → small-*n* abstention + the corr(τ,propensity) principle
-(fig 2, 3 = real-data support) · 3) margin-aware offer allocation.
+**Papers (D-042):** merge 1+2 → small-*n* abstention + the corr(τ,propensity)
+principle; simulator is the *instrument*, finding is the lead. arXiv → EJOR/DSS, not
+JMR (Ascarza's turf). Novelty is NOT "churn scores are bad" — that is Ascarza 2018.
+
+**Go-to-market (D-040/041):** reports before dashboards. Three usage modes: report
+(built) → dunning autopilot → retention decisions. Dunning is first because it needs
+the *least trust*, not because it is easiest. The best version is invisible.
 
 ---
 
@@ -73,26 +77,24 @@ though underpowered to test the consequence. Small-n: uplift beats random on onl
 ## Map
 
 ```
-keel/core/                 schema (occurred_at+available_at) · features (_visible is the
-                           ONLY path to data) · leakage (audit, time-travel, canary)
-keel/ingest/               stripe (pure, fixture-tested) · csv_ingest · subsim_adapter
-keel/sim/                  config · latents (copula) · hazard (ONE defn, two regimes)
-                           subsim (panel) · counterfactual (exact τ, CRN, LADDER)
-                           calibration (check, check_quadrants, calibrate_intercept)
-keel/report/               autopsy (analysis) + render (self-contained HTML)
-keel/sim/dunning.py        decline codes, retry success, payday cycles, fatigue
-keel/policy/dunning.py     6 retry policies (processor_default … aggressive)
-keel/experiments/          kill_test · leakage_penalty · dunning · figures
-keel/benchmarks/           datasets (Hillstrom, Criteo, Lenta) · models · evaluate · small_n
-                           spectrum (when uplift pays) · figures
-tests/                     220 tests — fairness, realism, edge cases, leakage gate
+keel/core/       schema (occurred_at+available_at) · features (_visible = ONLY data path)
+                 leakage (availability audit, time-travel, canary injection)
+keel/ingest/     stripe (pure, fixture-tested) · csv_ingest · subsim_adapter
+keel/sim/        config · latents (copula) · hazard (ONE defn, two regimes) · subsim
+                 counterfactual (exact τ, CRN, LADDER) · calibration · dunning
+keel/policy/     dunning — 6 retry policies (processor_default … aggressive)
+keel/report/     autopsy (analysis) + render (self-contained HTML)
+keel/experiments/  kill_test · leakage_penalty · dunning · figures
+keel/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · models · evaluate
+                   small_n · spectrum (when uplift pays) · figures
+tests/                     223 tests — fairness, realism, edge cases, leakage gate
 explainer/                 10 docs for non-technical evaluators/investors (see protocol)
 ```
 
 ## Commands
 
 ```bash
-make check      # lint + 220 tests + calibration gates — run before every commit
+make check      # lint + 223 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
@@ -104,48 +106,43 @@ push: tests (3.11-3.13) · calibration · **leakage** · **kill test**.
 
 ## Update protocol
 
-Every session: **this file** — flip phase status, move **next**, add ONE checkpoint
-line; add an invariant only if something must never break again.
-**Detail elsewhere:** `docs/BUILDLOG.md` (what happened + tested) · `docs/DECISIONS.md`
+**Every session — this file:** flip phase status, move **next**, add ONE checkpoint
+line. New invariant only if something must never break again.
+**Detail elsewhere:** `docs/BUILDLOG.md` (what + tested) · `docs/DECISIONS.md`
 (why — append D-0NN, never edit past entries).
 
-**On phase completion — `explainer/`** (non-technical: evaluators + investors):
-always update `09-status-and-roadmap.md` (flip row + append change-log). Update others
-only if the phase changed what they claim: `05` new results (incl. honest-status),
-`04` architecture, `06` pricing/competitors, `07` risks, `08` new terms.
-*Rules:* zero assumed knowledge, define every term, **never claim more than was
-demonstrated** — those readers cannot check us.
+**On phase completion — `explainer/`** (non-technical readers): always update
+`09-status-and-roadmap.md`; update `04`/`05`/`06`/`07`/`08` only if the phase changed
+what they claim. Rules: zero assumed knowledge, define every term, **never claim more
+than was demonstrated** — those readers cannot check us.
 
-**Then commit and push — every checkpoint, no exceptions:**
+**Then, every checkpoint, no exceptions:**
 ```bash
 make check && git add -A && git commit && git push origin main
 ```
-Message leads with what it **establishes or fixes**, not files touched; moved numbers
-in the body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first (newest
-first). Never commit on red — if blocked, commit *with the failure described* rather
-than leaving work uncommitted.
+Message leads with what it **establishes or fixes**, not files touched; numbers in the
+body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first. Never commit on red —
+if blocked, commit *with the failure described*.
 
-Keep this file under ~120 lines. If it grows, cut history, not invariants.
+Keep this file under **~150 lines** (raised from 120 once the project reached 7 phases,
+42 decisions and 3 real datasets — a deliberate change, not drift). If it grows past
+that, cut checkpoint history first; never invariants.
 
 ---
 
 ## Checkpoints
 
-- **CP-01/02** — Phases 0-1: SubSim + kill test; canonical schema, PIT store,
-  leakage suite, ingest.
-- **CP-03** — Hillstrom: worse-than-random did NOT replicate → scoped (D-020);
-  small-n unreliability found (D-023, fig 2).
-- **CP-04** — Criteo added. Uplift LOSES to outcome models there; reconciled by
-  corr(τ,propensity) as the governing quantity (D-026, figure 3). Criteo file is
-  treatment-sorted — prefix reads invalid (D-024).
-- **CP-05** — Lenta: out-of-sample test of D-026, predicted between advertising and
-  churn, landed +0.18 (D-031). Underpowered to test the consequence. CI fixes D-028/030.
-- **CP-06** — Phase 2 dunning BUILT. Code-aware retries +6.9pp over processor default
-  with 32% FEWER attempts; `aggressive` strictly dominated (D-033 — a test caught the
-  sim inflating its own result). Calibrated on the passive band, reproduces the
-  dedicated-dunning band un-tuned (D-034). 200 tests.
-  **Phase 2 gate (paying client) is OPEN — a sales task, not a code task.**
-- **CP-07** — Churn Autopsy built: `keel/report/`, billing-CSV in, self-contained HTML
+Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
+
+- **CP-01…05** — Phases 0-1 (SubSim + kill test; schema, PIT store, leakage, ingest)
+  and three real-RCT validations (Hillstrom → D-020/023; Criteo → D-024/026;
+  Lenta → D-031). Two CI failures fixed: unpinned ruff rule set (D-028), pandas
+  timestamp resolution (D-030).
+- **CP-06** — Phase 2 dunning BUILT. Code-aware retries +6.9pp with 32% FEWER attempts;
+  `aggressive` strictly dominated (D-033 — a test caught the sim inflating its own
+  result). Calibrated on the passive band, reproduces the dedicated band un-tuned
+  (D-034). **Gate (paying client) OPEN — a sales task, not a code task.**
+- **CP-07** — Churn Autopsy built (`keel/report/`): billing CSV in, self-contained HTML
   out. Findings badged measured-vs-estimated (D-035); refuses to name targets (D-036).
-  Adapter now emits successful retries — recovery was reading 0% (D-037). 220 tests.
-  **Next action is not code: run the Autopsy against 10 real businesses.**
+  Fixed: recovery read 0% (D-037), chart text invisible in dark mode (D-038/039).
+  223 tests. **Next action is NOT code: run the Autopsy against 10 real businesses.**
