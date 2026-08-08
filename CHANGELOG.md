@@ -6,6 +6,46 @@ each choice in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
+## Churn Autopsy — the first customer-facing artifact
+
+**Closes the gap between the research and something a business can actually receive.**
+
+### Added
+
+- `keel/report/autopsy.py` — retention curve, voluntary/involuntary split,
+  failed-payment economics and decline-code mix, computed from billing data alone.
+- `keel/report/render.py` — self-contained HTML: inline CSS, inline SVG charts, no
+  external requests. Opens offline, prints, emails.
+
+### How a business uses it
+
+Export three CSVs from the Stripe dashboard (customers, subscriptions, invoices). Ten
+minutes of clicking, no engineer, no integration. They receive a document with money
+attached to every finding, ranked by value at stake.
+
+### Honesty is enforced in the artifact, not just intended
+
+- **Every finding is badged** `measured from your data` (green) or
+  `estimated from industry benchmarks` (amber). The most persuasive finding — the
+  recovery gap — is amber (D-035).
+- **Caveats are printed.** If the export carried no decline codes, the report says so
+  and explains why that field matters.
+- **It refuses to name individual targets** (D-036). That is the most-requested feature
+  and precisely what this project argues against: billing data cannot support causal
+  claims, and targeting on outcome propensity is worse than useless in the adversarial
+  setting retention occupies.
+
+### Fixed
+
+- The first run reported **0% recovery** — the SubSim adapter emitted payment failures
+  but never the retries that succeeded, so the pipeline was representationally
+  incapable of expressing recovery. Left unfixed, every report would have claimed a
+  catastrophic recovery gap. Now reads 38.6%, consistent with SubSim's 0.42 (D-037).
+
+**220 tests passing.**
+
+---
+
 ## Phase 2 — Dunning and involuntary churn
 
 **The module that earns money. Technical work complete; the phase gate is a paying

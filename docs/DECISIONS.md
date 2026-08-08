@@ -783,3 +783,101 @@ dunning* figure at the other end without further tuning:
 Landing at the lower edge of an independent published band, from a fit made at the
 other end, is a genuine out-of-sample check on the generative structure. Recorded as
 "lower edge", not "in the band" — it is 54.7%, not 62%.
+
+---
+
+## D-035 — The report labels measured numbers differently from estimated ones
+
+**The temptation.** The Churn Autopsy is a sales artifact — it is the only thing a
+prospect sees before paying anything. Every incentive points toward blending "we
+computed this from your invoices" with "operators like you typically recover more" into
+one confident-sounding paragraph.
+
+**The rule:** every `Finding` carries a `measured` flag, rendered as a visible badge —
+green for *measured from your data*, amber for *estimated from industry benchmarks*.
+The recovery-gap finding, which is the most persuasive one in the report, is amber.
+
+**Why this is not just scruples.** The report's entire job is to earn enough trust for
+a billing integration. A founder who later discovers that the headline number was an
+extrapolation dressed as a measurement will not grant that integration, and would be
+right not to. Being visibly conservative in the first artifact is the cheapest trust
+you will ever buy.
+
+**Also printed rather than omitted:** what could *not* be computed. If the export
+carried no decline codes, the report says so and explains why that field matters. A
+report that hides its own gaps is not worth the trust it exists to build.
+
+---
+
+## D-036 — The report refuses to recommend individual targets
+
+**What it will not do**, stated in the report's own footer: name which customers to
+contact.
+
+**Reason.** Billing data supports retention curves, churn splits, and payment
+economics. It does not support causal claims. Recommending targets requires a record of
+past interventions and their outcomes, which no billing export contains — and D-026
+established that targeting on outcome propensity is *worse than useless* in exactly the
+adversarial setting retention occupies.
+
+Producing a "customers at risk" list from a CSV would be the single most requested
+feature and precisely the thing this project exists to argue against. Declining it in
+the first customer-facing artifact keeps the product honest at the point where it is
+most tempting not to be.
+
+---
+
+## D-037 — The SubSim adapter emits successful retries
+
+**The bug.** The first Churn Autopsy run reported **0% recovery**. SubSim recovers a
+share of failed payments without the customer churning, but the adapter emitted only
+the failure, never the retry that succeeded. Downstream, recovery correctly measured
+zero — an artifact of the adapter, not of any business.
+
+Left unfixed it would have made every report claim a catastrophic recovery gap, which
+is both wrong and exactly the direction that flatters us.
+
+**Fix:** a failure that did not end in involuntary churn was, by SubSim's construction,
+recovered; the adapter now emits the paid retry 1-6 days later. Recovery reads 38.6%,
+consistent with SubSim's own passive rate of 0.42.
+
+**Third instance of the same class of bug** (after D-024 and D-029): the pipeline was
+representationally incapable of expressing something real, and the resulting number
+looked like a finding rather than a gap. Worth asking of any new metric: *could this
+number be zero because the data cannot express the thing, rather than because the thing
+did not happen?*
+
+---
+
+## D-038 — Chart chrome inherits the page colour; charts are not themed at render time
+
+**The bug.** Axis labels, tick marks and gridlines were invisible in dark mode. The
+SVGs were rendered with matplotlib's default dark text and embedded as-is, so the CSS
+theme switched around them and the chart text stayed dark-on-dark.
+
+**Rejected fix:** rendering two copies of every chart and hiding one per theme. That
+doubles the file size, doubles render time, and still breaks the moment someone toggles
+manually.
+
+**Fix:** render with sentinel colours (`#abcdef` for text, `#123456` for axes), then
+string-replace both with `currentColor`. The SVG then inherits `color` from its
+container, so one chart renders correctly in every theme, including a mid-session
+toggle. Data colours -- the green line, the red bars -- are deliberately left alone;
+only chrome inherits.
+
+---
+
+## D-039 — Light is the default theme, and printing forces it
+
+**Behaviour:** light by default; follows `prefers-color-scheme` when the system
+expresses one; a toggle overrides in *both* directions (`[data-theme]` on the root
+beats the media query); `@media print` forces the light palette and hides the toggle.
+
+**Why light rather than system-only.** This report is emailed, forwarded and printed.
+A dark page arriving unexpectedly in an inbox wastes ink and reads badly on paper, and
+the reader has no context for why it happened. Following the system is a courtesy;
+light is the safe fallback when there is no signal.
+
+**Why a toggle at all,** given the earlier argument against building UI: it is fifteen
+lines of inline JavaScript with no network dependency, and it is the difference between
+a reader who can read the report and one who cannot. That is not a dashboard.

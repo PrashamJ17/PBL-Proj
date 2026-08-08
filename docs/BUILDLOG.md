@@ -791,3 +791,73 @@ conclusion breaks is more useful than asserting the parameter.
 The technical work is done and the calibration is externally checked. The gate is a
 paying client, and no amount of further code closes it. The realistic next step is the
 Churn Autopsy outreach in `explainer/06`, not another module.
+
+---
+
+## Churn Autopsy — the first customer-facing artifact
+
+**Goal:** close the gap between a research repo and something a real business can
+receive. This is Mode 1 of the three usage modes: a report, not software.
+
+### Step R.1 — What billing data can and cannot support
+
+`keel/report/autopsy.py` computes from customers + subscriptions + invoices alone:
+retention curve (Kaplan-Meier over pooled tenure rather than signup cohorts, since
+small businesses have too few customers per month for cohort curves to be readable),
+revenue vs logo churn, the voluntary/involuntary split, failed-payment economics, and
+decline-code mix.
+
+Three CSVs from the Stripe dashboard. Ten minutes of clicking, no engineer.
+
+It computes nothing causal, and the report says so in its own footer (D-036).
+
+### Step R.2 — The 0% recovery bug ⭐
+
+The first run reported **0% payment recovery**. Not a modelling error — the SubSim
+adapter emitted payment *failures* but never the *retries that succeeded*, so the
+canonical data was representationally incapable of expressing recovery.
+
+Left unfixed, every report would have opened with a catastrophic recovery gap and a
+correspondingly large "opportunity". Wrong, and in the direction that flatters us.
+
+Fixed by emitting the paid retry (1-6 days later) for any failure that did not end in
+involuntary churn — which is, by SubSim's construction, exactly the set that recovered.
+Recovery now reads 38.6%, consistent with SubSim's own 0.42 (D-037).
+
+**Third instance of this class of bug**, after Criteo's treatment-sorted prefix (D-024)
+and `.exists()` on a downloading file (D-029). The general question worth asking of any
+new metric: *could this number be zero because the data cannot express the thing?*
+
+### Step R.3 — Honesty enforced in the artifact
+
+Every `Finding` carries a `measured` flag rendered as a visible badge: green for
+*measured from your data*, amber for *estimated from industry benchmarks*. The most
+persuasive finding in the report — the recovery gap — is amber (D-035).
+
+Caveats are printed rather than omitted: an export with no decline codes produces a
+visible note explaining why that field matters, instead of a silently missing section.
+
+Tests assert both. `test_benchmark_based_findings_are_labelled_as_estimates` and
+`test_report_states_what_it_will_not_do` are the two that matter — they pin the
+honesty properties rather than the arithmetic.
+
+### Step R.4 — Rendering
+
+`keel/report/render.py` produces one self-contained HTML file: inline CSS, inline SVG
+charts, no external requests, light and dark. It can be emailed, opened offline,
+printed, or placed behind an unguessable URL without any of that being a deployment.
+
+Money at the top, findings ranked by value at stake, retention curve, decline table,
+caveats, and a footer stating what the report deliberately will not do.
+
+**20 new tests, 220 total.**
+
+---
+
+### Where this leaves Phase 2
+
+The technical work for the revenue gate is complete: the analysis, the retry policies,
+and now the artifact a prospect actually receives. **The gate itself — a paying client
+— is a sales task and no further module closes it.**
+
+The next action is running this against ten real businesses.

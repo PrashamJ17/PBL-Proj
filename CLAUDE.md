@@ -28,8 +28,8 @@ though underpowered to test the consequence. Small-n: uplift beats random on onl
 
 ## Status
 
-**Phases 0-1 done, 3 real-RCT validations, Phase 2 BUILT** (gate=revenue, open).
-200 tests. CI green.
+**Phases 0-1 done, 3 real-RCT validations, Phase 2 BUILT + Churn Autopsy report.**
+220 tests. CI green. Phase 2 gate (paying client) OPEN.
 **Next: Phase 3** — survival hazard + CLV. Phase 2's gate needs a *client*, not code.
 
 | # | Phase | Status | Gate |
@@ -79,19 +79,20 @@ keel/ingest/               stripe (pure, fixture-tested) · csv_ingest · subsim
 keel/sim/                  config · latents (copula) · hazard (ONE defn, two regimes)
                            subsim (panel) · counterfactual (exact τ, CRN, LADDER)
                            calibration (check, check_quadrants, calibrate_intercept)
+keel/report/               autopsy (analysis) + render (self-contained HTML)
 keel/sim/dunning.py        decline codes, retry success, payday cycles, fatigue
 keel/policy/dunning.py     6 retry policies (processor_default … aggressive)
 keel/experiments/          kill_test · leakage_penalty · dunning · figures
 keel/benchmarks/           datasets (Hillstrom, Criteo, Lenta) · models · evaluate · small_n
                            spectrum (when uplift pays) · figures
-tests/                     200 tests — fairness, realism, edge cases, leakage gate
+tests/                     220 tests — fairness, realism, edge cases, leakage gate
 explainer/                 10 docs for non-technical evaluators/investors (see protocol)
 ```
 
 ## Commands
 
 ```bash
-make check      # lint + 200 tests + calibration gates — run before every commit
+make check      # lint + 220 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
@@ -130,10 +131,10 @@ Keep this file under ~120 lines. If it grows, cut history, not invariants.
 
 ## Checkpoints
 
-- **CP-01** — Phase 0 complete. SubSim calibrated, kill test 6/6 seeds, figure 1.
-- **CP-02** — Phase 1 complete. Canonical schema, PIT store, leakage suite, ingest.
-- **CP-03** — Hillstrom: worse-than-random did NOT replicate → claim scoped (D-020).
-  Small-n unreliability found (75% win rate at n=500) → D-023, figure 2.
+- **CP-01/02** — Phases 0-1: SubSim + kill test; canonical schema, PIT store,
+  leakage suite, ingest.
+- **CP-03** — Hillstrom: worse-than-random did NOT replicate → scoped (D-020);
+  small-n unreliability found (D-023, fig 2).
 - **CP-04** — Criteo added. Uplift LOSES to outcome models there; reconciled by
   corr(τ,propensity) as the governing quantity (D-026, figure 3). Criteo file is
   treatment-sorted — prefix reads invalid (D-024).
@@ -143,4 +144,8 @@ Keep this file under ~120 lines. If it grows, cut history, not invariants.
   with 32% FEWER attempts; `aggressive` strictly dominated (D-033 — a test caught the
   sim inflating its own result). Calibrated on the passive band, reproduces the
   dedicated-dunning band un-tuned (D-034). 200 tests.
-  **Phase 2 gate (paying client) is OPEN — that is a sales task, not a code task.**
+  **Phase 2 gate (paying client) is OPEN — a sales task, not a code task.**
+- **CP-07** — Churn Autopsy built: `keel/report/`, billing-CSV in, self-contained HTML
+  out. Findings badged measured-vs-estimated (D-035); refuses to name targets (D-036).
+  Adapter now emits successful retries — recovery was reading 0% (D-037). 220 tests.
+  **Next action is not code: run the Autopsy against 10 real businesses.**

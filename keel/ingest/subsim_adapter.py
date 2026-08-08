@@ -131,6 +131,41 @@ def to_canonical(
         }
     )
 
+    # --- successful retries --------------------------------------------------
+    # SubSim recovers some failed payments (`passive_recovery_rate`) without the
+    # customer ever churning. Without emitting the retry that succeeded, the
+    # canonical data contains failures and no recoveries at all, and anything
+    # downstream measuring recovery correctly reports 0% -- which is an artifact of
+    # the adapter, not of the business.
+    #
+    # A failure that did NOT end in involuntary churn that month was, by SubSim's
+    # construction, recovered. Emit the paid retry a few days later.
+    failed_rows = inv["failed"].to_numpy()
+    churned_involuntary = panel["churn_involuntary"].to_numpy().astype(bool)
+    was_recovered = failed_rows & ~churned_involuntary
+
+    if was_recovered.any():
+        idx = np.flatnonzero(was_recovered)
+        retry_delay = rng.uniform(1.0, 6.0, len(idx))
+        retry_at = attempted.to_numpy()[idx] + pd.to_timedelta(retry_delay, unit="D")
+        retries = pd.DataFrame(
+            {
+                "invoice_id": "rty_" + inv["customer_id"].astype(str).to_numpy()[idx]
+                + "_" + inv["month"].astype(str).to_numpy()[idx],
+                "customer_id": inv["customer_id"].astype(str).to_numpy()[idx],
+                "subscription_id": "sub_" + inv["customer_id"].astype(str).to_numpy()[idx],
+                "amount": inv["mrr"].astype(float).to_numpy()[idx],
+                "currency": pd.Series(["INR"] * len(idx), dtype="string"),
+                "status": pd.Series(["paid"] * len(idx), dtype="string"),
+                "attempted_at": retry_at,
+                "paid_at": retry_at,
+                "failure_code": pd.Series([None] * len(idx), dtype="string"),
+                "attempt_number": np.full(len(idx), 2, dtype="int64"),
+                "available_at": retry_at,
+            }
+        )
+        invoices = pd.concat([invoices, retries], ignore_index=True)
+
     # --- events -------------------------------------------------------------
     # Expand each month's session count into individual timestamped sessions.
     events = _expand_sessions(panel, month_ts, rng)
