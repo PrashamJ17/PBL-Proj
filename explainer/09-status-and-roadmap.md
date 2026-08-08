@@ -24,10 +24,10 @@ much of it is at risk. Nothing has been sold to a real customer yet.**
 | **Realistic business simulator** | ✅ Done | Calibrated to published benchmarks, stable across 8 variations |
 | **Connecting to real billing data** | ✅ Done | Stripe and CSV adapters; one common data shape |
 | **Guard against using future information** | ✅ Done | Measured: prevents a 0.35 inflation in apparent accuracy |
-| **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts |
+| **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts — see [below](#what-phase-2-found-about-failed-payments) |
 | **A report a business can actually receive** | ✅ Built | Three spreadsheet exports in, one web page out |
 | **Predicting when a customer leaves, and what they are worth** | ✅ Done | Matches or beats established methods on public data — see below |
-| **Quality controls** | ✅ Done | 277 automated tests, all passing |
+| **Quality controls** | ✅ Done | 302 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
 | **The practical version of our method** | ⬜ Not started | **The main research risk** |
 | Customer-facing product | ⬜ Not started | — |
@@ -65,6 +65,27 @@ system works almost perfectly, and would allocate a retention budget accordingly
 
 We also built the connections to real billing systems, so the work from here runs on the
 same data shape a real customer would provide.
+
+---
+
+## What Phase 2 found about failed payments
+
+Around a third of the customers a subscription business loses never decided to leave —
+their card failed. The intuitive response is to try harder: retry more often, email more
+insistently.
+
+![More dunning is not better dunning](figures/fig04_dunning_value.png)
+
+That turns out to be **strictly worse**. The aggressive approach on the left uses two and
+a half times as many retries and nearly four times as many emails, and recovers *no more
+money*. What works is knowing *which* failure you are looking at: money that has not
+arrived yet needs a retry timed to payday, and an expired card cannot be charged again no
+matter how many times you try.
+
+The right panel is there because the conclusion depends on something we assumed rather
+than measured — how much goodwill one payment-failure email costs. It shows the point at
+which the answer would flip, so a reader can judge whether our assumption is reasonable
+instead of taking it on trust.
 
 ---
 
@@ -128,6 +149,15 @@ forests, and a neural-network method called DeepSurv) on **Telco**, a public dat
 **We beat two of the three and tied the third**, on ten out of ten repeats. We do not
 claim to have beaten DeepSurv — the difference was 0.0824 against 0.0825, which is
 noise, and calling it a win would be dishonest.
+
+![How honest each method's probabilities are](figures/fig05_survival_calibration.png)
+
+The picture shows what "honest probabilities" means. The diagonal is perfect: a customer
+the model says has a 30% chance of leaving should leave 30% of the time. A line above it
+means the method is over-confident about who will stay. This matters more than ranking
+for our purposes, because we multiply these probabilities by what each customer is worth
+— and a probability that is systematically 20% too optimistic makes every value estimate
+built on it 20% wrong.
 
 We also tested on a medical dataset those methods were originally designed for, and
 **we lost** — we wrote down that we expected to lose before running it, and we did. Our

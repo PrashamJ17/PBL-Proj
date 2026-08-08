@@ -228,6 +228,58 @@ where it exists and is measurable.
 
 ---
 
+## Two more real datasets, and the rule that explains all of them
+
+We then tested two further real experiments: **Criteo** (14 million people, online
+advertising) and **Lenta** (687,000 supermarket customers, promotional text messages).
+
+Criteo gave the opposite answer to Hillstrom. Targeting by *effect* — the approach we
+argue for — was no better than targeting by *likelihood of responding*. Every method was
+tied.
+
+Two real datasets, two contradictory answers. Neither was a fluke, and the explanation
+is the most useful thing in this project.
+
+### The rule
+
+Two different questions can be asked about a customer:
+
+- **How likely are they to respond?** (what a conventional model estimates)
+- **How much does contacting them change what they do?** (what actually matters)
+
+Sometimes those two questions rank customers in the *same order*. When they do, the
+conventional model wins — not because it is asking the right question, but because it is
+asking an **easier** one. Estimating one quantity is more stable than estimating the
+difference between two, and with limited data that reliability advantage decides it.
+
+Sometimes the two orderings *conflict*. That is when the conventional approach stops
+being merely wasteful and starts actively selecting the customers you will harm.
+
+![When does this approach pay off?](figures/fig03_when_uplift_pays.png)
+
+Each point is one setting. The horizontal axis measures how closely the two orderings
+agree. The vertical axis is how much better the effect-based approach does.
+
+Everything on the right — advertising, promotional email, retail texts — sits near zero.
+The orderings agree there, so the sophisticated approach buys almost nothing. Only
+subscription retention sits on the left, and it is an order of magnitude above the rest.
+
+### Why this made the argument stronger, not weaker
+
+It replaced *"this approach is better"* — which is **false in advertising, and we can
+prove it** — with something narrower and testable: **subscription retention has a
+structure that advertising does not.**
+
+It also produced a prediction we could get wrong. Before downloading Lenta, we wrote down
+that retail promotion should land *between* advertising and subscription retention. It
+landed at +0.18, between +0.61 and −0.19, as predicted.
+
+One caveat we state plainly, and the figure states on its face: with five settings this
+is a contrast, not a curve. The ordering among the four points on the right is within
+noise. The finding is the gap on the left.
+
+---
+
 ## The finding that matters most, and it is from real data
 
 Hillstrom cannot test the harm mechanism. But it can test the question this project

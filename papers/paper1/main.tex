@@ -237,7 +237,8 @@ build-time gate fails if $\bar\CATE$ ever becomes positive.
 \paragraph{The kill test.} We train a real churn model --- gradient-boosted trees on
 observable features only, with a strictly temporal split, reaching holdout
 AUC $\approx 0.70$ --- and compare targeting policies at a 20\% budget over six
-seeds (Table~\ref{tab:killtest}). Ranking by churn score loses money and loses
+seeds (Table~\ref{tab:killtest}, drawn in Figure~\ref{fig:killtest}). Ranking by
+churn score loses money and loses
 \emph{more than random selection}, unanimously across seeds. The mechanism is
 visible directly: sleeping dogs are 48\% of the top predicted-risk decile and 2\% of
 the bottom.
@@ -261,6 +262,21 @@ that a \emph{more accurate} churn model makes the second row worse, because accu
 at detecting disengagement is precision at finding sleeping dogs.}
 \label{tab:killtest}
 \end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{../figures/fig01_kill_test.png}
+\caption{The instrument, and the mechanism it exists to reproduce. \textbf{Left:}
+expected incremental value against retention budget, averaged over six seeds with
+$\pm1$\,s.d.\ bands. Risk-ranked targeting (red) lies below random (grey) at every
+budget, and both lie below doing nothing. \textbf{Right:} why. Customers are sorted
+into deciles of \emph{predicted} risk and coloured by their \emph{true} type. Harmed
+customers are 48\% of the decile a risk-ranked campaign contacts first and 2\% of the
+decile it never reaches. The ranking is not uninformative for this decision; it is
+anti-informative. Note that the oracle curve peaks and then falls --- even a perfect
+rule loses money if forced to spend more.}
+\label{fig:killtest}
+\end{figure}
 
 \paragraph{A methodological note on leakage.} Every feature in this project is
 computed point-in-time: each fact carries both when it occurred and when it became
@@ -309,12 +325,26 @@ noise. The signal is the order-of-magnitude gap at negative correlation.}
 \label{tab:corr}
 \end{table}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.86\textwidth]{../figures/fig03_when_uplift_pays.png}
+\caption{Table~\ref{tab:corr} drawn. The horizontal axis is
+$\corr(\hat\CATE,\hat\pi)$; the vertical axis is the advantage of effect-based over
+outcome-based targeting. Four real settings cluster near zero advantage across a wide
+range of positive correlation; the single negative-correlation setting sits an order
+of magnitude above them. Deliberately no fitted curve: with five points the ordering
+among the positive-correlation settings is within noise, and the figure states this on
+its face. The claim is the gap at negative correlation, not a functional form.}
+\label{fig:corr}
+\end{figure}
+
 An outcome model ranks by \emph{likelihood of responding}; an effect model ranks by
 \emph{how much treatment changes the response}. When those orderings coincide, the
 outcome model wins --- not because it measures the right thing, but because it
 solves an easier estimation problem, and at small $n$ that variance advantage
 dominates. This reframes the recommendation. It is not that uplift modelling is
-better; that is false in advertising and Table~\ref{tab:corr} shows it. It is that
+better; that is false in advertising, and Table~\ref{tab:corr} and
+Figure~\ref{fig:corr} show it. It is that
 \textbf{retention has an adversarial structure that advertising does not}.
 
 \subsection{The share of harmed customers is not the right diagnostic}
@@ -358,7 +388,10 @@ change is attributable to estimation difficulty rather than evaluation noise.
 The headline metric is deliberately not a mean. A mean across hypothetical draws is
 not what a business experiences; it gets one draw, and a method with a good average
 and a wide spread is a gamble. We therefore report the \textbf{proportion of seeds on
-which a method beats random targeting, paired on the same split}.
+which a method beats random targeting, paired on the same split}
+(Table~\ref{tab:smalln}). Figure~\ref{fig:smalln} places the two views side by side:
+the conventional mean-performance plot and the reliability plot disagree about whether
+these methods are usable at the scale in question.
 
 \begin{table}[t]
 \centering
@@ -374,6 +407,21 @@ Class-transform estimator beats random & \textbf{55\%} & --- & --- & --- \\
 a coin flip while its mean performance looks respectable.}
 \label{tab:smalln}
 \end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{../figures/fig02_small_n_reliability.png}
+\caption{Two views of the same experiment on Hillstrom, with the evaluation set held
+fixed so that only estimation difficulty varies. \textbf{Left:} the conventional
+report --- mean performance rises with training size, and every method looks
+serviceable. \textbf{Right:} the proportion of seeds on which each method actually
+beats random. A firm gets one draw, not an average over twenty. Below roughly 2{,}000
+customers (shaded) the best method fails one attempt in four, and one estimator is
+indistinguishable from a coin flip --- while its mean remains respectable. Reporting
+expectation rather than reliability conceals exactly the risk that matters at this
+scale.}
+\label{fig:smalln}
+\end{figure}
 
 Two consequences. First, published uplift results are reported in a regime almost no
 prospective user occupies, and the gap is not a matter of degree: at $n=500$ the
@@ -432,7 +480,21 @@ we lose; we recorded that expectation before running it.}
 \label{tab:survival}
 \end{table}
 
-Kaplan--Meier is in Table~\ref{tab:survival} for a reason. On calibration error
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{../figures/fig05_survival_calibration.png}
+\caption{Calibration on Telco, which is the property the value calculation needs and
+concordance does not measure. A model may rank customers correctly and still be
+systematically wrong about absolute survival probability, in which case every
+$\CATE_i \cdot V_i$ product built on it is scaled wrongly. Reliability curves for the
+discrete-time hazard and the baselines are shown against the diagonal; the
+proportional-hazards baselines are visibly optimistic in the region where most of the
+value sits.}
+\label{fig:survival}
+\end{figure}
+
+Kaplan--Meier is in Table~\ref{tab:survival} for a reason, and Figure~\ref{fig:survival}
+shows the reliability curves behind it. On calibration error
 alone it \emph{beats} Cox on this dataset, because a covariate-free prediction is
 trivially calibrated. Reporting calibration error as a headline would make
 ``predict the average for everyone'' the winning strategy. The integrated Brier

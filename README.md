@@ -59,7 +59,7 @@ attributable to targeting, not to a bad offer.
 git clone https://github.com/PrashamJ17/PBL-Proj.git
 cd PBL-Proj
 make install     # or: pip install -e ".[dev,viz]"
-make check       # lint + 58 tests + calibration gates
+make check       # lint + 302 tests + calibration gates
 ```
 
 ```python
@@ -91,25 +91,27 @@ python -m pytest tests/ -q
 
 ```
 keel/
-├── sim/                    SubSim — the simulator (paper 1)
-│   ├── config.py           every generative parameter, documented
-│   ├── latents.py          8 latent traits; attention ~ engagement via copula
-│   ├── hazard.py           the monthly churn hazard (one definition, two regimes)
-│   ├── subsim.py           lifecycle → person-period panel of OBSERVABLES only
-│   ├── counterfactual.py   exact ground-truth τ + paired Y(0), Y(1)
-│   └── calibration.py      targets, checks, and the intercept solver
-└── experiments/
-    ├── kill_test.py        the go/no-go gate
-    └── figures.py          figure generation
+├── sim/            SubSim — the simulator. Latents (attention ~ engagement via a
+│                   copula), one hazard definition, exact ground-truth τ with paired
+│                   potential outcomes, dunning, and a solver for the calibration.
+├── core/           Canonical schema (occurred_at + available_at on every fact),
+│                   point-in-time feature store, leakage audit.
+├── ingest/         Stripe (pure, fixture-tested) · CSV · SubSim adapter.
+├── models/         survival/ (discrete-time hazard, competing risks, metrics,
+│                   Cox/RSF/DeepSurv baselines) · clv/ (value, value at risk).
+├── policy/         Retry policies for failed payments.
+├── report/         Churn Autopsy — billing CSV in, self-contained HTML out.
+├── benchmarks/     Public RCTs (Hillstrom, Criteo, Lenta) + Telco/GBSG2 survival data.
+└── experiments/    kill_test · leakage_penalty · dunning · survival · clv · figures
 
-tests/                      58 tests — fairness, realism, edge cases
+tests/              302 tests — fairness, realism, edge cases, leakage gate
 docs/
-├── BUILDLOG.md             what was built, what was tested, what happened
-└── DECISIONS.md            why each modelling choice was made (D-001 … D-013)
-explainer/                  10 documents for non-technical evaluators & investors
-papers/figures/             generated figures
-CHANGELOG.md                checkpoint history, newest first
-CLAUDE.md                   project state + working protocol
+├── BUILDLOG.md     what was built, what was tested, what happened
+└── DECISIONS.md    why each modelling choice was made (D-001 … D-049)
+explainer/          10 documents for non-technical evaluators & investors
+papers/paper1/      merged paper draft — README says what is evidence vs specification
+CHANGELOG.md        checkpoint history, newest first
+CLAUDE.md           project state + working protocol
 ```
 
 ### Commands
@@ -124,8 +126,21 @@ CLAUDE.md                   project state + working protocol
 CI re-runs the tests, the calibration gates, **and the kill test** on every push.
 If the founding claim ever stops holding, the build fails.
 
-**Status: Phase 0 complete.** Next: canonical schema, point-in-time feature store,
-Stripe ingest, leakage suite. See [CHANGELOG.md](CHANGELOG.md).
+### Status
+
+**Phases 0–3 complete. Next: Phase 4** — hierarchical Bayesian CATE with abstention,
+which is the research contribution the rest of this exists to support.
+
+| Phase | | Gate |
+|---|---|---|
+| 0 | Simulator + kill test | ✅ churn-score targeting provably loses money |
+| 1 | Canonical schema, point-in-time features, ingest | ✅ leakage suite green in CI |
+| 2 | Dunning + Churn Autopsy report | 🟨 built; gate is **a paying client**, not code |
+| 3 | Survival hazard + CLV | ✅ beats Cox and RSF 10/10 on Telco, ties DeepSurv |
+| 4 | Hierarchical CATE + abstention | ⬜ next |
+
+Validated against three real randomised experiments (Hillstrom, Criteo, Lenta) and two
+public survival datasets (Telco, GBSG2). See [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

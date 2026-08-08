@@ -1241,3 +1241,65 @@ while requiring a ~2GB dependency. That is the claim, and it is narrower and mor
 defensible than "beats Cox".
 
 ---
+
+---
+
+## D-050 — Survival refuses to extrapolate past its observed support
+
+**The inconsistency found in audit.** `clv()` raises past the observed tenure support
+and forces `allow_extrapolation=True` to be a visible line of code (invariant 12,
+D-046). `DiscreteTimeHazard.survival()` happily returned a 24-month curve fitted on 8
+months of history, silently. The same epistemic concern, opposite handling — and the
+CLV docstring already implied a guard that did not exist.
+
+**Why it matters more here than it looks.** Beyond the observed support the period
+basis is not estimating: the dummy basis has no coefficient for those periods and the
+spline basis is running on its linear tail. The curve is a functional-form assumption
+presented as an estimate — and `clv()` consumes exactly this curve, so an unguarded
+survival call routes straight around the CLV guard.
+
+**Fix:** `observed_support` is recorded at fit time and `survival()` refuses to project
+past it unless `allow_extrapolation=True`. Invariant 12 now covers both.
+
+---
+
+## D-051 — Degenerate survival inputs get errors about the data, not the solver
+
+**Found by probing rather than by reading.** Five situations a real tenant can be in
+produced messages naming a scikit-learn optimiser:
+
+| Input | Was | Now |
+|---|---|---|
+| Zero events (a young business) | `solver needs samples of at least 2 classes` | names the hazard as unidentified, suggests Kaplan-Meier |
+| NaN in a covariate | `Input X contains NaN` | names the offending column |
+| Empty dataset | `need at least one array to concatenate` | says the dataset is empty |
+| `horizon=0` | `Found array with 0 sample(s)` | says horizon must be >= 1 |
+| Undeclared event code | *silently accepted* | names the code and `cause_names` |
+
+The last was the real defect. `event` is a **cause code**, so values above 1 are
+legitimate — but an *undeclared* one silently censored those subjects, losing a whole
+competing risk with no signal at all.
+
+**Deliberately not fixed by imputing.** NaN covariates raise rather than fill, because
+choosing a fill value is a modelling decision that belongs in the loader where it is
+visible, not inside a model where it is invisible.
+
+---
+
+## D-052 — Two audit findings that were tests being wrong, not code
+
+Recorded because both are traps that would recur.
+
+**"No censoring" is not "no censored periods".** A subject with duration 5 who then
+fails contributes four survived person-period rows and one event, so the expanded frame
+has both classes even when no *subject* was censored. A test asserting refusal there
+was wrong; the degenerate case the guard actually catches is every subject failing in
+their first period.
+
+**`duration == window` in a landmark slice is not "censored".** Durations are capped at
+the window, so that value contains both customers who failed in its final month and
+those still present at its edge. The invariant worth testing is the cap itself.
+
+Both follow the pattern of D-037: the test encoded an assumption about the data model
+rather than checking the data model. When a new test fails, the first question is which
+of the two is wrong — and roughly half the time in this project it has been the test.

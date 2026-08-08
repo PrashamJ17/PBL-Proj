@@ -1028,3 +1028,65 @@ covariates through the existing point-in-time path, competing risks that stay se
 all the way to the output, and calibrated absolute probabilities CLV can multiply by
 money. DeepSurv matches the numbers, does none of those three, and costs a ~2GB
 dependency.
+
+---
+
+## Pre-Phase-4 audit
+
+A full re-verification before moving on, rather than trusting the documentation.
+Everything was re-run from scratch: `make check`, `make survival`, `make clv`, and a
+mechanical check of the paper.
+
+### What held up
+
+Every Phase 3 claim reproduced exactly:
+
+| Claim | Verified |
+|---|---|
+| Telco IBS 0.0824 vs Cox 0.0914 / RSF 0.0964 | ✅ `ours_beats_it_on_ibs` = 1.000 for both (10/10) |
+| Ties DeepSurv (0.0825) | ✅ win rate 4/10 — a genuine tie, reported as one |
+| Loses GBSG2 to RSF | ✅ 0.1867 vs 0.1832, 2/10 — reported as a loss |
+| CLV shortfall 72.5 / 27.5 | ✅ exact |
+| 21% decile overlap | ✅ exact |
+
+Paper: 22 citations all resolve, no broken `\ref`, and all 16 headline numbers match
+the code. Section 8's `\todo` marker is intact and its README still states it is
+specification only.
+
+### What did not
+
+**The paper contained no figures.** Five existed; `\includegraphics` count was zero.
+Four are now placed and referenced in prose — the kill test, the correlation principle,
+small-*n* reliability, and survival calibration. The dunning figure correctly stays out:
+the paper does not discuss dunning at all (0 mentions), so its home is the explainer.
+
+**The explainer stopped at Hillstrom.** Criteo, Lenta and the `corr(τ, π)` principle —
+the paper's lead contribution — appeared nowhere in the non-technical documents. A new
+section in `05-the-evidence.md` covers all three, with the figure. Phase 2's dunning
+result and Phase 3's calibration argument likewise had no explainer home; both now do.
+
+**The README was frozen at Phase 0.** It claimed 58 tests (actual: 277), "Status: Phase
+0 complete", a layout listing two of eight packages, and a decision range of D-001…D-013
+against an actual 49. Rewritten.
+
+**Five degenerate survival inputs produced solver-internals errors** and one silently
+lost a competing risk. Fixed with clear messages (D-051), each with a regression test.
+
+**Survival extrapolated freely while CLV refused to** (D-050). `survival()` now records
+its observed support and refuses to project past it unless asked, matching invariant 12.
+
+**`survival_benchmark.py` (510 lines) was untested** — the largest untested module, and
+the one producing the paper's Table 4. 14 tests added, covering the evaluation grid
+(where an over-long horizon makes IPCW weights undefined rather than noisy), the
+landmark slice (where the future can leak into a time-varying model), and the guarantee
+that every model goes through one scoring path.
+
+### Two tests that were wrong, not the code
+
+Both recorded in D-052. "No censoring" at the subject level still yields non-event rows
+at the person-period level; and `duration == window` in a landmark slice contains both
+failures in the final month and censorings at the edge. Roughly half the failing tests
+written during this project have been the test rather than the code — worth asking which
+is wrong before reaching for the source.
+
+**302 tests, up from 277. Lint clean, both calibration gates green.**

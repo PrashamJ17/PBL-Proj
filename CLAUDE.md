@@ -30,7 +30,7 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1 and 3 done, 3 real-RCT validations, Phase 2 BUILT + Churn Autopsy report.**
-277 tests. CI green. Phase 2 gate (paying client) OPEN.
+302 tests. CI green. Phase 2 gate (paying client) OPEN.
 **Next: Phase 4** — hierarchical Bayesian CATE + abstention. Phase 2's gate needs a
 *client*, not code; Phase 3 built the money layer Phase 4 multiplies by.
 
@@ -77,8 +77,11 @@ autopilot → retention decisions, ordered by *trust required*. Best version is 
     path may pass `mode=`. Default is `SAFE`; a test enforces it.
 11. **Any split of a person-period frame is by SUBJECT, never by row.** Consecutive
     months of one customer share covariates and an outcome. CI-enforced.
-12. **CLV is never extrapolated past the observed tenure support.** `clv()` raises;
-    `allow_extrapolation=True` makes the assumption a visible line of code (D-046).
+12. **Never extrapolate past observed support.** Both `clv()` and
+    `DiscreteTimeHazard.survival()` raise; `allow_extrapolation=True` makes the
+    assumption a visible line of code (D-046, D-050).
+13. **Degenerate survival inputs raise errors about the DATA, not the solver** (D-051).
+    NaN covariates raise rather than impute — filling is a loader decision.
 
 ---
 
@@ -100,7 +103,7 @@ keel/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark
                    figures · survival_figures
 keel/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           277 — fairness, realism, edge cases, leakage gate
+tests/           302 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -108,7 +111,7 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 277 tests + calibration gates — run before every commit
+make check      # lint + 302 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
@@ -138,7 +141,7 @@ Message leads with what it **establishes or fixes**, not files touched; numbers 
 body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first. Never commit on red —
 if blocked, commit *with the failure described*.
 
-Keep under **~150 lines** (raised from 120 at 7 phases / 49 decisions — deliberate, not
+Keep under **~165 lines** (raised 120→150→165 as phases, decisions and the paper accumulated — deliberate, not
 drift). If it grows, cut checkpoints first; never invariants.
 
 ---
@@ -148,15 +151,11 @@ drift). If it grows, cut checkpoints first; never invariants.
 Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
 
 - **CP-01…07** — Phases 0-1 (SubSim + kill test; schema, PIT store, leakage, ingest),
-  three real-RCT validations (Hillstrom → D-020/023; Criteo → D-024/026; Lenta →
-  D-031), Phase 2 dunning (code-aware retries +6.9pp with 32% FEWER attempts;
-  `aggressive` strictly dominated — D-033/034), and the Churn Autopsy (D-035/036).
-  CI failures fixed: ruff rule set (D-028), pandas timestamps (D-030).
+  three real-RCT validations (Hillstrom D-020/023 · Criteo D-024/026 · Lenta D-031),
+  Phase 2 dunning (D-033/034) and the Churn Autopsy (D-035/036). CI fixes D-028/030.
   **Phase 2's gate is a sales task: run the Autopsy against 10 real businesses.**
-- **CP-08** — **Phase 3 done** + merged paper drafted. Telco: beats Cox and RSF **10/10
-  resplits** on integrated Brier (0.0824 vs 0.0914/0.0964), **ties DeepSurv** (0.0825),
-  best-calibrated alongside it; loses GBSG2 to RSF — predicted before running
-  (D-021/049). CLV shortfall splits exactly 72.5/27.5. Two metric bugs caught by
-  external reference, not by reading (D-048). Below **n=250 nothing reliably beats
-  Kaplan-Meier** — unpredicted, most useful number here. The phase bought
-  *representation*, not accuracy — say it that way.
+- **CP-08** — **Phase 3 done** + merged paper drafted. Telco: beats Cox and RSF 10/10
+  on integrated Brier (0.0824 vs 0.0914/0.0964), **ties DeepSurv** (0.0825); loses
+  GBSG2 to RSF as predicted (D-021/049). CLV shortfall 72.5/27.5; top value-at-risk
+  decile overlaps top churn-risk decile by only **21%**. Below n=250 nothing reliably
+  beats Kaplan-Meier. Two metric bugs caught by external reference (D-048).

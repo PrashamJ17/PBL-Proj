@@ -543,3 +543,127 @@ def test_telco_is_a_plausible_churn_dataset():
     data = load_telco()
     assert 0.20 < (data.event > 0).mean() < 0.32
     assert data.duration.max() == 72
+
+
+# --- degenerate inputs: clear errors, not solver internals -------------------
+#
+# Every case below previously surfaced a scikit-learn or numpy message naming an
+# optimiser rather than the data problem. Each is a situation a real tenant can be
+# in, so the error has to say what is wrong and what to do about it.
+
+
+def _toy(n=60, all_censored=False, no_censoring=False, nan_cov=False, seed=0):
+    rng = np.random.default_rng(seed)
+    duration = rng.integers(1, 8, n)
+    event = (
+        np.zeros(n, dtype=int) if all_censored
+        else np.ones(n, dtype=int) if no_censoring
+        else rng.integers(0, 2, n)
+    )
+    X = pd.DataFrame({"x": rng.normal(size=n), "y": rng.normal(size=n)})
+    if nan_cov:
+        X.loc[X.index[:3], "x"] = np.nan
+    return SurvivalData(name="toy", X=X, duration=duration, event=event)
+
+
+def test_empty_dataset_is_refused_with_a_useful_message():
+    with pytest.raises(ValueError, match="empty"):
+        _toy(n=0)
+
+
+def test_missing_covariates_name_the_offending_column():
+    """Real billing exports carry NaNs. The message must name the column so the
+    caller can decide how to fill it, rather than the model imputing silently."""
+    with pytest.raises(ValueError, match=r"missing values in covariate\(s\) \['x'\]"):
+        _toy(nan_cov=True)
+
+
+def test_undeclared_event_codes_are_refused():
+    """`event` is a cause code, so values above 1 are legitimate -- but only if
+    declared. An undeclared code would silently censor those subjects."""
+    with pytest.raises(ValueError, match="not declared in cause_names"):
+        SurvivalData(
+            name="toy", X=pd.DataFrame({"x": [1.0, 2.0]}),
+            duration=np.array([2, 3]), event=np.array([5, 0]),
+        )
+
+
+def test_declared_event_codes_are_accepted():
+    """The complement: competing risks must still work."""
+    data = SurvivalData(
+        name="toy", X=pd.DataFrame({"x": [1.0, 2.0]}),
+        duration=np.array([2, 3]), event=np.array([2, 0]),
+        cause_names={1: "voluntary", 2: "involuntary"},
+    )
+    assert data.causes == [2]
+
+
+def test_a_dataset_with_no_events_says_the_hazard_is_unidentified():
+    """A young business that has not lost anyone yet. The honest answer is that the
+    hazard cannot be identified, not that an optimiser is unhappy."""
+    with pytest.raises(ValueError, match="no events"):
+        DiscreteTimeHazard().fit_data(_toy(all_censored=True))
+
+
+def test_no_censored_subjects_still_fits():
+    """Subject-level censoring is not period-level censoring.
+
+    A subject with duration 5 who then fails contributes four survived periods and
+    one event, so the person-period frame has both classes even when nobody was
+    censored. An earlier version of this test asserted a refusal here and was simply
+    wrong about the expansion."""
+    model = DiscreteTimeHazard().fit_data(_toy(no_censoring=True))
+    assert model.observed_support is not None
+
+
+def test_every_period_an_event_is_refused():
+    """The degenerate case the no-censored-periods branch actually guards: every
+    subject fails in their first period, so no row survives."""
+    n = 40
+    data = SurvivalData(
+        name="toy",
+        X=pd.DataFrame({"x": np.random.default_rng(0).normal(size=n)}),
+        duration=np.ones(n, dtype=int),
+        event=np.ones(n, dtype=int),
+    )
+    with pytest.raises(ValueError, match="no censored periods"):
+        DiscreteTimeHazard().fit_data(data)
+
+
+# --- extrapolation guard, mirroring the CLV invariant -----------------------
+
+
+def test_survival_refuses_to_project_past_the_observed_support():
+    """Invariant 12 applies to survival as it does to CLV (D-046, D-050). Beyond the
+    observed support the period basis asserts a functional form rather than
+    estimating one, and a 24-month CLV must not be built from 8 months of history
+    without that being a visible choice."""
+    data = _toy()
+    model = DiscreteTimeHazard().fit_data(data)
+    assert model.observed_support is not None
+
+    with pytest.raises(ValueError, match="exceeds the observed support"):
+        model.survival(data.X.head(2), horizon=model.observed_support + 50)
+
+
+def test_extrapolation_is_possible_but_has_to_be_asked_for():
+    data = _toy()
+    model = DiscreteTimeHazard(allow_extrapolation=True).fit_data(data)
+    out = model.survival(data.X.head(2), horizon=model.observed_support + 50)
+    assert out.shape == (2, model.observed_support + 50)
+
+
+def test_horizon_within_support_is_allowed():
+    data = _toy()
+    model = DiscreteTimeHazard().fit_data(data)
+    out = model.survival(data.X.head(2), horizon=model.observed_support)
+    assert out.shape == (2, model.observed_support)
+    assert np.all((out >= 0) & (out <= 1))
+
+
+def test_non_positive_horizon_is_refused():
+    data = _toy()
+    model = DiscreteTimeHazard().fit_data(data)
+    for bad in (0, -1):
+        with pytest.raises(ValueError, match="horizon must be >= 1"):
+            model.survival(data.X.head(2), horizon=bad)

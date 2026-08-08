@@ -90,11 +90,38 @@ class SurvivalData:
         self.event = np.asarray(self.event).astype(int)
         if len(self.X) != len(self.duration) or len(self.duration) != len(self.event):
             raise ValueError("X, duration and event must be the same length")
+        if len(self.duration) == 0:
+            raise ValueError(
+                f"{self.name}: dataset is empty. A survival model cannot be fitted to "
+                "zero subjects; check the loader's filters."
+            )
         if (self.duration < 1).any():
             raise ValueError(
                 "duration must be >= 1 period; a subject with zero periods at risk "
                 "contributes no person-period rows. Drop them in the loader, "
                 "explicitly, so the exclusion is visible."
+            )
+        # Covariates reach scikit-learn unchanged, whose NaN message names a solver
+        # rather than the column at fault. Real billing exports carry NaNs, so say
+        # which column and let the caller decide how to fill it -- imputing silently
+        # here would hide a data problem inside a model.
+        nan_cols = [c for c in self.X.columns if self.X[c].isna().any()]
+        if nan_cols:
+            raise ValueError(
+                f"{self.name}: missing values in covariate(s) {nan_cols}. Impute or "
+                "drop them in the loader, where the choice is visible, rather than "
+                "letting the model decide."
+            )
+        # `event` is a cause code, so values above 1 are legitimate -- but only if
+        # they were declared. An undeclared code silently becomes a cause nobody
+        # models, and its subjects are treated as censored without anyone saying so.
+        undeclared = sorted(set(np.unique(self.event)) - {0} - set(self.cause_names))
+        if undeclared:
+            raise ValueError(
+                f"{self.name}: event codes {undeclared} are not declared in "
+                f"cause_names={self.cause_names}. Either declare them or map them to "
+                "an existing cause; leaving them undeclared silently censors those "
+                "subjects."
             )
 
     def __len__(self) -> int:
@@ -250,6 +277,11 @@ class DiscreteTimeHazard:
         Fit an isotonic map from raw hazard to observed frequency on a held-out slice
         of **subjects**. Off for logistic (which is already calibrated and would only
         lose data to the split), on for gbm.
+    allow_extrapolation:
+        Permit predictions past the last period seen during fitting. Off by default,
+        matching the same discipline `clv()` applies (invariant 12): beyond the
+        observed support the period basis is asserting a functional form rather than
+        estimating one, and that should be a visible choice.
     """
 
     def __init__(
@@ -260,6 +292,7 @@ class DiscreteTimeHazard:
         calibrate: bool | None = None,
         calibration_fraction: float = 0.25,
         seed: int = 0,
+        allow_extrapolation: bool = False,
     ):
         if learner not in ("logistic", "gbm"):
             raise ValueError(f"unknown learner {learner!r}; use 'logistic' or 'gbm'")
@@ -269,6 +302,9 @@ class DiscreteTimeHazard:
         self.calibrate = (learner == "gbm") if calibrate is None else calibrate
         self.calibration_fraction = calibration_fraction
         self.seed = seed
+        self.allow_extrapolation = allow_extrapolation
+        self.observed_support: int | None = None
+        """Largest period seen during fitting. Predictions beyond it extrapolate."""
 
         self.features: list[str] = []
         self.cause: int = 1
@@ -298,10 +334,48 @@ class DiscreteTimeHazard:
             min_samples_leaf=40, random_state=self.seed,
         )
 
+    def _check_support(self, horizon: int) -> None:
+        """Refuse to project past the periods the model actually saw.
+
+        The same discipline `clv()` applies (invariant 12, D-046). Beyond the
+        observed support the period basis is extrapolating: the dummy basis has no
+        coefficient for those periods and the spline basis is running on its linear
+        tail. Neither is estimated from data, and the resulting survival curve is not
+        merely uncertain -- it is a functional-form assumption presented as an
+        estimate. Silence here would let a 24-month CLV be built from 8 months of
+        history without anyone noticing.
+        """
+        if self.observed_support is None or self.allow_extrapolation:
+            return
+        if horizon > self.observed_support:
+            raise ValueError(
+                f"horizon {horizon} exceeds the observed support of "
+                f"{self.observed_support} periods. Beyond it the period basis is "
+                "extrapolating rather than estimating. Shorten the horizon, or pass "
+                "allow_extrapolation=True so the assumption is a visible line of code."
+            )
+
     def fit(self, pp: pd.DataFrame, features: list[str]) -> DiscreteTimeHazard:
         """Fit on an already-expanded person-period frame."""
         self.features = list(features)
         y = pp[EVENT].to_numpy().astype(int)
+        self.observed_support = int(pp[PERIOD].max()) if len(pp) else None
+
+        # Without this, scikit-learn raises "this solver needs samples of at least 2
+        # classes", which names the solver rather than the problem. Zero events is a
+        # real situation -- a young business that has not lost anyone yet -- and the
+        # honest answer is that the hazard is unidentified, not that the optimiser
+        # is unhappy.
+        if len(y) == 0:
+            raise ValueError("no person-period rows to fit; the dataset expanded to nothing")
+        if len(np.unique(y)) < 2:
+            only = "no events" if y.max() == 0 else "no censored periods"
+            raise ValueError(
+                f"cannot fit a hazard: the person-period frame contains {only} "
+                f"({int(y.sum())} events in {len(y)} rows). The hazard is "
+                "unidentified from this data. Use Kaplan-Meier for a marginal "
+                "estimate, or wait for events to accrue."
+            )
 
         if not self.calibrate:
             self.model = self._new_model().fit(self._design(pp), y)
@@ -352,6 +426,10 @@ class DiscreteTimeHazard:
         time-varying one -- `survival_from_panel` is the version that uses a real
         covariate path.
         """
+        if horizon < 1:
+            raise ValueError(f"horizon must be >= 1 period, got {horizon}")
+        self._check_support(horizon)
+
         n = len(X)
         rep = np.repeat(np.arange(n), horizon)
         grid = X.iloc[rep].reset_index(drop=True)
