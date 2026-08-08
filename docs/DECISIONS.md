@@ -702,3 +702,84 @@ observation, not two.
 — comparable to the churn setting's 25.7% — yet uplift modelling still buys almost
 nothing. This reinforces the D-026 refinement: **the share of harmed customers is not
 what matters; their correlation with outcome propensity is.**
+
+---
+
+## D-032 — Dunning fatigue links the two churn processes without merging them
+
+**The tension.** Invariant 5 says voluntary and involuntary churn stay separate
+processes and are never summed. But a dunning email is unambiguously a message telling
+the customer they are paying you — the same salience mechanism that creates sleeping
+dogs in voluntary retention (D-002), arriving through the billing path.
+
+**Resolution:** they remain separate *processes*, with an explicit causal *link* from
+one to the other. Dunning contact adds an increment to the customer's voluntary-churn
+hazard (`contact_fatigue_per_email`, on the logit scale). Nothing is summed; a
+mechanism is modelled.
+
+**Why it matters commercially:** without it, every evaluation prefers "email them more",
+because recovery rate rises monotonically with contact. Recovering the payment and
+losing the customer is not a win, and a metric that cannot express that will always
+recommend the wrong policy.
+
+**Stated honestly:** the fatigue magnitude is *assumed*, not measured — no public
+dataset gives the churn cost of a dunning email. Figure 4's right panel is therefore a
+sensitivity sweep showing where the policy ranking flips (~0.031) relative to our
+assumption (0.055), rather than a single number presented as fact.
+
+---
+
+## D-033 — A test caught the simulator inflating its own headline result
+
+**What happened.** `test_expired_cards_are_not_recoverable_by_retry` failed: expired
+cards were recovering 21.7% under aggressive retrying.
+
+**The bug.** `expired_card` had a gentle `attempt_decay` (0.90), so eight retries
+compounded to ~22% recovery. But retrying a genuinely expired card **cannot** work.
+The only recoveries come from the customer updating their card of their own accord, and
+that does not become more likely because you retried again. The decay for
+`needs_new_card` codes is now steep (0.30), so later attempts contribute almost nothing.
+
+**It changed the headline.** Before the fix, `aggressive` had the *highest* recovery
+rate and lost on value — a tradeoff story ("more recoveries, less money"). After the
+fix, aggressive's advantage disappears entirely: it uses 2.5x the retries and 3.9x the
+emails and recovers **no more** (48.6% vs 48.9%). It is strictly dominated and does not
+even win on the vendor's own metric.
+
+**The corrected result is cleaner and stronger.** The original required arguing a
+tradeoff; the corrected one says simply that the extra effort buys nothing. Worth
+recording that a test written to pin a *mechanism* found a bug that was flattering the
+conclusion — which is the direction that matters, since nobody investigates a result
+that looks good.
+
+**Consequence:** `recovery_scale` was re-solved (0.4533 → 0.4764) after the change, per
+the standing rule that calibration is re-run whenever a generative parameter moves.
+
+---
+
+## D-034 — The detailed dunning model is calibrated to agree with SubSim, then checked
+## against a second published figure it was NOT calibrated on
+
+**Alternative rejected:** replacing SubSim's aggregate involuntary-churn model outright.
+
+**Reason:** SubSim's single-Bernoulli model is what the Phase 0 calibration gates were
+tuned against. Replacing it would have re-opened calibration for no benefit — the
+aggregate model is adequate for overall churn and useless only for studying *retry
+policy*, which is what the new module exists for.
+
+So they coexist, and `calibrate_recovery_scale` solves for the scale that makes the
+detailed model's **passive** policy reproduce SubSim's `passive_recovery_rate` (0.42).
+Consistent by construction rather than by coincidence.
+
+**The check that makes this more than bookkeeping.** One parameter was fitted, against
+the *passive* band (published 30–45%). The model then reproduces the *dedicated
+dunning* figure at the other end without further tuning:
+
+| configuration | recovery |
+|---|---|
+| processor default, no updater | 41.9% ← calibrated here |
+| code-aware + account updater | 54.7% ← published band is 55–70%, not fitted |
+
+Landing at the lower edge of an independent published band, from a fit made at the
+other end, is a genuine out-of-sample check on the generative structure. Recorded as
+"lower edge", not "in the band" — it is 54.7%, not 62%.

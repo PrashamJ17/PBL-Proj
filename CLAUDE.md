@@ -28,14 +28,15 @@ though underpowered to test the consequence. Small-n: uplift beats random on onl
 
 ## Status
 
-**Phases 0-1 COMPLETE + 3 real-RCT validations.** 172 tests. CI green.
-**Next: Phase 2** — dunning / involuntary churn. The first thing that earns money.
+**Phases 0-1 done, 3 real-RCT validations, Phase 2 BUILT** (gate=revenue, open).
+200 tests. CI green.
+**Next: Phase 3** — survival hazard + CLV. Phase 2's gate needs a *client*, not code.
 
 | # | Phase | Status | Gate |
 |---|---|---|---|
 | 0 | SubSim + kill test | ✅ **done** | churn-score policy provably loses money |
 | 1 | Canonical schema, PIT feature store, ingest | ✅ **done** | leakage suite green in CI |
-| 2 | Dunning / involuntary churn + retry-timing model | ⬜ **next** | **first revenue — get a paying client** |
+| 2 | Dunning / involuntary churn + retry-timing model | 🟨 **built** | **first revenue — get a paying client (OPEN)** |
 | 3 | Discrete-time survival hazard + CLV | ⬜ | beats Cox/RSF/DeepSurv on public data; calibrated |
 | 4 | Hierarchical Bayesian CATE + abstention | ⬜ | **paper 2**; beats baselines on net revenue at small n |
 | 5 | Offer-ladder optimizer + reason codes + dashboard | ⬜ | owner can act without asking us |
@@ -78,17 +79,19 @@ keel/ingest/               stripe (pure, fixture-tested) · csv_ingest · subsim
 keel/sim/                  config · latents (copula) · hazard (ONE defn, two regimes)
                            subsim (panel) · counterfactual (exact τ, CRN, LADDER)
                            calibration (check, check_quadrants, calibrate_intercept)
-keel/experiments/          kill_test · leakage_penalty · figures
+keel/sim/dunning.py        decline codes, retry success, payday cycles, fatigue
+keel/policy/dunning.py     6 retry policies (processor_default … aggressive)
+keel/experiments/          kill_test · leakage_penalty · dunning · figures
 keel/benchmarks/           datasets (Hillstrom, Criteo, Lenta) · models · evaluate · small_n
                            spectrum (when uplift pays) · figures
-tests/                     172 tests — fairness, realism, edge cases, leakage gate
+tests/                     200 tests — fairness, realism, edge cases, leakage gate
 explainer/                 10 docs for non-technical evaluators/investors (see protocol)
 ```
 
 ## Commands
 
 ```bash
-make check      # lint + 172 tests + calibration gates — run before every commit
+make check      # lint + 200 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
@@ -134,8 +137,10 @@ Keep this file under ~120 lines. If it grows, cut history, not invariants.
 - **CP-04** — Criteo added. Uplift LOSES to outcome models there; reconciled by
   corr(τ,propensity) as the governing quantity (D-026, figure 3). Criteo file is
   treatment-sorted — prefix reads invalid (D-024).
-- **CP-05** — Lenta added as an OUT-OF-SAMPLE test of D-026: predicted to land between
-  advertising and churn, landed at +0.18 (D-031). Underpowered to test the consequence
-  (ATE only +7.4% lift). Two CI failures fixed — unpinned ruff rule set (D-028) and a
-  pandas-resolution assertion (D-030). 172 tests, CI green.
-  Next: Phase 2 dunning — first revenue.
+- **CP-05** — Lenta: out-of-sample test of D-026, predicted between advertising and
+  churn, landed +0.18 (D-031). Underpowered to test the consequence. CI fixes D-028/030.
+- **CP-06** — Phase 2 dunning BUILT. Code-aware retries +6.9pp over processor default
+  with 32% FEWER attempts; `aggressive` strictly dominated (D-033 — a test caught the
+  sim inflating its own result). Calibrated on the passive band, reproduces the
+  dedicated-dunning band un-tuned (D-034). 200 tests.
+  **Phase 2 gate (paying client) is OPEN — that is a sales task, not a code task.**

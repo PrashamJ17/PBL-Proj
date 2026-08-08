@@ -6,6 +6,54 @@ each choice in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
+## Phase 2 — Dunning and involuntary churn
+
+**The module that earns money. Technical work complete; the phase gate is a paying
+client and remains OPEN.**
+
+### Added
+
+- `keel/sim/dunning.py` — decline-code taxonomy, retry-success dynamics conditioned on
+  code / attempt / timing, payday cycles, and dunning fatigue.
+- `keel/policy/dunning.py` — six retry policies from `no_retry` to `aggressive`.
+- `keel/experiments/dunning.py` — valuation in money, not recovery rate.
+- Figure 4 (`fig04_dunning_value.png`).
+
+### Results (n=40,000 failed payments)
+
+| policy | recovery | attempts | emails | net value |
+|---|---:|---:|---:|---:|
+| processor_default | 42.0% | 3.09 | 2.47 | 17.15M |
+| code_aware | **48.9%** | 2.10 | 2.03 | 20.24M |
+| **code_aware_quiet** | 48.8% | 2.09 | 1.37 | **20.47M** |
+| aggressive | 48.6% | 5.29 | 5.29 | 19.41M |
+
+**Knowing which payment failed beats trying harder.** Code-aware scheduling gains
++6.9pp over the processor default while using **32% fewer attempts** — the processor
+already tells you the decline reason and the default schedule ignores it.
+
+**`aggressive` is strictly dominated.** 2.5x the retries, 3.9x the emails, and it
+recovers *no more*. It does not even win on the vendor's own headline metric.
+
+**Emailing a third less is worth +227k** at identical recovery — the timing does the
+work, not the nagging.
+
+### Notable
+
+- **A test caught the simulator inflating its own headline** (D-033). Expired cards were
+  "recovering" 21.7% because retries compounded — which cannot happen. Fixing it removed
+  aggressive's only advantage and produced a cleaner finding.
+- Calibrated on the passive band (30–45%), the model then reproduces the *dedicated
+  dunning* figure (54.7% against a published 55–70%) **without further tuning** — an
+  out-of-sample check on the generative structure (D-034).
+- Dunning fatigue links voluntary and involuntary churn without merging them (D-032).
+  Its magnitude is assumed, not measured, so figure 4 shows a sensitivity sweep: the
+  policy ranking flips at 0.031 against our assumption of 0.055.
+
+**200 tests passing.**
+
+---
+
 ## Lenta — an out-of-sample test of the correlation principle
 
 **Third real RCT, added specifically to try to break D-026.**

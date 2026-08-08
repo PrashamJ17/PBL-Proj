@@ -689,3 +689,105 @@ the sharpest available statement of the refinement to D-020.
 
 **172 tests passing.** Figure 3 now carries five settings and states on its face that
 the ordering among the four positive-correlation points is within noise.
+
+---
+
+## Phase 2 — Dunning and involuntary churn
+
+**Goal (plan §12):** the module that earns money. Involuntary churn is 20-40% of all
+churn, needs almost no causal machinery, and most small businesses do nothing about it.
+**Gate: a paying client** — which is a sales task, not a code task, and remains open.
+
+### Step 2.1 — The generative model
+
+`keel/sim/dunning.py`. Six decline codes with distinct behaviour under retry:
+`insufficient_funds` (40%, timing-driven, payday-sensitive), `expired_card` (18%,
+unfixable by retry), `do_not_honor`, `generic_decline`, `processing_error` (transient,
+immediate retry works), `lost_or_stolen_card` (unrecoverable).
+
+Kept **separate from SubSim's aggregate model** rather than replacing it (D-034).
+SubSim's single Bernoulli is what the Phase 0 gates were tuned against and is adequate
+for overall churn; it is useless only for studying retry *policy*, which is what this
+module is for. `calibrate_recovery_scale` solves for the scale that makes the passive
+policy reproduce SubSim's 0.42, so the two agree by construction.
+
+### Step 2.2 — Policies
+
+`keel/policy/dunning.py`. Six, from `no_retry` to `aggressive`. The interesting one is
+`code_aware`: it conditions on the decline reason the processor **already gave you** —
+retry `processing_error` immediately, snap `insufficient_funds` to the next payday,
+don't burn attempts on `expired_card`, stop after one on `lost_or_stolen_card`. No
+machine learning involved.
+
+### Step 2.3 — A test caught the simulator flattering itself ⭐
+
+`test_expired_cards_are_not_recoverable_by_retry` failed: expired cards recovered 21.7%
+under aggressive retrying. The cause was a gentle `attempt_decay` (0.90) letting eight
+retries compound. But retrying a genuinely expired card cannot work — recoveries come
+only from the customer updating their card, which does not become likelier because you
+retried again.
+
+**This changed the headline** (D-033). Before the fix, `aggressive` had the highest
+recovery rate and lost on value: a tradeoff story. After, its advantage vanishes
+entirely — it recovers *no more* than a code-aware schedule while using 2.5x the
+retries.
+
+Worth recording that the test was written to pin a *mechanism*, and it found a bug
+flattering the conclusion. That is the direction that matters, because nobody
+investigates a result that looks good.
+
+`recovery_scale` re-solved after the change: 0.4533 → 0.4764.
+
+### Step 2.4 — Results
+
+```
+policy               recovery  attempts  emails    net value
+processor_default       42.0%     3.09     2.47   17,149,952
+fixed_smart             44.8%     3.67     2.47   18,414,361
+code_aware              48.9%     2.10     2.03   20,242,692
+code_aware_quiet        48.8%     2.09     1.37   20,469,358
+aggressive              48.6%     5.29     5.29   19,406,983
+```
+
+Three findings:
+
+1. **Knowing which payment failed beats trying harder.** +6.9pp over the processor
+   default using **32% fewer attempts**.
+2. **`aggressive` is strictly dominated** — 2.5x retries, 3.9x emails, no more
+   recovered. It does not even win on the vendor's own metric.
+3. **Emailing a third less is worth +227k** at identical recovery. The timing does the
+   work, not the nagging.
+
+### Step 2.5 — Out-of-sample calibration check
+
+One parameter was fitted, against the *passive* band (published 30-45%). The model then
+reproduces the *dedicated dunning* figure at the other end **without further tuning**:
+
+| configuration | recovery |
+|---|---|
+| processor default, no updater | 41.9% ← fitted here |
+| code-aware + account updater | 54.7% ← published 55-70%, not fitted |
+
+Recorded as "lower edge of the band", not "in the band" — it is 54.7%, not 62%.
+
+### Step 2.6 — Economics and honesty about the assumption
+
+`keel/experiments/dunning.py` values policies in money, not recovery rate: lifetime
+value retained, minus lifetime value destroyed by contact (D-032), minus operational
+cost. Recovering a payment retains a *customer*, not an invoice — and every dunning
+email is also a reminder that they are paying you.
+
+The fatigue magnitude is **assumed, not measured** — no public dataset gives the churn
+cost of a dunning email. Figure 4's right panel is therefore a sensitivity sweep: the
+policy ranking flips at ~0.031 against our assumption of 0.055. Stating where the
+conclusion breaks is more useful than asserting the parameter.
+
+**200 tests passing.**
+
+---
+
+## Phase 2 status: **BUILT — gate OPEN**
+
+The technical work is done and the calibration is externally checked. The gate is a
+paying client, and no amount of further code closes it. The realistic next step is the
+Churn Autopsy outreach in `explainer/06`, not another module.
