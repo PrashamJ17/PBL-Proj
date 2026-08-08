@@ -6,6 +6,48 @@ each choice in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
+## Lenta — an out-of-sample test of the correlation principle
+
+**Third real RCT, added specifically to try to break D-026.**
+
+### The prediction, made before downloading
+
+Retail SMS promotion should fall **between** advertising (+0.61) and subscription
+retention (−0.19) on `corr(treatment effect, outcome propensity)`.
+
+### Result: +0.177 — as predicted
+
+| setting | corr | uplift advantage | % predicted negative |
+|---|---:|---:|---:|
+| Hillstrom (mens) | +0.63 | +4.7% | 0.2% |
+| Criteo | +0.61 | +0.6% | 19.2% |
+| **Lenta** | **+0.18** | **+10.4%** | 24.9% |
+| Hillstrom (womens) | +0.07 | +3.9% | 10.2% |
+| SubSim (churn) | −0.19 | +106.8% | 25.7% |
+
+### What is NOT confirmed
+
+Whether the *consequence* follows. Lenta's +10.4% uplift advantage is nominally the
+largest of the positive-correlation settings, but the intervals make it meaningless:
+class-transform [359, 1601] vs outcome-propensity [309, 1477], random at [343, 1007].
+**Nothing is distinguishable from anything.**
+
+Lenta is underpowered rather than noisy — ATE +0.0075 on a 10.3% base (7.4% lift,
+against Hillstrom's 42.6%). Its small-n sweep is flat from n=500 to n=20,000: more data
+does not help because there is barely a signal to learn.
+
+**One confirming observation, not two** (D-031).
+
+### Secondary observation
+
+24.9% of Lenta customers are predicted harmed — comparable to churn's 25.7% — yet
+uplift still buys almost nothing. The share of harmed customers is not what matters;
+their **correlation with outcome propensity** is.
+
+**172 tests passing.**
+
+---
+
 ## Criteo benchmark — and the quantity that reconciles everything
 
 **Second real dataset, an apparently contradictory result, and the principle that

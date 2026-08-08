@@ -657,3 +657,48 @@ wrong for a library other people install. The correct discipline is that tests a
 versions, so `make check` passing is not proof CI will pass. The mitigation is
 discipline, not machinery — if a future failure is again a version divergence rather
 than a real defect, a constraints file for CI becomes worth the complexity.
+
+---
+
+## D-031 — Lenta: the correlation principle survives an out-of-sample prediction
+
+**The prediction, made before the data was downloaded.** D-026 proposed that
+`corr(treatment effect, outcome propensity)` governs whether uplift modelling pays.
+Lenta (retail SMS promotion) was added specifically as a test: retail was predicted to
+fall **between** advertising (Criteo, +0.61) and subscription retention (−0.19). A
+prediction that cannot fail is not worth making.
+
+**Result: +0.177.** Between the two, as predicted.
+
+| setting | corr | uplift advantage | % predicted negative |
+|---|---:|---:|---:|
+| Hillstrom (mens) | +0.63 | +4.7% | 0.2% |
+| Criteo | +0.61 | +0.6% | 19.2% |
+| **Lenta** | **+0.18** | **+10.4%** | 24.9% |
+| Hillstrom (womens) | +0.07 | +3.9% | 10.2% |
+| SubSim (churn) | −0.19 | +106.8% | 25.7% |
+
+**What is confirmed and what is not — stated separately, because they differ.**
+
+*Confirmed:* the correlation lands where predicted. Retail promotion is less coupled
+than advertising and far less adversarial than retention.
+
+*Not confirmed:* whether the *consequence* follows. Lenta's uplift advantage is
+nominally +10.4%, the largest of the positive-correlation settings, which is consistent
+with the principle — but the confidence intervals make it meaningless:
+class-transform [359, 1601] against outcome-propensity [309, 1477], with random at
+[343, 1007]. **Nothing is distinguishable from anything.**
+
+**Why: Lenta is underpowered, not noisy.** The ATE is +0.0075 on a 10.3% base — a 7.4%
+lift, against Hillstrom's 42.6% and Criteo's 27.3%. The small-n sweep is flat from
+n=500 to n=20,000, with every method's mean inside one standard deviation of every
+other's. More training data does not help because there is barely a signal to learn.
+
+**The honest summary:** Lenta supports the principle on the axis it was predicted to
+land on, and is too underpowered to test the consequence. It is one confirming
+observation, not two.
+
+**A useful secondary observation:** 24.9% of Lenta customers are predicted to be harmed
+— comparable to the churn setting's 25.7% — yet uplift modelling still buys almost
+nothing. This reinforces the D-026 refinement: **the share of harmed customers is not
+what matters; their correlation with outcome propensity is.**

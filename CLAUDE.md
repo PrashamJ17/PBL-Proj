@@ -12,21 +12,23 @@ small-sample causal uncertainty**. Keel decides *who to treat, with what, at wha
 — and **abstains** when the CATE posterior is too wide. Vertical: subscription
 (contractual) first; e-commerce/BTYD is Phase 7.
 
-**Proven (Phase 0, 6/6 seeds):** churn-score targeting loses money, *worse than random*;
-abstention beats ranking (209 > 718 treated); sleeping dogs 48% of top risk decile vs 2%
-of bottom. **(Phase 1):** PIT features prevent a **0.35 AUC inflation** (0.603 vs 0.954).
+**Proven (Phase 0):** churn-score targeting loses money, worse than random 6/6 seeds;
+abstention beats ranking (209 > 718). **(Phase 1):** PIT features prevent a 0.35 AUC
+inflation (0.603 vs 0.954).
 
-**Real-data checks (Hillstrom + Criteo RCTs).** Worse-than-random did NOT replicate
-(D-020). **Governing quantity = corr(τ, propensity)** (D-026): Criteo +0.61 → uplift
-adds 0.6%; Hillstrom +0.07 → 3.9%; churn −0.19 → **+107%**. When orderings coincide the
-outcome model wins (easier estimand). Retention is the adversarial case. Small-n: uplift
-beats random on only **75% of seeds at n=500** (D-023). Prior art: Ascarza, JMR 2018.
+**Real-data checks (Hillstrom, Criteo, Lenta RCTs).** Worse-than-random did NOT
+replicate (D-020). **Governing quantity = corr(τ, propensity)** (D-026): Criteo +0.61 →
+uplift adds 0.6%; Lenta +0.18 → 10.4%; Hillstrom +0.07 → 3.9%; churn −0.19 → **+107%**.
+When orderings coincide the outcome model wins (easier estimand). Retention is the
+adversarial case. Lenta was an **out-of-sample prediction and it landed** (D-031),
+though underpowered to test the consequence. Small-n: uplift beats random on only
+**75% of seeds at n=500** (D-023). Prior art: Ascarza, JMR 2018.
 
 ---
 
 ## Status
 
-**Phases 0-1 COMPLETE + external validation (Hillstrom, Criteo).** 167 tests.
+**Phases 0-1 COMPLETE + 3 real-RCT validations.** 172 tests. CI green.
 **Next: Phase 2** — dunning / involuntary churn. The first thing that earns money.
 
 | # | Phase | Status | Gate |
@@ -40,8 +42,8 @@ beats random on only **75% of seeds at n=500** (D-023). Prior art: Ascarza, JMR 
 | 6 | Holdout infra + incrementality reports + cancel widget | ⬜ | **real client ROI number**; paper 3 |
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
 
-**Papers:** merge 1+2 → small-*n* abstention (simulator as instrument, finding as lead;
-fig 2 is real-data support) · 3) margin-aware offer allocation.
+**Papers:** merge 1+2 → small-*n* abstention + the corr(τ,propensity) principle
+(fig 2, 3 = real-data support) · 3) margin-aware offer allocation.
 
 ---
 
@@ -77,16 +79,16 @@ keel/sim/                  config · latents (copula) · hazard (ONE defn, two r
                            subsim (panel) · counterfactual (exact τ, CRN, LADDER)
                            calibration (check, check_quadrants, calibrate_intercept)
 keel/experiments/          kill_test · leakage_penalty · figures
-keel/benchmarks/           datasets (Hillstrom, Criteo) · models · evaluate · small_n
+keel/benchmarks/           datasets (Hillstrom, Criteo, Lenta) · models · evaluate · small_n
                            spectrum (when uplift pays) · figures
-tests/                     167 tests — fairness, realism, edge cases, leakage gate
+tests/                     172 tests — fairness, realism, edge cases, leakage gate
 explainer/                 10 docs for non-technical evaluators/investors (see protocol)
 ```
 
 ## Commands
 
 ```bash
-make check      # lint + 167 tests + calibration gates — run before every commit
+make check      # lint + 172 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
@@ -125,16 +127,15 @@ Keep this file under ~120 lines. If it grows, cut history, not invariants.
 
 ## Checkpoints
 
-- **CP-01** — Phase 0 complete. SubSim calibrated (4.5% monthly voluntary churn, 30%
-  involuntary share, 17% sleeping dogs, mean τ=−0.010), kill test passed 6/6 seeds,
-  figure 1 generated, 58 tests green.
-- **CP-02** — Phase 1 complete. Canonical schema, PIT feature store, leakage suite,
-  Stripe/CSV/SubSim ingest. Leakage penalty measured: 0.603 correct vs 0.954
-  unfiltered. 137 tests green, 4 CI gates.
-- **CP-03** — External validation on Hillstrom RCT. Worse-than-random did not replicate
-  (no sleeping dogs in that data) → claim scoped, D-020. New real-data finding: uplift
-  unreliable below n≈2000 (75% win rate at n=500) → D-023, figure 2.
+- **CP-01** — Phase 0 complete. SubSim calibrated, kill test 6/6 seeds, figure 1.
+- **CP-02** — Phase 1 complete. Canonical schema, PIT store, leakage suite, ingest.
+- **CP-03** — Hillstrom: worse-than-random did NOT replicate → claim scoped (D-020).
+  Small-n unreliability found (75% win rate at n=500) → D-023, figure 2.
 - **CP-04** — Criteo added. Uplift LOSES to outcome models there; reconciled by
   corr(τ,propensity) as the governing quantity (D-026, figure 3). Criteo file is
-  treatment-sorted — prefix reads invalid (D-024). 167 tests green.
+  treatment-sorted — prefix reads invalid (D-024).
+- **CP-05** — Lenta added as an OUT-OF-SAMPLE test of D-026: predicted to land between
+  advertising and churn, landed at +0.18 (D-031). Underpowered to test the consequence
+  (ATE only +7.4% lift). Two CI failures fixed — unpinned ruff rule set (D-028) and a
+  pandas-resolution assertion (D-030). 172 tests, CI green.
   Next: Phase 2 dunning — first revenue.

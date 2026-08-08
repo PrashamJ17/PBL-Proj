@@ -41,7 +41,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from keel.benchmarks.datasets import load_criteo, load_hillstrom
+from keel.benchmarks.datasets import load_criteo, load_hillstrom, load_lenta
 from keel.benchmarks.evaluate import evaluate_policy
 from keel.benchmarks.models import (
     ClassTransform,
@@ -147,6 +147,9 @@ def collect() -> list[Point]:
         ("Criteo", "advertising", load_criteo(sample_rows=1_500_000, seed=0)),
         ("Hillstrom (mens)", "promotional email", load_hillstrom("mens")),
         ("Hillstrom (womens)", "promotional email", load_hillstrom("womens")),
+        # Added AFTER the principle was formulated, as an out-of-sample test:
+        # retail promotion was predicted to fall between advertising and churn.
+        ("Lenta", "retail promotion", load_lenta()),
     ]:
         corr, adv, neg = measure(rct)
         points.append(Point(label, domain, corr, adv, neg, len(rct)))
@@ -161,6 +164,7 @@ def figure_3(points: list[Point] | None = None, out: Path | None = None) -> Path
     colours = {
         "advertising": "#C62828",
         "promotional email": "#EF6C00",
+        "retail promotion": "#1565C0",
         "subscription retention": "#2E7D32",
     }
 
@@ -171,9 +175,10 @@ def figure_3(points: list[Point] | None = None, out: Path | None = None) -> Path
     # each other at corr ~0.6, so automatic placement collides.
     offsets = {
         "SubSim (churn)": (55, -6),
-        "Hillstrom (womens)": (0, 26),
-        "Criteo": (-135, 4),
-        "Hillstrom (mens)": (-30, 30),
+        "Hillstrom (womens)": (-6, -36),
+        "Lenta": (4, 30),
+        "Criteo": (-78, -34),
+        "Hillstrom (mens)": (-6, 30),
     }
     for p in points:
         ax.scatter(p.correlation, p.uplift_advantage, s=190,
@@ -187,12 +192,12 @@ def figure_3(points: list[Point] | None = None, out: Path | None = None) -> Path
         )
 
     ax.set_ylim(-14, 125)
-    ax.set_xlim(-0.32, 0.78)
+    ax.set_xlim(-0.32, 0.82)
 
     ax.axvspan(-0.32, 0.0, color="#2E7D32", alpha=0.06, lw=0, zorder=0)
     ax.annotate("uplift PAYS\norderings conflict", xy=(-0.295, 62),
                 fontsize=10, color="#2E7D32", ha="left", weight="bold")
-    ax.annotate("uplift barely helps\nsame ordering, harder to estimate", xy=(0.16, 22),
+    ax.annotate("uplift barely helps\nsame ordering, harder to estimate", xy=(0.26, 52),
                 fontsize=10, color="#C62828", ha="left")
 
     ax.set_xlabel("corr( treatment effect , outcome propensity )", fontsize=11)
@@ -207,9 +212,9 @@ def figure_3(points: list[Point] | None = None, out: Path | None = None) -> Path
     # Four points is a contrast, not a fitted relationship. Deliberately no trend line.
     ax.text(
         0.5, -0.19,
-        "Four settings, not a fitted curve: the ordering among the three positive-correlation "
-        "points is within noise.\nThe signal is the order-of-magnitude gap at "
-        "negative correlation.",
+        "Five settings, not a fitted curve: the ordering among the four positive-correlation "
+        "points is within noise\n(their confidence intervals overlap heavily). The signal is "
+        "the order-of-magnitude gap at negative correlation.",
         transform=ax.transAxes, ha="center", fontsize=8.5, color="#546E7A",
     )
 

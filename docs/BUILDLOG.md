@@ -618,3 +618,74 @@ difference (D-027).
 
 **167 tests passing.** Criteo tests lock in the treatment-sorting trap, the exclusion of
 `exposure` from covariates, and the coupling finding as regressions.
+
+---
+
+## Lenta — out-of-sample test of the correlation principle
+
+### Step L.1 — Getting the data
+
+138MB from `sklift.s3.eu-west-2.amazonaws.com` at ~20 KB/s — ~100 minutes, measured
+cleanly after killing four competing curl processes from an earlier retry storm. No
+faster mirror exists (the HuggingFace hit for "lenta" is a Russian *news* corpus, not
+this dataset), so unlike Criteo there was no 80x shortcut to find.
+
+Loader written while the download ran, applying both Criteo lessons up front: the
+single-arm guard, and a **60-feature cap**. The cap matters for the comparison — Lenta
+has ~190 columns against Criteo's 12, and letting it use all of them would confound
+"more features" with "different domain" in exactly the measurement under test.
+
+### Step L.2 — The prediction
+
+Recorded before the data landed: retail promotion should fall **between** advertising
+(+0.61) and subscription retention (−0.19).
+
+**Result: +0.177.** As predicted.
+
+### Step L.3 — Main result
+
+```
+lenta[response]: n=687,029  treated 75.1%  ATE +0.0075 (+7.4% lift)
+
+policy               targeted  uplift/1000  incremental             95% CI    qini
+treat_all              343515         6.77       2326.1                 --      --
+class_transform        103054         9.82       1011.5    [359.0, 1601.4]   201.7
+s_learner              103054         8.92        919.4    [284.8, 1496.5]   182.2
+outcome_propensity     103054         8.89        916.4    [309.3, 1477.2]   160.7
+t_learner              103054         7.98        822.7    [253.7, 1330.5]    25.6
+response_model         103054         7.36        758.5    [152.9, 1345.8]   145.5
+random                 103054         6.85        705.8    [343.1, 1006.6]     0.0
+```
+
+Best uplift beats best outcome by 10.4% — **but every interval overlaps every other,
+including random's.** With 343,515 test customers, nothing is distinguishable.
+
+### Step L.4 — Small-n sweep: flat
+
+| train n | outcome_prop | t_learner | s_learner | class_transform |
+|---|---|---|---|---|
+| 500 | 659±215 | 599±202 | 524±146 | 578±198 |
+| 20,000 | 660±206 | 473±140 | 510±153 | 658±201 |
+
+**Nothing improves with more data.** Lenta is underpowered rather than noisy: at a 7.4%
+lift there is barely a signal to learn, so 40x more training data changes nothing.
+
+### Step L.5 — What this does and does not establish
+
+*Establishes:* the correlation lands where predicted. That is a genuine out-of-sample
+hit for D-026 — the principle was formulated on Hillstrom and Criteo, and Lenta was
+chosen because it should fall between them.
+
+*Does not establish:* that the consequence follows. The +10.4% advantage is nominally
+the largest among positive-correlation settings, consistent with the principle, but the
+intervals make it meaningless.
+
+**One confirming observation, not two** (D-031).
+
+**Secondary observation worth keeping:** 24.9% of Lenta customers are predicted harmed —
+comparable to churn's 25.7% — yet uplift buys almost nothing. The *share* of harmed
+customers is not what matters; their **correlation with outcome propensity** is. That is
+the sharpest available statement of the refinement to D-020.
+
+**172 tests passing.** Figure 3 now carries five settings and states on its face that
+the ordering among the four positive-correlation points is within noise.
