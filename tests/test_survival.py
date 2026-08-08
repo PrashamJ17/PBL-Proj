@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from keel.benchmarks.datasets import DATA_DIR
 from keel.benchmarks.survival_data import (
     EXCLUDED_FROM_TELCO,
     SUBSIM_FEATURES,
@@ -54,10 +55,10 @@ from keel.models.survival.metrics import (
 )
 from keel.sim import SimConfig, simulate
 
-TELCO_PRESENT = (
-    __import__("keel.benchmarks.datasets", fromlist=["DATA_DIR"]).DATA_DIR
-    / "telco_churn.csv"
-).exists()
+TELCO_PATH = DATA_DIR / "telco_churn.csv"
+#: Presence is not completeness -- the same lesson as D-029. A download in progress
+#: leaves a file that exists and then fails to parse, so check the byte count too.
+TELCO_PRESENT = TELCO_PATH.exists() and TELCO_PATH.stat().st_size > 900_000
 needs_telco = pytest.mark.skipif(not TELCO_PRESENT, reason="telco not downloaded")
 
 
@@ -516,9 +517,7 @@ def test_total_charges_is_excluded_because_it_encodes_the_duration():
     """The leak every published Telco survival analysis ships. `TotalCharges` is
     cumulative billing, so it is very nearly `MonthlyCharges * tenure` -- a direct
     encoding of the outcome being predicted."""
-    from keel.benchmarks.datasets import DATA_DIR
-
-    raw = pd.read_csv(DATA_DIR / "telco_churn.csv")
+    raw = pd.read_csv(TELCO_PATH)
     charges = pd.to_numeric(raw["TotalCharges"], errors="coerce").fillna(0.0)
     assert abs(np.corrcoef(charges, raw["tenure"])[0, 1]) > 0.8
 
@@ -533,9 +532,7 @@ def test_total_charges_is_excluded_because_it_encodes_the_duration():
 def test_telco_drops_the_customers_with_no_completed_period():
     """11 customers have tenure 0. Coercing them to 1 would invent a month of
     survival for the customers least likely to have had one."""
-    from keel.benchmarks.datasets import DATA_DIR
-
-    raw = pd.read_csv(DATA_DIR / "telco_churn.csv")
+    raw = pd.read_csv(TELCO_PATH)
     data = load_telco()
     assert len(data) == len(raw) - (raw["tenure"] == 0).sum()
     assert data.duration.min() >= 1

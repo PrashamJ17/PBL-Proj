@@ -1,11 +1,11 @@
 % ---------------------------------------------------------------------------
 % Keel -- merged paper 1+2 (see docs/DECISIONS.md D-042 for the positioning).
 %
-% STATUS: DRAFT. Sections 2-6 and 8 report experiments that are implemented,
-% tested and reproducible from this repository. Section 7 specifies the
-% hierarchical estimator and its abstention rule but reports NO results,
-% because Phase 4 is not built. Every number below is regenerable -- see
-% papers/paper1/README.md for the command that produces each table.
+% STATUS: DRAFT. Sections 4-7 report experiments that are implemented, tested
+% and reproducible from this repository. Section 8 specifies the hierarchical
+% estimator and its abstention rule but reports NO results, because Phase 4 is
+% not built -- do not remove its \todo marker until it does. Every number below
+% is regenerable; papers/paper1/README.md lists the command for each table.
 %
 % Not compiled in this environment (no TeX installation). Compile with:
 %   latexmk -pdf main.tex
@@ -331,7 +331,8 @@ correlation measures.
 
 A relationship inferred from three points is a description. To make it a claim we
 recorded a prediction in the repository before downloading a fourth dataset: retail
-SMS promotion (Lenta, 687{,}029 customers) should fall \emph{between} advertising
+SMS promotion (Lenta, 687{,}029 customers; \citealp{sklift}) should fall
+\emph{between} advertising
 ($+0.61$) and subscription retention ($-0.19$).
 
 \textbf{Result: $+0.177$.} As predicted.
@@ -405,7 +406,7 @@ nuisance, which is what absolute calibration requires; and subscription billing 
 genuinely discrete, so tied event times are simultaneity rather than a tie problem.
 
 \paragraph{Calibration is the point, not concordance.} We evaluate on the Telco
-customer-churn dataset (7{,}032 real subscription customers), excluding
+customer-churn dataset \citep{telco} (7{,}032 real subscription customers), excluding
 \texttt{TotalCharges}, which correlates with tenure at $r = 0.83$ and is therefore a
 direct encoding of the duration being predicted --- an exclusion that published
 Telco survival analyses routinely omit.
