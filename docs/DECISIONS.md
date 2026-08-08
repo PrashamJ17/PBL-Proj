@@ -989,3 +989,255 @@ then *EJOR* or *Decision Support Systems*, which have published this line. **Not
 **Also check before drafting:** Verbeke et al. on cost-sensitive causal classification
 and "To do or not to do: cost-sensitive causal decision-making" — close to the planned
 paper 3.
+
+---
+
+## D-043 — Survival is modelled in discrete time on a person-period frame, not with Cox
+
+**Alternative rejected:** Cox proportional hazards, which is the default in the
+survival literature and would have been less work — `lifelines` is one call.
+
+**Reason.** Four, specific to what this project needs rather than to survival analysis
+in general.
+
+1. **Time-varying covariates are the point, and Cox handles them badly *here*.**
+   Engagement, support pain and payment failures move every month and are what carry
+   the churn signal. Cox can take them via a start-stop dataset — and that construction
+   is exactly where availability leakage is easiest to introduce and hardest to see.
+   In the person-period form each row **is** one point-in-time feature build, so the
+   Phase 1 guarantee (`FeatureStore._visible`, D-015) extends to the survival model
+   with no new machinery. The representation and the safeguard are the same object.
+
+2. **We need absolute probabilities, not a ranking.** CLV is
+   `sum_t margin * S(t) / (1+d)^t` — a functional of the *level* of the survival
+   curve. Cox's partial likelihood profiles the baseline hazard out as a nuisance and
+   absolute survival arrives afterwards via Breslow, which nothing in the fit
+   optimised. A model can rank perfectly and value a customer at twice their worth.
+
+3. **Proportional hazards is false in subscriptions and cheap to drop.** A
+   month-to-month customer and an annual one do not share a baseline hazard scaled by
+   a constant; the shapes differ. Here the baseline is a free function of the period
+   and covariate-by-period interactions cost nothing.
+
+4. **Billing is genuinely discrete.** Churn happens at a renewal boundary. Tied event
+   times are not a nuisance to be approximated away — they are simultaneous events in a
+   monthly cycle, which is what the data actually is.
+
+**Cost, stated plainly:** the frame is `sum_i d_i` rows rather than `n`, i.e. larger by
+the mean duration. Irrelevant at thousands of customers; it would matter at tens of
+millions. And discretising *continuous* data costs real resolution — see the GBSG2
+result, where we lose.
+
+**Consequence:** any split of a person-period frame must be **by subject, not by row**.
+Rows from one customer in consecutive months share covariates and an outcome, so a
+row-wise split leaks. `test_calibration_split_is_by_subject_not_by_row` enforces it for
+the isotonic calibration step, which is the one place inside the model where a split
+happens.
+
+---
+
+## D-044 — Competing risks are combined at the survival level, never at the label level
+
+**The tension.** Invariant 5 says voluntary and involuntary churn stay separate
+processes and are never summed. But a survival curve has to account for both: a
+customer lost to an expired card is not available to be lost voluntarily.
+
+**Resolution:** a **separate cause-specific hazard per cause**, sharing nothing but the
+at-risk structure. They meet only in
+
+```
+S(t)     = prod_{s<=t} (1 - sum_k h_k(s))
+CIF_k(t) = sum_{s<=t} h_k(s) * S(s-1)
+```
+
+No label is ever merged. Each cause keeps its own model, its own coefficients and its
+own interpretation, and `test_each_cause_keeps_its_own_model` asserts the two fitted
+hazards actually differ — otherwise the split would be decorative.
+
+**Why this is not the error D-001 forbids.** D-001 objects to fitting one binary
+`churned` target, which makes a third of the outcome unaddressable by the model meant
+to explain it. Composing separately-estimated cause-specific hazards is the opposite
+operation: the split survives all the way to the output, and
+`S(t) + sum_k CIF_k(t) = 1` holds exactly (tested).
+
+**What it buys commercially.** The CLV shortfall decomposes by cause with **no
+residual** — `sum_k shortfall_k = V0 - V` exactly — so "72% of the leak is voluntary,
+28% is billing" is a measurement rather than an apportionment. Those two have different
+fixes and, per Phase 2, wildly different effort-to-recovery ratios. A blended churn
+number cannot express the distinction.
+
+**One honest wrinkle:** the cause-specific hazards are fitted independently, so their
+sum can exceed 1 for a customer every model considers doomed. It is clipped. The clip
+rate is worth watching rather than hiding; a joint multinomial fit would remove the
+issue and is the obvious refinement if it ever bites.
+
+---
+
+## D-045 — The headline survival metric is the integrated Brier score, not concordance
+
+**Alternative rejected:** reporting Harrell's C, as essentially the whole survival
+literature does.
+
+**Reason.** Concordance is a *rank* statistic. It cannot distinguish a model that says
+"you have a 90% chance of still being here in a year" from one that says 60%, provided
+they order customers the same way. CLV multiplies that number by money, so the
+distinction is the entire product.
+
+**But calibration error alone is worse**, and this was a live trap rather than a
+hypothetical. `cal_mae` on Telco: Kaplan-Meier **0.0268**, Cox 0.0439. The model with
+no covariates at all beats the covariate model, because a marginal prediction is
+trivially calibrated — it is right on average by construction. Reporting calibration
+error as the headline would have made "predict the average for everyone" the winning
+strategy.
+
+**So the headline is the integrated Brier score**, a proper scoring rule, which
+penalises miscalibration *and* lack of discrimination together. Kaplan-Meier scores
+0.1823 there against 0.0824 for the discrete model — no longer competitive at all. The
+rank metric and the calibration diagnostics are reported beside it, never instead of
+it, and `KaplanMeierBaseline` stays in every table specifically so this failure mode
+is visible rather than argued about.
+
+**A correction that had to be made to D-calibration.** `S(T) ~ Uniform(0,1)` holds for
+*continuous* distributions. On a monthly grid `S(T_i)` lands at the bottom of the
+interval the event fell in, so the top bin is systematically starved. Measured on a
+correctly-specified synthetic fit: chi2 = **61.7** using `S(t)` against **2.3** using
+the interval midpoint `(S(t) + S(t-))/2`. The rejection was an artifact of the grid,
+not a defect of the model. The midpoint is the standard randomised-PIT correction for
+discrete distributions, and the harness applies it to **every** model through one code
+path — the left limit is just `survival_at(X, t - 1e-9)`, well defined for any step
+function. Applying it to our model alone would have been exactly the asymmetry this
+project exists to avoid.
+
+---
+
+## D-046 — CLV is capped at the observed support and refuses to extrapolate
+
+**Alternative rejected:** the standard `ARPU / churn_rate` formula, or equivalently
+summing the survival curve to infinity.
+
+**Reason.** That formula is the sum of an infinite geometric series, so it assumes a
+**constant hazard forever**. Retention hazards decline with tenure — D-004 built that
+in deliberately, and measured `early_late_hazard_ratio ~ 2.0` — so a constant-hazard
+extrapolation is not merely uncertain, it is *biased*. Worse, the survival model has no
+information whatsoever about periods beyond its training window: the curve keeps
+returning numbers, and they are the tail assumption talking, not the data.
+
+**Implementation:** `clv()` takes `observed_support` and raises `ExtrapolationError`
+when the horizon exceeds it. A warning was rejected — a warning in a notebook is a
+warning nobody reads. `allow_extrapolation=True` exists, so the assumption becomes a
+visible line of code owned by whoever wrote it.
+
+**Two smaller choices in the same formula, for the record.** Margin rather than
+revenue, because revenue-based CLV overstates every customer by the cost of serving
+them and overstates the expensive ones most — precisely the ones a retention budget
+would then chase. And discounting compounded monthly rather than `annual/12`, which
+differs by ~5% of the rate and compounds again over a multi-year horizon.
+
+---
+
+## D-047 — Telco's `TotalCharges` is a duration proxy, and the split cannot be temporal
+
+Two decisions about the public dataset, both worth naming because both are places where
+the obvious move is wrong.
+
+**`TotalCharges` is excluded.** It is cumulative billing to date, so it is very nearly
+`MonthlyCharges * tenure`: measured **r = 0.83** with tenure. As a fixed covariate in a
+survival model it is a direct encoding of the duration being predicted. It is named in
+`EXCLUDED_FROM_TELCO` with its reason, and `test_total_charges_is_excluded_because_it_
+encodes_the_duration` asserts both the exclusion and the correlation, so the reason
+cannot rot away from the rule.
+
+**The split is by subject, not temporal, and this is an exception to invariant 1.**
+Invariant 1 requires temporal splits, and it should be — it is what prevents the
+0.35 AUC inflation measured in D-016. But Telco and GBSG2 carry **no calendar time at
+all**: there is only tenure, which *is* the outcome. There is no "train on months < T"
+available to perform, so a random subject-level split is the only honest option and is
+what the survival literature uses for these sets. Where calendar time does exist —
+SubSim, and any real tenant — the temporal split applies unchanged.
+
+Recorded rather than glossed, because a silent exception to an invariant is how
+invariants stop meaning anything.
+
+---
+
+## D-048 — Two evaluation bugs, both caught by an external check rather than by reading
+
+Neither was in the model. Both were in the metric, and both changed the ranking.
+
+**1. The censoring distribution needs the events-before-censorings tie convention.**
+The IPCW Brier score reweights by `1/G(t)`, and `G` was first estimated as
+Kaplan-Meier with the event indicator flipped. That is wrong when events and censorings
+are **tied**, which on monthly data is almost every time point: the denominator must be
+`at_risk - events`, not `at_risk`. The error was ~2% on the integrated Brier score —
+small enough to look like noise, large enough to reorder near-tied models. Caught by
+`test_brier_matches_scikit_survival`, which was written to check agreement with the
+reference implementation rather than to trust ours.
+
+**2. `G(t)` reaches exactly zero at the end of follow-up.** Under administrative
+censoring, nobody can be censored later than the last day of the study, so
+`G(24) = 0` in a 24-month simulation and every weight there is undefined. Evaluating on
+a grid that reached the end produced integrated Brier scores of **2.6e7** on SubSim —
+six orders of magnitude out, with the model ranking scrambled rather than merely
+inflated. It was invisible on Telco and GBSG2, where follow-up is staggered and `G`
+stays positive, which is why it survived the first round of runs and only appeared when
+the simulator was added to the same table.
+
+Fixed by `estimable_horizon`, and `brier_score` now returns **NaN** rather than a number
+when a weight is undefined. Clipping the weight or dropping those subjects would have
+biased the score toward whichever model is optimistic about the customers we can no
+longer weight — silently, and in a direction nobody would investigate.
+
+**The generalisable point,** and it is the same one as D-024, D-029 and D-037: the
+failure was not in the thing being measured but in the pipeline's ability to measure it.
+Two questions earn their place on any new metric — *could this number be wrong in a way
+that looks plausible?* and *is there an independent implementation to check it against?*
+The second one is what caught the first bug in minutes.
+
+---
+
+## D-049 — Phase 3 gate: what was established and what was not
+
+The gate reads "beats Cox/RSF/DeepSurv on public data; calibrated". Recorded here in
+the D-021 spirit: the prediction was written into
+`keel/experiments/survival_benchmark.py` before the first run, and this is the scoring
+of it, including the parts that did not land.
+
+**Telco (7,032 customers, the subscription dataset — mean over 10 resplits):**
+
+| model | C-index | IBS | cal. slope | ours wins on IBS |
+|---|---:|---:|---:|---:|
+| **discrete-time (logistic)** | 0.8650 | **0.0824** | 1.02 | — |
+| DeepSurv | 0.8661 | 0.0825 | 0.98 | 4/10 |
+| discrete-time (GBM) | 0.8608 | 0.0865 | 1.00 | 10/10 |
+| Cox PH | 0.8565 | 0.0914 | 1.18 | **10/10** |
+| Random Survival Forest | 0.8461 | 0.0964 | 1.18 | **10/10** |
+| Kaplan-Meier | — | 0.1823 | — | 10/10 |
+
+**MET:** beats Cox and RSF on 10/10 resplits, and is the best-calibrated model in the
+table alongside DeepSurv. **NOT MET:** it does not beat DeepSurv — 0.0824 against
+0.0825 is a tie, and saying otherwise would be reading noise.
+
+**GBSG2 (686 patients, the baselines' own benchmark):** we predicted a loss and lost.
+RSF leads on C (0.698 vs 0.678) and IBS (0.183 vs 0.187). The discrete model has the
+best calibration slope (1.09 against Cox's 1.48) but discretising seven years of daily
+follow-up onto a monthly grid costs resolution the others keep. **This is the correct
+result to get here** and it is the reason GBSG2 is in the table at all.
+
+**Landmark prediction (SubSim): partially confirmed, and weaker than predicted.** The
+pre-registration said "expect a SUBSTANTIAL win". Against the controlled comparison —
+the same model class restricted to signup-time covariates — the time-varying model wins
+on **100% of seeds at n>=2,000 and 92% at n=1,000**, but by a modest +0.03 C-index.
+Against Cox refitted at each landmark it is a wash (55-92% of seeds, no trend in n), so
+the *pooling* hypothesis is **not established**. Below n=250 nothing reliably beats
+Kaplan-Meier at all, which is the most useful number in the experiment and was not
+predicted.
+
+**Honest summary of what Phase 3 bought.** Not accuracy — on rank it is a tie with the
+strongest baseline. What it bought is *what the model can represent*: time-varying
+covariates through the same point-in-time path the rest of the system uses, competing
+risks that stay separate to the output, and calibrated absolute probabilities that CLV
+can multiply by money. DeepSurv matches the numbers and can do none of those three,
+while requiring a ~2GB dependency. That is the claim, and it is narrower and more
+defensible than "beats Cox".
+
+---

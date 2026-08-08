@@ -3,14 +3,16 @@
 **This document is updated as the project progresses. Everything else in this folder is
 relatively stable; this is the living record.**
 
-**Last updated:** Phase 1 complete, plus first external validation on real data.
+**Last updated:** Phase 3 complete (prediction models and customer value), on top of
+Phases 0-1, three external validations on real data, and Phase 2 built but unsold.
 
 ---
 
 ## Where we are in one line
 
-**The founding claim has been tested and survived, and the data plumbing that keeps
-future results honest is built. Nothing has been sold to a real customer yet.**
+**The founding claim has been tested and survived; the data plumbing that keeps future
+results honest is built; and we can now put a pound figure on each customer and on how
+much of it is at risk. Nothing has been sold to a real customer yet.**
 
 ---
 
@@ -22,17 +24,19 @@ future results honest is built. Nothing has been sold to a real customer yet.**
 | **Realistic business simulator** | ✅ Done | Calibrated to published benchmarks, stable across 8 variations |
 | **Connecting to real billing data** | ✅ Done | Stripe and CSV adapters; one common data shape |
 | **Guard against using future information** | ✅ Done | Measured: prevents a 0.35 inflation in apparent accuracy |
-| **Quality controls** | ✅ Done | 137 automated tests, all passing |
+| **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts |
+| **A report a business can actually receive** | ✅ Built | Three spreadsheet exports in, one web page out |
+| **Predicting when a customer leaves, and what they are worth** | ✅ Done | Matches or beats established methods on public data — see below |
+| **Quality controls** | ✅ Done | 277 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
-| Failed-payment recovery | ⬜ Not started | — |
-| Production prediction models | ⬜ Not started | — |
 | **The practical version of our method** | ⬜ Not started | **The main research risk** |
 | Customer-facing product | ⬜ Not started | — |
 | Proof with a real business | ⬜ Not started | — |
 | Paying customers | ⬜ **None** | — |
 
-**Six rows of twelve.** But note *which* six: everything complete so far is
-groundwork and evidence. Nothing yet earns anyone money.
+**Nine rows of thirteen.** But note *which* nine: everything complete so far is
+groundwork and evidence. **Nothing yet has earned anyone money**, and the two rows that
+would prove the idea works outside our own machinery are both still empty.
 
 ---
 
@@ -64,6 +68,86 @@ same data shape a real customer would provide.
 
 ---
 
+## What Phase 3 was about, in plain terms
+
+Everything before this phase talked about customers in terms of **probability** — this
+one is 30% likely to leave, that one 8%. A business does not spend probability. It
+spends money, and the two customers might be worth £12 and £1,200.
+
+Phase 3 built two things.
+
+**A model of *when* a customer leaves, not just whether.** Instead of predicting "will
+they churn this year", it predicts the chance of leaving in each individual month, given
+what we know about them right now. Chaining those months together gives a full survival
+curve: the chance they are still paying in month 1, month 2, and so on.
+
+Two properties matter more than accuracy here:
+
+- It handles information that **changes over time**. A customer whose usage collapsed
+  last month is a different customer from the one who signed up. Most standard methods
+  can only use what was true on the day someone joined.
+- It keeps **voluntary leaving separate from failed payments**. Someone whose card
+  expires has not decided anything. Merging the two — which nearly every published churn
+  model does — makes roughly a third of the problem invisible to the model meant to
+  explain it.
+
+**Lifetime value.** Multiply each month's chance of still being a customer by the profit
+that month, discount it because money later is worth less than money now, and add it up.
+
+We deliberately **refuse to extend that sum past the data we actually have**. The usual
+industry shortcut ("average revenue divided by churn rate") quietly assumes customers
+leave at a constant rate forever. They do not — long-tenured customers leave more slowly
+— so the shortcut is not just uncertain, it is wrong in a predictable direction. Our code
+raises an error rather than producing a comfortable number.
+
+### The result worth remembering
+
+On simulated data where we know the truth, we ranked customers two ways: by **chance of
+leaving**, and by **money at risk** (value multiplied by that chance).
+
+**The two top-10% lists overlapped by only 21%.**
+
+Put plainly: a churn score points you at the wrong four-fifths of the money. And this is
+before any of the harder argument in [03](03-the-core-insight.md) about *contacting*
+people making things worse — it is simply that a risk score does not know who is
+valuable.
+
+### How it compares to the established methods
+
+We tested against the three standard approaches (Cox regression, random survival
+forests, and a neural-network method called DeepSurv) on **Telco**, a public dataset of
+7,032 real subscription customers.
+
+| | Ranking customers correctly | Are the probabilities honest? |
+|---|---|---|
+| **Ours** | joint best | **best, tied with DeepSurv** |
+| DeepSurv | joint best | **best, tied with ours** |
+| Cox regression | slightly worse | clearly worse |
+| Random survival forest | worse | clearly worse |
+
+**We beat two of the three and tied the third**, on ten out of ten repeats. We do not
+claim to have beaten DeepSurv — the difference was 0.0824 against 0.0825, which is
+noise, and calling it a win would be dishonest.
+
+We also tested on a medical dataset those methods were originally designed for, and
+**we lost** — we wrote down that we expected to lose before running it, and we did. Our
+approach works in whole months because subscriptions bill in whole months; that dataset
+is measured in days, and rounding to months throws away detail the others keep.
+
+So the honest summary of Phase 3 is **not** "we built a more accurate model". It is:
+*equally accurate, more honest about its own probabilities, and able to represent two
+things the alternatives cannot* — information that changes over time, and the split
+between leaving and payment failure. DeepSurv matches the numbers, can do neither, and
+requires roughly two gigabytes of machine-learning libraries to run.
+
+### The limitation we found and did not predict
+
+**Below about 250 customers, none of this beats simply using the company-wide average.**
+There is not enough history for any model to learn an individual pattern. That is a real
+constraint on who this can help, and it is stated here rather than buried.
+
+---
+
 ## The plan, in order
 
 Each phase has a **gate** — a condition that must be met before moving on. Gates exist to
@@ -73,9 +157,9 @@ force early failure rather than late failure.
 |---|---|---|---|
 | **0** | **Build the simulator; test the founding claim** | Standard approach provably loses money | ✅ **Passed** |
 | **1** | **Connect to real billing data; guard against using future information** | Automated checks pass | ✅ **Passed** |
-| **2** | **Failed-payment recovery** | **First paying client** | ⬜ **Next** |
-| **3** | Prediction models for who leaves and what they're worth | Beat established methods on public data | ⬜ |
-| **4** | **The practical version of our method** | Beat existing approaches on money earned, at small scale | ⬜ |
+| **2** | **Failed-payment recovery** | **First paying client** | 🟨 **Built — gate still open** |
+| **3** | Prediction models for who leaves and what they're worth | Beat established methods on public data | ✅ **Passed** (2 of 3 beaten, 1 tied) |
+| **4** | **The practical version of our method** | Beat existing approaches on money earned, at small scale | ⬜ **Next** |
 | **5** | Decision engine, plain-language explanations, dashboard | An owner can act without asking us | ⬜ |
 | **6** | Control-group infrastructure; proof-of-results reporting | **A real client's verified return** | ⬜ |
 | **7** | Cross-business learning; retail support | Client #10 outperforms client #1 on day one | ⬜ |
@@ -110,11 +194,12 @@ technical problem in the project.
 
 ## Next immediate steps
 
-1. **Phase 2 — failed-payment recovery.** The first thing that earns money. It is 20–40%
-   of all churn, needs almost no sophisticated technology, and produces immediately
-   attributable revenue.
-2. **Draft paper 1** while the Phase 0 results are fresh.
-3. **In parallel, start talking to businesses.** Twenty conversations with subscription
+1. **Get the failed-payment work in front of real businesses.** This is not a coding
+   task and no further code completes it. The report described above needs to be run
+   against real billing exports and shown to the people who own them.
+2. **Phase 4 — the practical version of our method.** The core research risk, and the
+   thing everything else has been clearing the way for.
+3. **In parallel, keep talking to businesses.** Twenty conversations with subscription
    founders will reshape this plan more than twenty more pages of it. This does not
    depend on the product existing.
 
@@ -150,6 +235,62 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### Phase 3 — complete
+
+Built the model of *when* a customer leaves and the calculation of what they are worth.
+Full description above; three things belong in the permanent record.
+
+**The comparison was fair and we said what would count as failure first.** Before
+running anything, we wrote down what we expected on each dataset and what each possible
+outcome would mean. We predicted we would lose on the medical dataset and win on
+calibration on the subscription one. Both happened. No setting was tuned per dataset,
+for our method or for any competitor — tuning one side is how a comparison becomes an
+advertisement.
+
+**We beat two of the three standard methods and tied the third.** We report the tie as
+a tie. The genuine advance is not accuracy: it is that the model can use information
+that changes over time, keeps voluntary leaving separate from payment failure, and
+produces probabilities honest enough to multiply by money.
+
+**Two mistakes were found in our own measuring instruments, not in the model.** Both
+concerned a technical correction for customers whose outcome we never got to see. One
+was wrong by about 2% — small enough to look like noise, big enough to change which
+method appeared to win. The other was wrong by a factor of ten million and was caught
+only because the number was absurd. Both were found by checking our arithmetic against
+an independent published implementation rather than by re-reading our own code. The
+lesson is recorded because it will recur: *a result can be wrong in a way that looks
+entirely plausible.*
+
+54 new automated tests (277 total).
+
+### Phase 2 — built, but the gate is not passed
+
+Failed-payment recovery. Roughly a fifth to two-fifths of all cancellations are not
+decisions at all — a card expired, a bank declined a charge. The processor tells you
+*why* it failed, and the standard retry schedule ignores that entirely.
+
+Using the reason to choose when to retry recovers **6.9 percentage points more** while
+making **32% fewer attempts**. Retrying harder recovers nothing extra: the most
+aggressive schedule uses two-and-a-half times the attempts and four times the emails
+for no additional recovery.
+
+An automated check caught our own simulation flattering this result — it was allowing
+expired cards to be "recovered" by retrying, which cannot happen. Fixing it made the
+finding cleaner, not weaker.
+
+We also built the **Churn Autopsy**: a business exports three spreadsheets from their
+payment provider and receives a single web page explaining where their money is going,
+with a figure attached to each finding. Every finding is visibly labelled either
+*measured from your data* or *estimated from industry benchmarks* — including the most
+persuasive one, which is an estimate. The report also states plainly what it will not
+do: it refuses to name which customers to contact, because billing data cannot support
+that claim and this project exists to argue against pretending otherwise.
+
+**The gate for this phase is a paying client, and it is still open.** No further code
+changes that.
+
+86 new automated tests (223 total).
 
 ### External validation — first real-data test
 

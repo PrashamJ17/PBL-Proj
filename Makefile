@@ -1,4 +1,4 @@
-.PHONY: help install test lint fmt calibrate killtest figures check clean
+.PHONY: help install install-survival test lint fmt calibrate killtest survival clv figures check clean
 
 help:  ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -6,6 +6,9 @@ help:  ## Show this help
 
 install:  ## Install the package with dev and viz extras
 	pip install -e ".[dev,viz]"
+
+install-survival:  ## Add the Phase 3 baselines (Cox, RSF, and DeepSurv via torch)
+	pip install -e ".[dev,viz,survival,deepsurv]"
 
 test:  ## Run the test suite
 	pytest tests/ -q
@@ -28,8 +31,15 @@ killtest:  ## Re-run the founding experiment
 	print(f'churn model AUC {auc:.3f}, {len(po)} eligible\n'); \
 	[print(f'{r.name:<34}{r.expected_value:>12,.0f}') for r in res]"
 
+survival:  ## Phase 3 head-to-head vs Cox / RSF / DeepSurv (needs the survival extras)
+	@python -m keel.experiments.survival_benchmark
+
+clv:  ## Value every simulated customer and split the leak by cause
+	@python -m keel.experiments.clv
+
 figures:  ## Regenerate figures (also syncs the explainer copy)
 	@python -m keel.experiments.figures
+	@python -m keel.experiments.survival_figures
 	@cp papers/figures/*.png explainer/figures/
 	@echo "figures regenerated and synced to explainer/figures/"
 

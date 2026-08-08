@@ -6,6 +6,77 @@ each choice in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
+## Phase 3 — Discrete-time survival hazard and CLV
+
+**Turns "who might churn" into "what is this customer worth, and how much of it is at
+risk from which cause". Gate met against Cox and RSF; a tie with DeepSurv.**
+
+### Added
+
+- `keel/models/survival/discrete.py` — person-period discrete-time hazard, two
+  learners, three baseline-hazard bases, and a competing-risks wrapper that keeps
+  voluntary and involuntary churn separate all the way to the output.
+- `keel/models/survival/metrics.py` — Kaplan-Meier, IPCW Brier, integrated Brier,
+  D-calibration and binned calibration, on numpy/scipy only so they run in CI, and
+  cross-checked against `scikit-survival` where installed.
+- `keel/models/survival/baselines.py` — Cox (lifelines), RSF (scikit-survival) and
+  DeepSurv (written directly against torch, ~40 lines, Breslow ties).
+- `keel/models/clv/value.py` — CLV, expected remaining months, value at risk, and an
+  exact decomposition of the value shortfall by cause.
+- `keel/benchmarks/survival_data.py` — Telco (IBM, real subscription churn), GBSG2,
+  and SubSim adapters.
+- `keel/experiments/survival_benchmark.py`, `keel/experiments/clv.py`, and figure 5.
+
+### Results — Telco, mean over 10 resplits
+
+| model | C-index | IBS | cal. slope | ours wins on IBS |
+|---|---:|---:|---:|---:|
+| **discrete-time (logistic)** | 0.8650 | **0.0824** | 1.02 | — |
+| DeepSurv | 0.8661 | 0.0825 | 0.98 | 4/10 |
+| Cox PH | 0.8565 | 0.0914 | 1.18 | **10/10** |
+| Random Survival Forest | 0.8461 | 0.0964 | 1.18 | **10/10** |
+| Kaplan-Meier | — | 0.1823 | — | 10/10 |
+
+**Beats Cox and RSF on 10/10 resplits. Ties DeepSurv** — 0.0824 vs 0.0825 is noise and
+is reported as a tie. On GBSG2, the benchmark those methods were developed on, **RSF
+wins and we said so before running it** (D-021): discretising seven years of daily
+follow-up onto months costs resolution the continuous-time models keep.
+
+**What the phase actually bought is representation, not accuracy.** Time-varying
+covariates through the existing point-in-time path, competing risks that never merge,
+and calibrated absolute probabilities CLV can multiply by money. DeepSurv matches the
+numbers, does none of those three, and needs a ~2GB dependency.
+
+### CLV on 4,000 simulated customers
+
+- Book value **2.22M**; shortfall against perfect retention **2.63M**, splitting
+  **exactly** into 72.5% voluntary / 27.5% involuntary with no residual.
+- **The top decile by value at risk overlaps the top decile by churn risk by 21%.**
+  Ranking by churn probability finds the wrong 79% of the money.
+- CLV **refuses to extrapolate** past the observed support (D-046). The standard
+  `ARPU / churn_rate` formula is an infinite sum assuming a constant hazard forever,
+  and hazards decline with tenure by construction (D-004).
+
+### Notable
+
+- **Two metric bugs, neither in the model** (D-048). The censoring estimator needed the
+  events-before-censorings tie convention (~2% on IBS — noise-sized, but enough to
+  reorder near-tied models), and `G(t)` hits exactly zero under administrative
+  censoring, which produced integrated Brier scores of **2.6e7** on SubSim. Caught by
+  agreement with `scikit-survival` and by a magnitude check, not by reading the code.
+- **`TotalCharges` is excluded from Telco** (D-047) — cumulative billing, r = 0.83 with
+  tenure, i.e. a direct encoding of the duration being predicted. Published Telco
+  survival analyses ship this.
+- **Calibration error alone is gameable and IBS is not** (D-045). On `cal_mae`,
+  Kaplan-Meier beats Cox on Telco — a covariate-free model is trivially calibrated.
+  Kaplan-Meier stays in every table so that failure mode is visible.
+- **Below 250 customers nothing reliably beats Kaplan-Meier.** Not predicted, and the
+  most useful number in the landmark experiment.
+
+**277 tests passing.**
+
+---
+
 ## Churn Autopsy — the first customer-facing artifact
 
 **Closes the gap between the research and something a business can actually receive.**

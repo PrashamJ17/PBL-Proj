@@ -861,3 +861,170 @@ and now the artifact a prospect actually receives. **The gate itself — a payin
 — is a sales task and no further module closes it.**
 
 The next action is running this against ten real businesses.
+
+---
+
+## Phase 3 — Discrete-time survival hazard + CLV
+
+**Goal:** convert "who is likely to churn" into "what is this customer worth, and how
+much of it is at risk from which cause". Phases 0-2 argued about targeting; nothing in
+them could put a number on a customer.
+
+### Step 3.1 — The model
+
+`keel/models/survival/discrete.py`. Each customer is expanded into one row per period
+at risk, the row is labelled 1 if they failed in that period, and a binary classifier
+is fitted. The fitted probability is the hazard; survival is the running product of its
+complements.
+
+Two learners (regularised logistic, histogram gradient boosting) and three baseline-
+hazard encodings (saturated dummies with a pooled tail, a restricted cubic spline on
+log time, raw period for tree learners). No per-dataset tuning anywhere — one
+configuration for every dataset, for our model and for every baseline, since tuning one
+side is how a benchmark becomes an advertisement.
+
+Why not Cox, in four points, is D-043. The one that matters most: each person-period
+row **is** one point-in-time feature build, so Phase 1's structural leakage guarantee
+extends to the survival model unchanged. Cox with time-varying covariates needs a
+start-stop frame, which is where that guarantee would have had to be rebuilt by hand.
+
+`CompetingRisksHazard` fits one cause-specific hazard per cause and combines them only
+at the survival level (D-044). `S(t) + sum_k CIF_k(t) = 1` holds exactly, and is tested.
+
+### Step 3.2 — Metrics, written rather than imported
+
+`keel/models/survival/metrics.py` implements Kaplan-Meier, the censoring distribution,
+Harrell's C, the IPCW Brier score, integrated Brier, D-calibration and a binned
+calibration curve — on numpy and scipy only.
+
+The reason is not purity. `lifelines` and `scikit-survival` are Phase 3 *extras*, and
+CI installs `[dev,viz]`. A metric that cannot run in CI is a metric that silently stops
+being checked. They are cross-checked against those libraries where installed:
+`test_concordance_matches_scikit_survival` and `test_brier_matches_scikit_survival`
+assert agreement to 1e-9 and 1e-6 rather than trusting our own arithmetic.
+
+### Step 3.3 — Two metric bugs, both caught by an external reference ⭐
+
+Neither was in the model.
+
+**The censoring estimator needs the events-before-censorings tie convention.** `G` was
+first estimated as Kaplan-Meier with the indicator flipped, which is wrong when events
+and censorings are tied — on monthly data, almost always. ~2% on the integrated Brier
+score: small enough to look like noise, large enough to reorder near-tied models.
+Caught by the scikit-survival agreement test.
+
+**`G(t)` hits exactly zero at the end of follow-up.** Under administrative censoring
+nobody can be censored after the last day of the study, so every IPCW weight there is
+undefined. Integrated Brier scores came out at **2.6e7** on SubSim — six orders of
+magnitude wrong, with the ranking scrambled rather than merely inflated. Invisible on
+Telco and GBSG2, where follow-up is staggered, so it survived the first round of runs
+and only surfaced when the simulator joined the same table. `brier_score` now returns
+NaN rather than a number where the weight is undefined, and `estimable_horizon` keeps
+callers out of that region (D-048).
+
+A third correction, smaller: D-calibration needs the discrete randomised-PIT midpoint,
+or a correctly specified model is rejected by its own grid (chi2 61.7 vs 2.3). Applied
+to every model through one code path, never to ours alone (D-045).
+
+### Step 3.4 — Public data, and the leak everyone ships
+
+`keel/benchmarks/survival_data.py`. Telco (IBM, 7,043 customers — real, public,
+contractual subscription), GBSG2 (686 patients, the benchmark RSF and DeepSurv were
+developed on), and SubSim.
+
+**`TotalCharges` is excluded from Telco.** It is cumulative billing, r = **0.83** with
+tenure — a direct encoding of the duration being predicted. Published Telco survival
+analyses that feed the raw column set into a Cox model have this, and it flatters them
+(D-047).
+
+Telco's 11 zero-tenure customers are dropped explicitly rather than coerced to 1:
+they completed no period at risk, and inventing one would invent it for the customers
+least likely to have had it.
+
+### Step 3.5 — Results
+
+Mean over 10 resplits. IBS lower is better; calibration slope 1.0 is perfect.
+
+**Telco** — the dataset that matches the vertical:
+
+| model | C-index | IBS | cal. slope | ours wins on IBS |
+|---|---:|---:|---:|---:|
+| **discrete-time (logistic)** | 0.8650 | **0.0824** | 1.02 | — |
+| DeepSurv | 0.8661 | 0.0825 | 0.98 | 4/10 |
+| discrete-time (GBM) | 0.8608 | 0.0865 | 1.00 | 10/10 |
+| Cox PH | 0.8565 | 0.0914 | 1.18 | 10/10 |
+| Random Survival Forest | 0.8461 | 0.0964 | 1.18 | 10/10 |
+| Kaplan-Meier | — | 0.1823 | — | 10/10 |
+
+**GBSG2** — RSF wins (C 0.698 vs 0.678, IBS 0.183 vs 0.187), as predicted before the
+run. Discretising seven years of daily follow-up onto months costs resolution the
+continuous-time models keep. The discrete model still has the best calibration slope
+in the table (1.09 against Cox's 1.48).
+
+**Kaplan-Meier is the reason IBS is the headline.** On `cal_mae` alone, Kaplan-Meier
+(0.0268) *beats* Cox (0.0439) on Telco — a model with no covariates is trivially
+calibrated. On IBS it is not competitive at all (0.1823 vs 0.0824). Reporting
+calibration error as the headline would have made "predict the average for everyone"
+the winning strategy (D-045).
+
+**Landmark prediction on SubSim** — at month L, using only what was observable at L,
+predict the next six months. Against the same model restricted to signup-time
+covariates:
+
+| customers | 250 | 500 | 1,000 | 2,000 | 4,000 |
+|---|---|---|---|---|---|
+| time-varying ranks better | 55% | 100% | 92% | 100% | 100% |
+| ...vs Cox refitted per landmark | 55% | 92% | 75% | 58% | 75% |
+
+Seeing covariates move is worth having from ~500 customers up, by a modest +0.03
+C-index. **Below 250 customers nothing reliably beats Kaplan-Meier** — the most useful
+number here and one we did not predict. Against Cox refitted at each landmark it is a
+wash with no trend in n, so the *pooling* hypothesis is **not established** (D-049).
+
+### Step 3.6 — CLV
+
+`keel/models/clv/value.py`. `CLV = sum_t margin * S(t) / (1+d)^t`, with three choices
+that are not incidental: contribution margin rather than revenue, monthly-compounded
+discounting, and a **finite horizon capped at the observed support**. `clv()` raises
+rather than extrapolating (D-046) — the `ARPU / churn_rate` formula everyone uses is an
+infinite geometric sum that assumes a constant hazard forever, and hazards decline with
+tenure by construction here (D-004).
+
+On 4,000 simulated customers at 75% margin and a 12% annual discount, over the observed
+24-month support:
+
+- book value **2.22M**, mean CLV 554, median 412, p90 1,126 — heavily right-skewed, so
+  the mean alone says little;
+- shortfall against perfect retention **2.63M**, splitting exactly into **72.5%
+  voluntary / 27.5% involuntary** with no residual;
+- **the top decile by value at risk overlaps the top decile by churn risk by only
+  21%.** Ranking by churn probability finds the wrong 79% of the money.
+
+That last number is the point of the phase. `treatment_value(clv, tau, cost)` is the
+bridge to Phase 4: an identical treatment effect is worth a hundred times more on one
+customer than another, and no amount of churn-model accuracy tells them apart.
+
+### Step 3.7 — Figure 5
+
+`fig05_survival_calibration.png`. Left: predicted vs observed survival on Telco, where
+Cox and RSF sit visibly off the diagonal and the discrete model and DeepSurv sit on it.
+Right: the win rate by business size, with the coin-flip line drawn and the n=250 bar
+left honestly at 55%.
+
+Deliberately not a bar chart of concordance — on rank this is a tie, and a figure
+claiming otherwise would be the wrong figure.
+
+**54 new tests, 277 total.**
+
+### Where this leaves Phase 3
+
+The gate — "beats Cox/RSF/DeepSurv on public data; calibrated" — is **met for Cox and
+RSF (10/10 resplits on Telco) and a tie with DeepSurv**. Calibration is met: best or
+tied-best slope on every dataset, D-calibration not rejected on Telco where Cox and RSF
+are rejected at p < 1e-4.
+
+What Phase 3 actually bought is not accuracy but *representation*: time-varying
+covariates through the existing point-in-time path, competing risks that stay separate
+all the way to the output, and calibrated absolute probabilities CLV can multiply by
+money. DeepSurv matches the numbers, does none of those three, and costs a ~2GB
+dependency.

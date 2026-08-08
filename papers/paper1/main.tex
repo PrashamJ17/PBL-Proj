@@ -1,0 +1,553 @@
+% ---------------------------------------------------------------------------
+% Keel -- merged paper 1+2 (see docs/DECISIONS.md D-042 for the positioning).
+%
+% STATUS: DRAFT. Sections 2-6 and 8 report experiments that are implemented,
+% tested and reproducible from this repository. Section 7 specifies the
+% hierarchical estimator and its abstention rule but reports NO results,
+% because Phase 4 is not built. Every number below is regenerable -- see
+% papers/paper1/README.md for the command that produces each table.
+%
+% Not compiled in this environment (no TeX installation). Compile with:
+%   latexmk -pdf main.tex
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+\newcommand{\corr}{\mathrm{corr}}
+\newcommand{\CATE}{\tau}
+
+\title{\textbf{When Does Targeting on Treatment Effects Pay?}\\
+\large The correlation between effect and propensity governs it,\\
+and small samples decide whether you should act at all}
+
+\author{Prasham Jain\thanks{Correspondence: \texttt{prasham258@gmail.com}. Code,
+data pipelines and every number in this paper:
+\url{https://github.com/PrashamJ17/PBL-Proj}.}}
+
+\date{Draft --- \today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Uplift modelling --- targeting customers by their estimated treatment effect rather
+than by their outcome propensity --- is widely recommended and inconsistently
+useful. We show that whether it pays is governed by a single measurable quantity:
+$\corr(\hat\CATE, \hat\pi)$, the correlation across customers between the estimated
+treatment effect and the estimated outcome propensity. Across four real randomised
+experiments and one simulator we find that when the two orderings coincide, the
+outcome model wins, not because it estimates the right quantity but because it
+solves an easier one; and that as the correlation goes negative, the advantage of
+effect-based targeting grows by an order of magnitude. Subscription retention is the
+adversarial case, with a negative correlation created by a mechanism absent from
+advertising and promotion: the customers a churn model ranks highest include dormant
+payers for whom being contacted is itself the reminder to cancel. We record a
+prediction made before the data was obtained --- that retail promotion would fall
+between advertising and retention --- and it landed at $+0.18$ as predicted, though
+underpowered to test the consequence.
+
+We then show that this diagnosis is of limited practical use to the businesses it
+most concerns, because at their scale neither method is reliable. Holding the
+evaluation set fixed and shrinking only the training set on a real 64{,}000-customer
+experiment, the best effect-based method beats random targeting on only 75\% of
+draws at $n=500$; one standard estimator manages 55\%. Mean performance at that size
+looks respectable. A business gets one draw.
+
+We argue the correct response is a decision rule that can \emph{abstain}, and that
+abstention must be denominated in money rather than probability: we give a
+discrete-time survival and lifetime-value layer whose absolute probabilities are
+calibrated well enough to multiply by revenue, and show that ranking customers by
+value at risk overlaps a churn-risk ranking by only 21\% at the top decile. The
+simulator used throughout is released as an instrument, not a contribution: it is
+the only setting in which individual-level ground-truth treatment effects exist, and
+no public dataset contains the mechanism the negative-correlation regime requires.
+\end{abstract}
+
+\medskip
+\noindent\textbf{Keywords:} uplift modelling; heterogeneous treatment effects;
+customer retention; small-sample decision-making; survival analysis; abstention.
+
+\section{Introduction}
+\label{sec:intro}
+
+A firm with a fixed retention budget must choose which customers to treat. The
+default in practice is to rank customers by predicted churn probability and treat
+the top slice. \citet{ascarza2018} established with two field experiments that this
+is \emph{ineffective} --- the highest-risk customers are not the most responsive ---
+and that targeting on sensitivity to the intervention outperforms targeting on risk
+by up to 6.8 percentage points. That finding is not in dispute here and we do not
+restate it as our own.
+
+Three questions remain open, and they are the ones a practitioner actually faces.
+
+\paragraph{First: when is effect-based targeting worth its cost?} The uplift
+literature reports wins on some datasets and not others
+\citep{gutierrez2017,devriendt2018}, usually without a diagnosis. Estimating
+$\CATE(x) = \mathbb{E}[Y(1)-Y(0) \mid X=x]$ is a harder statistical problem than
+estimating $\pi(x) = \mathbb{E}[Y \mid X=x]$: it is a difference of two conditional
+means, and its variance is the sum of theirs. If the two induce nearly the same
+ranking, paying that variance premium buys nothing. Section~\ref{sec:corr} makes
+this precise and measurable.
+
+\paragraph{Second: can risk-based targeting be actively harmful, not merely
+ineffective?} It can, but only under a condition that does not hold in most settings
+where uplift modelling is studied. Section~\ref{sec:corr} states the condition and
+Section~\ref{sec:instrument} describes the mechanism that produces it in
+subscription retention.
+
+\paragraph{Third: at the sample sizes of the firms that need this most, is any of it
+reliable?} Published uplift results come from datasets of $10^4$ to $10^7$ customers.
+The subscription businesses where retention economics are most acute have hundreds.
+Section~\ref{sec:smalln} measures what happens in that regime and finds that the
+honest answer is often \emph{no}, which motivates Section~\ref{sec:abstain}.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item \textbf{A governing quantity.} $\corr(\hat\CATE,\hat\pi)$, measured on the
+        $T$-learner so that both quantities live on comparable scales, orders five
+        settings by how much effect-based targeting is worth
+        (Table~\ref{tab:corr}). We give the mechanism, not only the correlation.
+  \item \textbf{An out-of-sample confirmation.} The principle was used to predict
+        where a fourth dataset would fall \emph{before it was obtained}. It landed
+        as predicted. We also state plainly what that experiment failed to confirm.
+  \item \textbf{Reliability, not expectation, at small $n$.} We report the
+        proportion of draws on which a method beats random, paired on the same
+        split, rather than a mean across draws.
+  \item \textbf{A money-denominated decision layer.} A discrete-time competing-risks
+        hazard model whose absolute survival probabilities are calibrated well
+        enough to multiply by revenue, with an exact decomposition of lost value by
+        cause of loss.
+  \item \textbf{An instrument.} A calibrated subscription simulator with exact
+        individual-level potential outcomes, released so that CATE estimators can be
+        scored against per-customer truth rather than against aggregate proxies.
+\end{enumerate}
+
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Uplift modelling.} The estimation problem has a long applied literature
+\citep{radcliffe2011,rzepakowski2012} and a more recent causal-machine-learning one
+\citep{athey2016,kunzel2019,chernozhukov2018}. Evaluation is usually by the Qini or
+uplift curve. We report Qini for comparability but argue in
+Section~\ref{sec:smalln} that it answers the wrong question for a firm with one
+sample and a budget: it presumes you rank and treat a top slice, with no option to
+decline.
+
+\paragraph{Targeting for retention.} \citet{ascarza2018} is the closest prior work
+and the reason our contribution is framed as \emph{when} risk-based targeting
+becomes harmful rather than \emph{that} it is ineffective. \citet{hitsch2018} study
+targeting under heterogeneous effects in marketing more broadly.
+
+\paragraph{Cost-sensitive causal decisions.} \citet{verbeke2023} and
+\citet{devriendt2021} formalise treatment decisions under explicit costs and
+benefits, which is the same object as our Section~\ref{sec:value}. Our addition is
+the survival and lifetime-value layer that supplies the benefit term, and the
+requirement that its probabilities be calibrated rather than merely ranked.
+
+\paragraph{Survival modelling of churn.} Cox regression \citep{cox1972} dominates,
+with random survival forests \citep{ishwaran2008} and neural extensions
+\citep{katzman2018} as the standard comparators. We use the person-period
+discrete-time formulation \citep{singer1993}, and evaluate with proper scoring
+rules \citep{graf1999} and distribution calibration \citep{haider2020} rather than
+concordance alone.
+
+\paragraph{Lifetime value.} We treat only the contractual case, where churn is
+observed. The non-contractual (BTYD) family \citep{fader2005} is a different
+estimand and is out of scope.
+
+\section{The decision problem}
+\label{sec:problem}
+
+Let each customer $i$ have covariates $X_i$, a binary treatment $W_i$, and potential
+outcomes $Y_i(0), Y_i(1)$ where $Y=1$ denotes churn within a horizon $H$. Write
+\[
+  \CATE(x) = \mathbb{E}[Y(1) - Y(0) \mid X = x], \qquad
+  \pi(x)   = \mathbb{E}[Y \mid X = x].
+\]
+Under our sign convention $\CATE < 0$ is a treatment that \emph{helps}. Customers
+with $\CATE > 0$ are \emph{sleeping dogs}: contacting them causes churn.
+
+A policy $\rho: \mathcal{X} \to \{0,1\}$ under unit cost $c$ and customer value $V_i$
+earns
+\begin{equation}
+  \label{eq:value}
+  \mathcal{V}(\rho) = \sum_i \rho(X_i)\bigl(-\CATE(X_i) V_i - c\bigr),
+\end{equation}
+measured against \emph{doing nothing}. This baseline is not incidental. The metric
+reported in most vendor case studies is the save rate among the treated, which is
+contaminated by selection: target customers who were going to stay and the save rate
+is superb while Equation~\eqref{eq:value} does not move.
+
+Three properties of Equation~\eqref{eq:value} drive everything that follows. It
+depends on $\CATE$, not $\pi$. It is denominated in money, so $V_i$ matters as much
+as $\CATE_i$ --- the subject of Section~\ref{sec:value}. And it admits
+$\rho \equiv 0$, so a policy that declines to act is a legitimate competitor ---
+the subject of Section~\ref{sec:abstain}.
+
+\section{The instrument}
+\label{sec:instrument}
+
+Individual treatment effects are never observed. Field experiments identify average
+effects; public uplift datasets identify subgroup effects by randomisation. Neither
+can score a per-customer CATE estimate against truth. We therefore build a simulator
+in which both potential outcomes are computed exactly, and we are explicit that this
+is an \emph{instrument} rather than a finding.
+
+\paragraph{Structure.} A monthly discrete-time hazard drives voluntary churn;
+involuntary churn (payment failure) is a separate process and the two are never
+summed. Latent customer attributes --- engagement, habit strength, price
+sensitivity, attention --- are drawn from a Gaussian copula. Observable features
+mimic what a billing plus product-analytics integration actually provides. Latents
+are returned separately from the observable panel and a test enforces that they
+never enter it.
+
+\paragraph{The mechanism that matters.} Latent \emph{attention} is correlated with
+latent \emph{engagement}. Low engagement is the strongest observable predictor of
+churn, so a churn model ranks low-engagement customers highest. Low attention marks
+a dormant payer who has half-forgotten the charge, and whom contacting \emph{causes}
+to cancel. Because the two latents are correlated, the top of a churn ranking is
+dense in sleeping dogs. This is the entire negative-correlation regime, expressed as
+a generative mechanism rather than as a fitted relationship.
+
+\paragraph{Calibration, and one deliberate handicap.} Generative parameters are
+solved for, not tuned by eye: the hazard intercept is obtained by bisection against
+a target monthly churn rate. The simulator reproduces published SMB-SaaS aggregates
+--- 4.5\% monthly voluntary churn, a 30\% involuntary share, 23\% two-year
+retention, and an early-to-late hazard ratio of 2.0 --- and is stable across seeds.
+
+One configuration choice runs \emph{against} our own thesis and is worth stating.
+An earlier setting produced 30\% sleeping dogs and a mean treatment effect that was
+\emph{harmful} ($\bar\CATE = +0.0044$). Under it the headline result is trivially
+true: a blanket campaign raises churn, so of course targeting it badly loses money.
+We rejected that configuration in favour of one with $\approx17\%$ sleeping dogs and
+$\bar\CATE = -0.010$, so that a blanket campaign \emph{helps} on average and any
+money lost is attributable to \emph{targeting} alone. This is the harder claim. A
+build-time gate fails if $\bar\CATE$ ever becomes positive.
+
+\paragraph{The kill test.} We train a real churn model --- gradient-boosted trees on
+observable features only, with a strictly temporal split, reaching holdout
+AUC $\approx 0.70$ --- and compare targeting policies at a 20\% budget over six
+seeds (Table~\ref{tab:killtest}). Ranking by churn score loses money and loses
+\emph{more than random selection}, unanimously across seeds. The mechanism is
+visible directly: sleeping dogs are 48\% of the top predicted-risk decile and 2\% of
+the bottom.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Policy & Treated & Value vs.\ do-nothing & Sleeping dogs treated \\
+\midrule
+Random (20\%)                & 718 & $-17{,}035$ & 9 \\
+Churn-score top 20\%         & 718 & $-22{,}123$ & 19 \\
+Effect-based top 20\%        & 718 & $+5{,}877$  & 0 \\
+\textbf{Effect-based, with abstention} & \textbf{209} & $\mathbf{+8{,}610}$ & \textbf{0} \\
+\bottomrule
+\end{tabular}
+\caption{Simulator, one representative seed at a 20\% budget; the ordering is
+unanimous over six seeds (mean: churn-score $-26{,}903$ vs.\ random $-16{,}949$).
+The last row treats 29\% as many customers as the third and earns 46\% more. Note
+that a \emph{more accurate} churn model makes the second row worse, because accuracy
+at detecting disengagement is precision at finding sleeping dogs.}
+\label{tab:killtest}
+\end{table}
+
+\paragraph{A methodological note on leakage.} Every feature in this project is
+computed point-in-time: each fact carries both when it occurred and when it became
+\emph{knowable}, and features filter on the latter. The cost of not doing so is
+measured rather than asserted. The same features, computed three ways, give holdout
+AUC $0.603$ (correct), $0.613$ (ignoring reporting lag), and $\mathbf{0.954}$ (no
+temporal filter). The 0.35 gap is not performance; it is the amount by which a
+backtest would overstate a model before it reached production. We report it because
+several published churn results are, on inspection, in the third column.
+
+\section{What governs whether effect-based targeting pays}
+\label{sec:corr}
+
+\subsection{An apparent contradiction}
+
+On the Hillstrom email experiment \citep{hillstrom2008}, effect-based targeting
+clearly beats outcome-based targeting (Qini 168 vs.\ 36). On the Criteo advertising
+experiment \citep{diemert2018} it clearly loses, at \emph{every} training size
+(3{,}617 vs.\ 2{,}811 incremental visits at $n=500$). Neither result is a fluke and
+they cannot both be evidence for a general recommendation.
+
+\subsection{The reconciliation}
+
+Estimate both quantities on held-out data and measure their correlation across
+customers. To keep the comparison meaningful we measure it on the $T$-learner
+specifically, whose output is a difference of two probabilities and therefore lives
+on the treatment-effect scale; class-transform scores are scale-dependent under
+unbalanced assignment and produce spurious correlations near unity.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Setting & $\corr(\hat\CATE, \hat\pi)$ & Advantage of effect-based & Predicted harmed \\
+\midrule
+Hillstrom (mens)     & $+0.63$ & $+4.7\%$   & 0.2\% \\
+Criteo (advertising) & $+0.61$ & $+0.6\%$   & 19.2\% \\
+Lenta (retail SMS)   & $+0.18$ & $+10.4\%$  & 24.9\% \\
+Hillstrom (womens)   & $+0.07$ & $+3.9\%$   & 10.2\% \\
+\textbf{Subscription retention (simulator)} & $\mathbf{-0.19}$ & $\mathbf{+106.8\%}$ & 25.7\% \\
+\bottomrule
+\end{tabular}
+\caption{The governing quantity. Four settings is a contrast, not a fitted
+relationship, and the ordering among the three positive-correlation rows is within
+noise. The signal is the order-of-magnitude gap at negative correlation.}
+\label{tab:corr}
+\end{table}
+
+An outcome model ranks by \emph{likelihood of responding}; an effect model ranks by
+\emph{how much treatment changes the response}. When those orderings coincide, the
+outcome model wins --- not because it measures the right thing, but because it
+solves an easier estimation problem, and at small $n$ that variance advantage
+dominates. This reframes the recommendation. It is not that uplift modelling is
+better; that is false in advertising and Table~\ref{tab:corr} shows it. It is that
+\textbf{retention has an adversarial structure that advertising does not}.
+
+\subsection{The share of harmed customers is not the right diagnostic}
+
+A natural hypothesis is that effect-based targeting pays when sleeping dogs exist.
+Table~\ref{tab:corr} refutes it: Criteo has 19.2\% predicted-harmed customers, more
+than Hillstrom-womens' 10.2\%, and effect-based targeting adds essentially nothing
+there. Lenta has 24.9\%, comparable to the retention setting's 25.7\%, and also buys
+little. What matters is not how many customers are harmed but \emph{whether the
+harmed ones sit where the outcome model ranks highest} --- which is what a negative
+correlation measures.
+
+\subsection{A prediction, recorded before the data was obtained}
+
+A relationship inferred from three points is a description. To make it a claim we
+recorded a prediction in the repository before downloading a fourth dataset: retail
+SMS promotion (Lenta, 687{,}029 customers) should fall \emph{between} advertising
+($+0.61$) and subscription retention ($-0.19$).
+
+\textbf{Result: $+0.177$.} As predicted.
+
+We separate what this confirms from what it does not. \emph{Confirmed:} the
+correlation lands where predicted. \emph{Not confirmed:} whether the consequence
+follows. Lenta's nominal $+10.4\%$ advantage has a bootstrap interval of
+$[359, 1601]$ against $[309, 1477]$ for the outcome model and $[343, 1007]$ for
+random --- nothing is distinguishable from anything. The dataset is underpowered
+rather than noisy: its average treatment effect is $+0.0075$ on a 10.3\% base, a
+7.4\% lift against Hillstrom's 42.6\%, and its small-$n$ sweep is flat from $n=500$
+to $n=20{,}000$ because there is barely a signal to learn. This is one confirming
+observation, not two.
+
+\section{Reliability at the sample sizes that matter}
+\label{sec:smalln}
+
+Every public uplift dataset is large by small-business standards. The firms for whom
+retention economics are most acute have hundreds of customers. We therefore hold the
+\emph{evaluation} set fixed on Hillstrom and shrink only the training set, so any
+change is attributable to estimation difficulty rather than evaluation noise.
+
+The headline metric is deliberately not a mean. A mean across hypothetical draws is
+not what a business experiences; it gets one draw, and a method with a good average
+and a wide spread is a gamble. We therefore report the \textbf{proportion of seeds on
+which a method beats random targeting, paired on the same split}.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Training $n$ & 500 & 1{,}000 & 2{,}000 & 5{,}000+ \\
+\midrule
+Best effect-based method beats random & \textbf{75\%} & 90\% & 100\% & 100\% \\
+Class-transform estimator beats random & \textbf{55\%} & --- & --- & --- \\
+\bottomrule
+\end{tabular}
+\caption{Hillstrom, evaluation set held fixed. At $n=500$ one standard estimator is
+a coin flip while its mean performance looks respectable.}
+\label{tab:smalln}
+\end{table}
+
+Two consequences. First, published uplift results are reported in a regime almost no
+prospective user occupies, and the gap is not a matter of degree: at $n=500$ the
+question is not which method is better but whether \emph{any} of them is doing
+anything. Second, the failure is invisible under the reporting conventions of the
+field. Reporting the mean at $n=500$ would have shown a respectable number.
+
+We find the same wall in the survival layer of Section~\ref{sec:value}: below
+roughly 250 customers, no covariate model reliably beats the marginal survival curve
+on a proper scoring rule. Different task, different metric, same conclusion.
+
+\section{From probability to money}
+\label{sec:value}
+
+Equation~\eqref{eq:value} multiplies $\CATE_i$ by $V_i$. An identical treatment
+effect on a \$12 customer and a \$1{,}200 customer are not comparable acts, and no
+amount of churn-model accuracy distinguishes them. Supplying $V_i$ requires absolute
+survival probabilities, not a ranking.
+
+\paragraph{Discrete-time competing risks.} We expand each customer into one row per
+period at risk and fit the hazard $h_k(t \mid x)$ for each cause $k$ separately;
+survival is $\prod_{s \le t}\bigl(1 - \sum_k h_k(s)\bigr)$ and the cause-specific
+cumulative incidence is $\sum_{s\le t} h_k(s) S(s-1)$. Causes are combined only at
+the survival level and never at the label level, so voluntary churn and payment
+failure keep separate models, separate coefficients and separate interpretations.
+Three properties motivate this over Cox: time-varying covariates are native rather
+than requiring a start-stop construction (which is where point-in-time discipline
+usually breaks); the baseline hazard is estimated rather than profiled out as a
+nuisance, which is what absolute calibration requires; and subscription billing is
+genuinely discrete, so tied event times are simultaneity rather than a tie problem.
+
+\paragraph{Calibration is the point, not concordance.} We evaluate on the Telco
+customer-churn dataset (7{,}032 real subscription customers), excluding
+\texttt{TotalCharges}, which correlates with tenure at $r = 0.83$ and is therefore a
+direct encoding of the duration being predicted --- an exclusion that published
+Telco survival analyses routinely omit.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Model & C-index & IBS $\downarrow$ & Calib.\ slope & Wins vs.\ ours \\
+\midrule
+\textbf{Discrete-time hazard (ours)} & 0.8650 & \textbf{0.0824} & 1.02 & --- \\
+DeepSurv                             & 0.8661 & 0.0825 & 0.98 & 6/10 \\
+Cox proportional hazards             & 0.8565 & 0.0914 & 1.18 & 0/10 \\
+Random survival forest               & 0.8461 & 0.0964 & 1.18 & 0/10 \\
+Kaplan--Meier (no covariates)        & ---    & 0.1823 & ---  & 0/10 \\
+\bottomrule
+\end{tabular}
+\caption{Telco, mean over ten resplits. IBS is the integrated Brier score, a proper
+scoring rule. We beat Cox and the random survival forest on 10/10 resplits and
+\textbf{tie} DeepSurv --- $0.0824$ against $0.0825$ is noise and we report it as a
+tie. On GBSG2, a continuous-time medical benchmark those methods were developed on,
+we lose; we recorded that expectation before running it.}
+\label{tab:survival}
+\end{table}
+
+Kaplan--Meier is in Table~\ref{tab:survival} for a reason. On calibration error
+alone it \emph{beats} Cox on this dataset, because a covariate-free prediction is
+trivially calibrated. Reporting calibration error as a headline would make
+``predict the average for everyone'' the winning strategy. The integrated Brier
+score penalises both miscalibration and lack of discrimination, and under it
+Kaplan--Meier is not competitive at all.
+
+\paragraph{Lifetime value, and a refusal.} With $S(t)$ in hand,
+$\mathrm{CLV} = \sum_{t=1}^{H} m\, S(t)\,(1+d)^{-t}$ using contribution margin $m$
+and a monthly discount $d$. We cap $H$ at the observed support and raise an error
+otherwise. The standard $\mathrm{ARPU}/\text{churn rate}$ formula is an infinite
+geometric sum that assumes a constant hazard forever; retention hazards decline with
+tenure, so that extrapolation is biased rather than merely uncertain, and the
+survival model has no evidence at all beyond its training window.
+
+\paragraph{The result worth stating.} Ranking simulated customers by churn
+probability and by value at risk ($\mathrm{CLV} \times$ hazard), \textbf{the two top
+deciles overlap by 21\%}. A churn score points at the wrong four-fifths of the
+money, before any causal argument is made. Separately, the value lost relative to
+perfect retention decomposes \emph{exactly} into 72.5\% voluntary and 27.5\%
+involuntary, with no residual --- a split a blended churn figure cannot express, and
+one with entirely different remedies.
+
+\section{Abstention under posterior uncertainty}
+\label{sec:abstain}
+
+\todo{Phase 4. This section specifies the estimator and the decision rule; it
+reports no results, because the estimator is not yet built. Nothing in this section
+should be read as demonstrated.}
+
+Sections~\ref{sec:corr} and \ref{sec:smalln} together pose a problem a practitioner
+cannot solve by choosing a better estimator. They cannot know in advance which
+correlation regime they occupy, choosing wrongly is expensive in both directions,
+and at their sample size the estimate that would tell them is itself unreliable.
+
+The response we propose is a policy that quantifies its own uncertainty and declines
+to act when that uncertainty is too wide relative to the stakes. Concretely, with a
+posterior $p(\CATE_i \mid \mathcal{D})$ from a hierarchical model that partially
+pools across customers (and, in a multi-tenant setting, across firms), treat $i$
+only when
+\begin{equation}
+  \label{eq:abstain}
+  \Pr\bigl(-\CATE_i V_i > c \;\big|\; \mathcal{D}\bigr) > 1 - \alpha ,
+\end{equation}
+which reduces to a point-estimate threshold as the posterior concentrates and to
+$\rho \equiv 0$ when it does not. Partial pooling is the mechanism by which the
+small-$n$ regime is survivable at all: it shrinks individual estimates toward a
+population effect whose sign is far better identified than any individual's.
+
+Table~\ref{tab:killtest} contains a crude precursor --- a threshold rule on an
+oracle effect estimate treating 209 customers and earning more than a ranking rule
+treating 718 --- but that uses ground-truth effects and is therefore an upper bound
+on what an estimated rule can achieve, not evidence for one. The evaluation this
+section requires is: does Equation~\eqref{eq:abstain}, with estimated posteriors,
+beat both ranking and doing nothing on realised money at $n \in [250, 2000]$, on
+what proportion of draws?
+
+\section{Limitations}
+\label{sec:limitations}
+
+\paragraph{One simulator carries the negative-correlation regime.} Every setting in
+Table~\ref{tab:corr} with $\corr < 0$ is ours. We argue the mechanism is real and
+the correlation is a consequence of it rather than an input --- the attention--%
+engagement correlation is a generative parameter and the correlation of
+\emph{estimated} quantities is measured downstream --- but a public retention
+experiment with the mechanism present would be far stronger evidence, and none
+exists that we are aware of.
+
+\paragraph{Four points are a contrast, not a relationship.} We do not fit a curve
+through Table~\ref{tab:corr} and do not claim one. The ordering among the three
+positive rows is within noise.
+
+\paragraph{The Lenta confirmation is partial.} It confirms the axis and is
+underpowered to test the consequence, as stated in Section~\ref{sec:corr}.
+
+\paragraph{The forward window is less stochastic than the historical period.} The
+simulator's exact-$\CATE$ regime evolves state along its expected trajectory, which
+slightly understates outcome variance. Acceptable because the estimand is the
+treatment effect rather than the outcome distribution, but it is a real
+approximation.
+
+\paragraph{The value layer is honest about probabilities, not about margins.}
+Contribution margin and discount rate are inputs a firm supplies. Every monetary
+figure in Section~\ref{sec:value} is conditional on them and they are stated
+wherever a number appears.
+
+\paragraph{The central proposal is unevaluated.} Section~\ref{sec:abstain} is a
+specification. Until it is built and tested at small $n$, this paper is a diagnosis
+with a proposed treatment, and should be read as one.
+
+\section{Conclusion}
+
+Whether to target on treatment effects is not a methodological preference but an
+empirical question about a specific dataset, and $\corr(\hat\CATE, \hat\pi)$ answers
+it. Where the effect ordering and the propensity ordering coincide --- advertising,
+promotion --- the simpler estimator wins on variance grounds and the sophistication
+is wasted. Where they diverge, as they do in subscription retention because the
+customers a churn model ranks highest include those an intervention harms, the gap
+is an order of magnitude and risk-based targeting destroys value rather than merely
+failing to add it.
+
+The practical difficulty is that the firms in the adversarial regime are also the
+smallest, and at their scale neither estimator is reliable on a single draw. We take
+that to mean the right object is not a better ranker but a decision rule that can
+decline, denominated in money rather than probability. We have built the money and
+shown that it disagrees sharply with risk. The decision rule itself remains to be
+demonstrated.
+
+\subsection*{Reproducibility}
+
+Every number in this paper is regenerated by a command in the repository, listed in
+\texttt{papers/paper1/README.md}. The simulator, the point-in-time feature store, the
+benchmark harness, the survival and value layers, and 277 tests are released under
+the repository's licence. Predictions made in advance of experiments are recorded in
+the source files that run them, in commits that precede the runs.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}

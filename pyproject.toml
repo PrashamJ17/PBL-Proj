@@ -17,12 +17,20 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Phase 3 — survival models
+# Phase 3 — survival models. Only the *baselines* need these: the discrete-time
+# hazard, the CLV layer and every survival metric run on the base install, so the
+# Phase 3 tests stay in CI. A metric that cannot be computed in CI is a metric that
+# silently stops being checked.
 survival = [
-    "lifelines>=0.28",
-    "scikit-survival>=0.22",
+    "lifelines>=0.28",       # Cox baseline
+    "scikit-survival>=0.22", # RSF baseline, GBSG2, and the metric cross-checks
     "lightgbm>=4.3",
 ]
+# DeepSurv is the one baseline the Phase 3 gate names that needs a deep-learning
+# stack. Split out because torch is ~2GB installed and nothing else here wants it;
+# `DeepSurvBaseline.available()` reports False and the benchmark says so rather than
+# failing.
+deepsurv = ["torch>=2.2"]
 # Phase 4 — causal / uplift baselines and the hierarchical model
 causal = [
     "econml>=0.15",
