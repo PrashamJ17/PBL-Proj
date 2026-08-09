@@ -29,12 +29,14 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 
 ## Status
 
-**Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phase 4 BUILT (gate PARTIAL).**
-337 tests. CI green.
-**Next: Phase 5** — offer ladder + reason codes, with a *specified* first job: make
-`alpha` a function of the payoff ratio (D-056). Phase 4's gate is unachievable as written
-— beating ranking and beating inaction trade off (D-055) — so do NOT tune Phase 4 to pass
-it. The diagnosis is deliberately unfixed; specify the fix before running it.
+**Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
+357 tests. CI green.
+**Next: Phase 5 remainder** — reason codes + dashboard (not built; gate unmet on those
+grounds alone). **D-057: Phase 4 multiplied log-odds by money for a whole phase.** Fixed
+in `keel/policy/economics.py`; losses -3,531→-1,070, but NO qualitative conclusion
+changed. Predictions were pre-registered (`docs/PREREG-phase5.md`) and 2 of 5 FAILED.
+**D-058: choosing the offer beats choosing the customer** — but 58% [.42,.72] is not
+beating chance. Do NOT tune to close it.
 
 | # | Phase | Status | Gate |
 |---|---|---|---|
@@ -42,8 +44,8 @@ it. The diagnosis is deliberately unfixed; specify the fix before running it.
 | 1 | Canonical schema, PIT feature store, ingest | ✅ **done** | leakage suite green in CI |
 | 2 | Dunning / involuntary churn + retry-timing model | 🟨 **built** | **first revenue — get a paying client (OPEN)** |
 | 3 | Discrete-time survival hazard + CLV | ✅ **done** | beats Cox+RSF 10/10 on Telco, **ties DeepSurv**; best-calibrated (D-049) |
-| 4 | Hierarchical Bayesian CATE + abstention | 🟨 **built** | gate **PARTIAL** — beats ranking 65-80%, does NOT beat do-nothing (D-054) |
-| 5 | Offer-ladder optimizer + reason codes + dashboard | ⬜ | owner can act without asking us |
+| 4 | Hierarchical Bayesian CATE + abstention | 🟨 **built** | gate **PARTIAL** — beats ranking 93% post-D-057, still not do-nothing |
+| 5 | Offer-ladder optimizer + reason codes + dashboard | 🟨 **built (optimizer only)** | **UNMET** — beats achievable rival 58% [.42,.72]; reason codes/dashboard absent |
 | 6 | Holdout infra + incrementality reports + cancel widget | ⬜ | **real client ROI number**; paper 3 |
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
 
@@ -94,7 +96,8 @@ keel/core/       schema (occurred_at+available_at) · features (_visible = ONLY 
 keel/ingest/     stripe (pure, fixture-tested) · csv_ingest · subsim_adapter
 keel/sim/        config · latents (copula) · hazard (ONE defn, two regimes) · subsim
                  counterfactual (exact τ, CRN, LADDER) · calibration · dunning
-keel/policy/     dunning — 6 retry policies (processor_default … aggressive)
+keel/policy/     dunning (6 retry policies) · economics (log-odds→money, D-057) ·
+                 ladder (per-customer rung choice, multi-arm pilot, D-058)
 keel/report/     autopsy (analysis) + render (self-contained HTML)
 keel/models/uplift/     bayesian (Laplace posterior, validated vs NUTS) · abstention
 keel/models/survival/  discrete (person-period hazard + competing risks) · metrics
@@ -105,7 +108,7 @@ keel/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark
                    abstention (P4 gate) · sensitivity (D-055/056) · figures
 keel/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           337 — fairness, realism, edge cases, leakage gate
+tests/           357 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -113,11 +116,12 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 337 tests + calibration gates — run before every commit
+make check      # lint + 357 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
 make sensitivity # why the Phase 4 gate failed — effect size and offer cost
+make ladder     # Phase 5 gate — rung-matching vs one good offer
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
 ```
@@ -144,9 +148,9 @@ Message leads with what it **establishes or fixes**, not files touched; numbers 
 body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first. Never commit on red —
 if blocked, commit *with the failure described*.
 
-Keep under **~180 lines** (raised 120→150→165→175→180 as phases, decisions and the paper
-accumulated — deliberate, not drift; each raise followed a real trim first). If it grows,
-cut checkpoints first; never invariants.
+Keep under **~195 lines** (raised 120→150→165→175→180→195 as phases, decisions and the
+paper accumulated — deliberate, not drift; each raise followed a real trim first, and
+this one followed compressing CP-08/10/11). If it grows, cut checkpoints; never invariants.
 
 ---
 
@@ -158,22 +162,33 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   real-RCT validations (Hillstrom D-020/023 · Criteo D-024/026 · Lenta D-031), Phase 2
   dunning (D-033/034), Churn Autopsy (D-035/036), CI fixes (D-028/030). **Phase 2's gate is
   a sales task: run the Autopsy against 10 real businesses.**
-- **CP-08** — **Phase 3 done** + merged paper drafted. Telco: beats Cox and RSF 10/10 on
-  integrated Brier (0.0824 vs 0.0914/0.0964), **ties DeepSurv** (0.0825); loses GBSG2 to
-  RSF as predicted (D-021/049). CLV shortfall 72.5/27.5. Below n=250 nothing beats KM.
-- **CP-10** — **Phase 4 built, gate PARTIAL (D-054).** Abstention beats ranking 65-80% of
-  draws spending 1/3 as much; beats do-nothing on 0-10%. At alpha=0.05 it treats ZERO and
-  correctly returns the baseline — damage prevention, not profit. Pooling cuts losses
-  -457→-62 at n=500. Laplace validated vs NUTS (D-053); residual under-coverage is
-  empirical Bayes and runs AGAINST the claim.
+- **CP-08** — **Phase 3 done** + paper drafted. Telco: beats Cox/RSF 10/10 on integrated
+  Brier (0.0824 vs 0.0914/0.0964), **ties DeepSurv**; loses GBSG2 to RSF as predicted
+  (D-021/049). Below n=250 nothing beats KM.
+- **CP-10** — **Phase 4 built, gate PARTIAL (D-054).** Beats ranking 65-80% spending 1/3
+  as much; beats do-nothing 0-10%. At alpha=0.05 treats ZERO — damage prevention, not
+  profit. Laplace validated vs NUTS (D-053); under-coverage runs AGAINST the claim.
+- **CP-12** — **D-057: a units bug ran for a whole phase.** `decide` multiplied a
+  **log-odds** tau by CLV as if it were a probability difference — believed -104.5 where
+  truth was +20.5. Overstatement `1/(p0(1-p0))` → **worst for low-risk customers**: the
+  Sure Thing error, inside our own rule. Every test passed: all were self-consistency
+  checks, and a units error is self-consistent. Fixed in `policy/economics.py`; the new
+  rule takes **money only**, so it is unrepresentable. Losses -3,531→-1,070, beats
+  ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
+  spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
+  not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-13** — **Phase 5 optimizer built; gate UNMET (D-058).** Per-rung effects from a
+  multi-arm pilot (~35/arm at n=500), pooled across rungs via D-041 machinery. First
+  estimated policy here to make money (655/1,039/2,252): **28% of oracle vs 13%** for the
+  achievable rival — but beats it on only **58% [.42,.72]**, chance. **Sellable finding:
+  pilot-pick matches the true best rung 13% of the time** (random=17%) and loses money at
+  n=1000, while a hindsight uniform rung captures **73%** vs the optimizer's 28%.
+  **Choosing the offer beats choosing the customer.** Risk aversion HURT. 357 tests.
 - **CP-11** — **The gate was unpassable, and we tested the wrong rung** (D-055/056).
-  Break-even |τ|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**; the gate was out
-  of reach on arithmetic. Raising the effect DOES flip it at τ=-0.050 (57%) but the two
-  win rates move in OPPOSITE directions — never both above chance — while sleeping dogs
-  collapse 27%→3%, so passing means deleting the mechanism. Phase 4 also ran on
-  `discount_20_3mo` (cost 32, 2nd dearest rung); `feature_nudge` costs 0.10 and pays for
-  69%. **Detectability and profitability are anti-correlated across the ladder** — the
-  real finding. A minimax-regret reading was pre-registered and **REFUTED** out-of-sample
-  (random hedges better, 58.9% vs 85.7%) — recorded, not dropped. It localised a genuine
-  defect: best alpha moves 0.49 (nudge) → 0.05 (discount), so **constant alpha is wrong by
-  construction**. Left unfixed on purpose → Phase 5. 337 tests.
+  Break-even |τ|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**. Raising the
+  effect flips it at τ=-0.050 but the two win rates move in OPPOSITE directions — never
+  both above chance — while sleeping dogs collapse 27%→3%, so passing deletes the
+  mechanism. **Detectability and profitability are anti-correlated across the ladder** —
+  the real finding. A minimax-regret reading was pre-registered and **REFUTED**
+  out-of-sample (random hedges better). Localised: best alpha moves 0.49→0.05, so
+  **constant alpha is wrong by construction**.

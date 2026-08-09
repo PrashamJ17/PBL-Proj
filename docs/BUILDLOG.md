@@ -1240,3 +1240,61 @@ The D-054 headline is unaffected — at those settings the rule was treating and
 left the default path identical, and that sweeping a nested config does not mutate the
 shared default. A sensitivity that moved its own baseline would be indistinguishable from
 the recalibration it exists to avoid.
+
+---
+
+## Step 5.1 — The decision layer, and a units bug that had been there all along (D-057, D-058)
+
+Phase 5 began with the correction D-056 specified, pre-registered in
+`docs/PREREG-phase5.md` and committed before any of it ran. Reading the rule in order to
+change it surfaced something larger.
+
+### The bug
+
+`AbstentionPolicy.decide` computed `-tau * value - cost` where `tau` is a **log-odds
+ratio**, not a probability difference. On one draw the rule believed treating was worth
+**-104.5** where the truth was **+20.5** against a 31.5 offer. The overstatement scales as
+`1/(p0(1-p0))` — 4x at `p0 = 0.5`, **25x at `p0 = 0.05`** — so it inflated the value of
+treating customers who were never going to leave. That is the Sure Thing quadrant, i.e. the
+error the whole project exists to characterise, reproduced inside our own decision rule.
+
+Every Phase 4 test passed and none of them was wrong; they were all self-consistency checks,
+and a units error is consistent with itself. The rule's own test compared it against the
+same wrong formula. The estimator's tests used synthetic `tau` on the logit scale. **Nothing
+asked what the number meant in currency.**
+
+Fixed in `keel/policy/economics.py`: convert on the probability scale first, using the
+baseline `eta0 = a + x'b` from the same fit, sampling `(eta0, tau)` jointly because they are
+correlated and `expit` destroys the closed form. The new rule takes a `MoneyPosterior` and
+nothing else, so the mistake is now unrepresentable.
+
+### What the fix bought, against predictions made first
+
+Losses fell sharply — n=2000: **-3,531 → -1,070**, treating 27 rather than 72; the deep
+discount at `alpha=0.05` went **-5,384 → 0**, correctly treating nobody — and the rule now
+beats corrected ranking on **93%** of draws. Of five registered predictions, two held, one
+half-held, and **two failed**: no cheap rung passes the gate (1d), and the per-rung `alpha`
+spread did not shrink (2a). 2a failing means D-056's claim survives a challenge we raised
+against ourselves. **The bug was real, the repair necessary, and not sufficient.**
+
+### Phase 5 proper — the offer-ladder optimiser
+
+`keel/policy/ladder.py` fits one effect model per rung from a randomised multi-arm pilot
+(never the simulator's `saveability_multiplier`, which is oracle knowledge), pools across
+rungs using the D-041 cross-tenant machinery, and picks `argmax_k E[B_ik] - lambda*SD[B_ik]`,
+abstaining when nothing clears zero.
+
+**Gate not met, and the closest the project has come.** The optimiser is the first estimated
+policy here to make money on average (655 / 1,039 / 2,252 at n = 500 / 1,000 / 2,000),
+capturing 28% of the oracle against 13% for the achievable alternative — but it beats that
+alternative on 58% of draws, CI [0.42, 0.72], which is not distinguishable from chance.
+
+The result worth keeping: a pilot-chosen best rung agrees with the true best rung on **13%**
+of draws, barely above the 17% of a random guess among six, and returns *negative* money at
+n=1000. **Choosing the right default offer is worth far more than per-customer targeting,
+and it is what small businesses are least able to do themselves.** Risk aversion did not
+help; `lambda = 0` dominated throughout, which is the opposite of what the abstention thesis
+predicted, and is reported because it was swept rather than chosen.
+
+**20 new tests, 357 total.** Reason codes and the dashboard are not built, so the phase gate
+is unmet on those grounds too, independently of the numbers.

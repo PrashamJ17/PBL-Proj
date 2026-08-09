@@ -1508,3 +1508,116 @@ against `treat_all`'s 753, so it still under-treats by a wide margin. Consistent
 empirical-Bayes shrinkage of D-053: pooling pulls small-but-real effects toward zero, and
 what is shrunk cannot be detected. Both defects point the same way, and neither is
 addressed by more customers.
+
+---
+
+## D-057 — Phase 4 multiplied a log-odds ratio by money for an entire phase
+
+**The defect.** `HierarchicalCATE` fits `logit P(churn) = a + x'b + T(tau_0 + x'gamma)`, so
+`tau_i` is a **log-odds ratio** — `bayesian.py` says so in as many words. `AbstentionPolicy.
+decide` then computed `-posterior.mean * value - cost`, which is money only if `tau_i` is a
+difference in **probability**. On one diagnostic draw (n=4000, seed 11, reference offer) the
+rule believed the mean benefit of treating was **-104.5**; the truth was **+20.5**, against
+an offer costing 31.5. The quantity being thresholded was not money.
+
+**Why it mattered rather than being untidy.** For baseline risk `p0`, a log-odds shift `t`
+moves the probability by roughly `t * p0(1-p0)`, so treating log-odds as probability
+overstates the benefit by about `1/(p0(1-p0))` — a factor of 4 at `p0 = 0.5` and **25 at
+`p0 = 0.05`**. The inflation is worst for customers who were **never going to churn**. That
+is the Sure Thing quadrant, and over-valuing it is the exact error this project exists to
+characterise (D-002, D-013). We reintroduced it inside our own decision rule.
+
+**Why nothing caught it.** Every Phase 4 test passed, and all of them were right about what
+they tested. `test_rule_reduces_to_a_point_threshold_as_the_posterior_concentrates` checks
+the rule against `(-mean * value - cost) > 0` — the same wrong formula. The estimator tests
+compare against a synthetic `tau` generated on the logit scale, so they are internally
+consistent. **Not one test asked what the number meant in currency.** The lesson is narrow
+and worth stating: self-consistency tests cannot catch a units error, because a units error
+is consistent with itself. `test_probability_effect_matches_the_definition` now checks a
+value computed by hand.
+
+**The fix** (`keel/policy/economics.py`). Convert before touching money:
+
+```
+delta_p = expit(eta0 + tau) - expit(eta0)      benefit = -delta_p * V - c
+```
+
+`eta0 = a + x'b` comes from the same fitted model, so no separate churn model is needed and
+the two halves cannot disagree. `expit` is nonlinear, so Equation 8's closed form is gone;
+the posterior over `benefit` is obtained by sampling `(eta0, tau)` **jointly**, since they
+come from one coefficient vector and are correlated. The new rule consumes a
+`MoneyPosterior` and nothing else, which makes the original mistake unrepresentable —
+there is no way to hand it a log-odds quantity. `decide` is kept, with a warning, so
+D-054/055/056 stay reproducible.
+
+**Predictions were registered first** (`docs/PREREG-phase5.md`), because "we fixed a bug and
+our numbers improved" is the easiest way to launder a result. Outcome, 20 seeds:
+
+| # | Prediction | Result |
+|---|---|---|
+| 1a | corrected benefit within ~3x of truth, right sign | **held** (-46 vs -23; was -104) |
+| 1b | treats more on cheap rungs, fewer on dear ones | **half** — dear yes (24→13, 28→1), cheap unchanged (25→26) |
+| 1c | gate **still fails** on the reference discount | **held** — 6% beats do-nothing |
+| 1d | gate **passes** on a cheap rung | **FAILED** — best is `feature_nudge` at 10%, CI [0.03, 0.24] |
+| 2a | the best-`alpha` spread shrinks | **FAILED** — 2 distinct values became 3 |
+
+**1c holding is the important one.** The 5.8% oracle ceiling of D-055 is computed from
+ground truth and no estimator fix can beat it; a fix that made the reference discount
+profitable would have been wrong. **1b's cheap half failed for a reason that was
+foreseeable**: when cost is negligible the decision is driven by the sign of `delta_p`,
+which `expit` preserves, so the bug barely moved it. **2a failing means D-056 stands** —
+the per-rung `alpha` dependence is real and not an artifact, which we had suspected it was.
+
+**What it changes.** Losses shrink sharply (n=2000: **-3,531 → -1,070**, treating 27 rather
+than 72; `discount_40_6mo` at `alpha=0.05`: **-5,384 → 0**, i.e. correctly treating nobody)
+and the rule now beats corrected ranking on **93%** of draws, up from 75%. **It does not
+change any qualitative conclusion.** The gate still fails, for the reason D-055 gave: the
+offer is four times too weak to pay for itself, and `corr(tau_hat, tau_true) = 0.13` at
+these sample sizes. The bug was real, its repair was necessary, and it was **not
+sufficient**.
+
+---
+
+## D-058 — Choosing the offer beats choosing the customer, and neither is reliable yet
+
+**The reframing.** Phases 0-4 all asked one question with the offer held fixed: who gets
+this discount? D-055 showed that question is close to degenerate — treat everyone when the
+offer is nearly free, nobody when it is expensive. Phase 5 asks the one the ladder was
+built for: **which rung for which customer.**
+
+**The test is harder than Phase 4's, deliberately.** Effects are learned **per rung** from a
+randomised multi-arm pilot, because `saveability_multiplier` is oracle knowledge a business
+does not have. That splits a small pilot `K+1` ways — roughly 35 customers per arm at
+n=500 — so learning six offers is *harder* than learning one. Partial pooling across rungs
+(the D-041 cross-tenant mechanism, applied across arms) is what makes it survivable.
+
+**Three comparators, one of them unfair on purpose.**
+
+| | mean money | share of oracle | beats it |
+|---|---|---|---|
+| **optimiser** (`lambda = 0`) | 655 / 1,039 / 2,252 | **28%** | — |
+| `pilot-pick` — best rung on the pilot, applied to everyone | 502 / **-562** / 1,869 | 13% | 58% [0.42, 0.72] |
+| `hindsight` — best single rung, chosen on the test set | 1,997 / 2,554 / 5,892 | 73% | 13% [0.05, 0.27] |
+| `oracle` — knows every tau, picks per customer | 2,348 / 3,747 / 8,242 | 100% | — |
+
+**Gate NOT met**, and it is the closest this project has come. The optimiser is the first
+estimated policy here to make money on average, and it captures roughly **twice** what the
+achievable alternative does. But 58% is not distinguishable from a coin flip on 45 draws,
+and it beats doing nothing on only 44%. D-023 again: a good mean with an unreliable draw.
+
+**The finding that is actually worth selling.** `pilot-pick` agrees with the hindsight best
+rung on **13%** of draws — barely better than the 17% a random guess among six rungs gives.
+A small business running a six-arm pilot **cannot reliably identify which single offer is
+best**, and gets a *negative* expected return at n=1000 by acting on it. Meanwhile the
+hindsight uniform rung captures 73% of the oracle against the optimiser's 28%. So: **picking
+the right default offer is worth far more than per-customer targeting, and it is the thing
+small businesses are least able to do for themselves.** That is a smaller, cheaper and much
+more defensible product than a targeting engine, and it points the go-to-market at offer
+selection rather than personalisation (revising D-040/041's emphasis, not its ordering).
+
+**Risk aversion did not help.** `lambda = 0` (risk-neutral expected value) dominated 0.5 and
+1.0 on every size. Reported because it was swept rather than chosen, and because the
+opposite is what the abstention thesis would have predicted.
+
+**Not attempted here:** reason codes and the dashboard, so the phase gate ("an owner can act
+without asking us") is not met on those grounds either, independently of the numbers.

@@ -381,6 +381,73 @@ class HierarchicalCATE:
         """Point estimate, for comparison against methods that only offer one."""
         return self.posterior(X).mean
 
+    def joint_samples(
+        self, X, n_samples: int = 500, seed: int | None = 0
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Draw `(baseline_logit, tau)` jointly, each of shape `(n, n_samples)`.
+
+        `posterior()` returns the marginal over `tau_i`, which is all a rule that
+        thresholds `tau` needs. Converting `tau` to *money* needs more than that: the
+        effect on the probability scale is
+
+            delta_p_i = expit(eta0_i + tau_i) - expit(eta0_i)
+
+        which depends on the baseline `eta0_i = alpha + x_i'beta` as well. The two are
+        estimated from the same data and are correlated -- a fit that puts a customer's
+        baseline risk high tends to put the treatment coefficient low -- so drawing them
+        independently would misstate the spread of `delta_p`. They are drawn from the
+        same parameter vector here.
+
+        Sampling rather than a closed form because `expit` is nonlinear: the exact
+        Gaussian algebra that `AbstentionPolicy` relies on does not survive the
+        conversion (D-057).
+        """
+        if self.theta_ is None:
+            raise RuntimeError("fit() first")
+        if n_samples < 1:
+            raise ValueError(f"n_samples must be >= 1, got {n_samples}")
+        p_in = np.asarray(X).shape[1]
+        if p_in != self.n_features_:
+            raise ValueError(
+                f"expected {self.n_features_} features, got {p_in}. The columns must "
+                "match those seen during fit, in the same order."
+            )
+
+        rng = np.random.default_rng(seed)
+        Xs = self._standardise(X)
+        n, p = Xs.shape
+        Zt = np.hstack([np.ones((n, 1)), Xs])        # (n, p+1)
+
+        # Draw the mixture component first, then the coefficients within it, so that
+        # uncertainty about the pooling strength propagates the same way it does in
+        # `posterior()`.
+        ks = rng.choice(len(self.components_), size=n_samples, p=self.sigma_weights_)
+        draws = np.empty((n_samples, 2 * p + 2))
+        for k in np.unique(ks):
+            rows = ks == k
+            theta, cov = self.components_[k]
+            # Cholesky with jitter: `cov` is a numerically-inverted Hessian and can
+            # lose positive-definiteness in the last bits.
+            sym = 0.5 * (cov + cov.T)
+            jitter = 1e-10 * max(np.trace(sym) / len(sym), 1.0)
+            for _ in range(6):
+                try:
+                    L = np.linalg.cholesky(sym + jitter * np.eye(len(sym)))
+                    break
+                except np.linalg.LinAlgError:
+                    jitter *= 100
+            else:
+                raise RuntimeError(
+                    "posterior covariance is not positive-definite even with jitter; "
+                    "the fit did not converge and its uncertainty cannot be trusted."
+                )
+            z = rng.standard_normal((int(rows.sum()), len(sym)))
+            draws[rows] = theta + z @ L.T
+
+        eta0 = Zt @ draws[:, : p + 1].T               # (n, n_samples)
+        tau = Zt @ draws[:, p + 1 :].T
+        return eta0, tau
+
 
 def pool_across_tenants(
     fits: list[HierarchicalCATE], shrink: float = 1.0

@@ -34,7 +34,11 @@ import numpy as np
 import pandas as pd
 
 from keel.models.uplift import AbstentionPolicy, HierarchicalCATE
-from keel.models.uplift.abstention import top_k_by_point_estimate
+from keel.models.uplift.abstention import (
+    top_k_by_expected_money,
+    top_k_by_point_estimate,
+)
+from keel.policy.economics import benefit_posterior
 from keel.sim import SimConfig, simulate
 from keel.sim.counterfactual import REFERENCE_OFFER, Offer, potential_outcomes
 
@@ -151,6 +155,16 @@ def run_once(
            .decide(post, value, cost).treat)
     record("abstention_no_budget", AbstentionPolicy(alpha=alpha)
            .decide(post, value, cost).treat)
+
+    # --- the same two policies with the D-057 conversion corrected ------------
+    # Both are corrected, not just ours: comparing a repaired policy against a
+    # broken comparator would flatter abstention for a reason unrelated to it.
+    money = benefit_posterior(model, Xte, value, cost, n_samples=500, seed=seed)
+    record("top_k_money", top_k_by_expected_money(money.mean, budget))
+    record("abstention_money", AbstentionPolicy(alpha=alpha, budget=budget)
+           .decide_money(money).treat)
+    record("abstention_money_no_budget", AbstentionPolicy(alpha=alpha)
+           .decide_money(money).treat)
 
     return out
 

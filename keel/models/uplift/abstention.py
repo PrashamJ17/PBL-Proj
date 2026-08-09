@@ -86,7 +86,19 @@ class AbstentionPolicy:
         value: np.ndarray,
         cost: np.ndarray | float,
     ) -> Decision:
-        """Apply Equation 8.
+        """Apply Equation 8 to a **probability-scale** treatment effect.
+
+        .. warning::
+           `posterior.mean` must be a difference in *probability*, because
+           `-tau * value` is only money under that reading. A `HierarchicalCATE`
+           posterior is on the **log-odds** scale and must not be passed here --
+           doing so is the Phase 4 defect (D-057), which inflated the apparent
+           benefit by roughly `1 / (p0(1-p0))`, worst for the low-risk customers it
+           was least justified in treating. Use `decide_money` with
+           `keel.policy.economics.benefit_posterior` instead.
+
+           This method is kept because the Phase 4 results (D-054/055/056) were
+           produced by it and must stay reproducible.
 
         `value` is each customer's worth if retained (CLV), `cost` the price of the
         offer. Both in the same currency; the rule is scale-free in that currency but
@@ -116,19 +128,45 @@ class AbstentionPolicy:
 
         treat = confidence > (1.0 - self.alpha)
 
-        if self.budget is not None:
-            k = int(round(self.budget * len(value)))
-            if treat.sum() > k:
-                # Over budget: keep the highest expected value among those that
-                # already cleared the confidence bar. Confidence is a gate, money is
-                # the ranking -- using confidence to rank would prefer certain
-                # trivialities over uncertain large wins.
-                order = np.argsort(-np.where(treat, mean_benefit, -np.inf))
-                keep = np.zeros_like(treat)
-                keep[order[:k]] = True
-                treat = keep
+        # Over budget: keep the highest expected value among those that already cleared
+        # the confidence bar. Confidence is a gate, money is the ranking -- ranking on
+        # confidence would prefer certain trivialities over uncertain large wins.
+        treat = self._apply_budget(treat, mean_benefit)
 
         return Decision(treat=treat, confidence=confidence, expected_value=mean_benefit)
+
+    def _apply_budget(self, treat: np.ndarray, mean_benefit: np.ndarray) -> np.ndarray:
+        """Trim to the budget, keeping the most valuable of those already cleared."""
+        if self.budget is None:
+            return treat
+        k = int(round(self.budget * len(treat)))
+        if treat.sum() <= k:
+            return treat
+        order = np.argsort(-np.where(treat, mean_benefit, -np.inf))
+        keep = np.zeros_like(treat)
+        keep[order[:k]] = True
+        return keep
+
+    def decide_money(self, money) -> Decision:
+        """Equation 8 applied to a posterior that is **already in currency**.
+
+        The correct entry point (D-057). `decide` above takes a posterior over the
+        treatment effect and does the conversion itself, which is only valid if that
+        effect is a difference in *probability*; Phase 4 handed it a log-odds
+        quantity. This method takes a `MoneyPosterior`, so there is no conversion to
+        get wrong and no scale to mistake.
+
+        The rule is unchanged -- confidence gates, money ranks, the budget is a ceiling
+        -- but `P(benefit > 0)` is now a Monte Carlo estimate, because the log-odds to
+        probability step is nonlinear and destroys the closed form.
+        """
+        mean_benefit = money.mean
+        treat = money.prob_positive() > (1.0 - self.alpha)
+        return Decision(
+            treat=self._apply_budget(treat, mean_benefit),
+            confidence=money.prob_positive(),
+            expected_value=mean_benefit,
+        )
 
 
 def top_k_by_point_estimate(
@@ -142,6 +180,17 @@ def top_k_by_point_estimate(
     comparator would flatter the policy for the wrong reason.
     """
     ev = -np.asarray(tau, dtype=float) * np.asarray(value, dtype=float) - np.asarray(cost)
+    return top_k_by_expected_money(ev, budget)
+
+
+def top_k_by_expected_money(expected_value: np.ndarray, budget: float) -> np.ndarray:
+    """Rank by expected money and fill the budget.
+
+    The same comparator as above, but taking the money directly rather than deriving it
+    from a treatment effect -- so it can be fed a correctly-converted posterior mean
+    (D-057) instead of repeating the log-odds mistake it was written with.
+    """
+    ev = np.asarray(expected_value, dtype=float)
     k = int(round(budget * len(ev)))
     mask = np.zeros(len(ev), dtype=bool)
     if k > 0:

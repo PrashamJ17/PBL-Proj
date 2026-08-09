@@ -54,3 +54,6 @@ abstention:  ## Phase 4 gate — abstention vs ranking on realised money
 
 sensitivity:  ## Why the Phase 4 gate failed — effect size and offer cost (D-055/056)
 	@python -m keel.experiments.sensitivity
+
+ladder:  ## Phase 5 gate — does matching a rung to a customer beat one good offer? (D-058)
+	@python -m keel.experiments.ladder
