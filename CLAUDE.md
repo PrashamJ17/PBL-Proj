@@ -31,11 +31,10 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phase 4 BUILT (gate PARTIAL).**
 337 tests. CI green.
-**Next: Phase 5** — offer ladder + reason codes, and it now has a *specified* first job:
-make `alpha` a function of the payoff ratio (D-056). Phase 4's gate is unachievable as
-written — beating ranking and beating inaction trade off against each other (D-055) — so
-do NOT tune Phase 4 to pass it. Sensitivity is done; the diagnosis is deliberately
-unfixed, and the fix must be specified before it is run.
+**Next: Phase 5** — offer ladder + reason codes, with a *specified* first job: make
+`alpha` a function of the payoff ratio (D-056). Phase 4's gate is unachievable as written
+— beating ranking and beating inaction trade off (D-055) — so do NOT tune Phase 4 to pass
+it. The diagnosis is deliberately unfixed; specify the fix before running it.
 
 | # | Phase | Status | Gate |
 |---|---|---|---|
@@ -48,12 +47,11 @@ unfixed, and the fix must be specified before it is run.
 | 6 | Holdout infra + incrementality reports + cancel widget | ⬜ | **real client ROI number**; paper 3 |
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
 
-**Papers (D-042):** merged 1+2 **drafted** → `papers/paper1/` (read its README first —
-§8 abstention now REPORTS results + why the gate was unpassable). Lead = corr(τ,propensity) +
-small-*n* reliability; simulator is the *instrument*. arXiv → EJOR/DSS, not JMR
-(Ascarza's turf). Novelty is NOT "churn scores are bad" — that is Ascarza 2018.
-**Go-to-market (D-040/041):** reports before dashboards; report (built) → dunning
-autopilot → retention decisions, ordered by *trust required*. Best version is invisible.
+**Papers (D-042):** merged 1+2 **drafted** → `papers/paper1/` (read its README first; §8
+REPORTS results + why the gate was unpassable). Lead = corr(τ,propensity) + small-*n*
+reliability; simulator is the *instrument*. arXiv → EJOR/DSS, not JMR (Ascarza's turf).
+Novelty is NOT "churn scores are bad" — that is Ascarza 2018. **GTM (D-040/041):** reports
+before dashboards → dunning autopilot → retention decisions, ordered by *trust required*.
 
 ---
 
@@ -146,8 +144,9 @@ Message leads with what it **establishes or fixes**, not files touched; numbers 
 body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first. Never commit on red —
 if blocked, commit *with the failure described*.
 
-Keep under **~175 lines** (raised 120→150→165→175 as phases, decisions and the paper accumulated — deliberate, not
-drift). If it grows, cut checkpoints first; never invariants.
+Keep under **~180 lines** (raised 120→150→165→175→180 as phases, decisions and the paper
+accumulated — deliberate, not drift; each raise followed a real trim first). If it grows,
+cut checkpoints first; never invariants.
 
 ---
 
@@ -155,10 +154,10 @@ drift). If it grows, cut checkpoints first; never invariants.
 
 Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
 
-- **CP-01…07** — Phases 0-1 (SubSim + kill test; schema, PIT store, leakage, ingest),
-  three real-RCT validations (Hillstrom D-020/023 · Criteo D-024/026 · Lenta D-031),
-  Phase 2 dunning (D-033/034) and the Churn Autopsy (D-035/036). CI fixes D-028/030.
-  **Phase 2's gate is a sales task: run the Autopsy against 10 real businesses.**
+- **CP-01…07** — Phases 0-1 (SubSim + kill test; schema, PIT store, leakage, ingest), three
+  real-RCT validations (Hillstrom D-020/023 · Criteo D-024/026 · Lenta D-031), Phase 2
+  dunning (D-033/034), Churn Autopsy (D-035/036), CI fixes (D-028/030). **Phase 2's gate is
+  a sales task: run the Autopsy against 10 real businesses.**
 - **CP-08** — **Phase 3 done** + merged paper drafted. Telco: beats Cox and RSF 10/10 on
   integrated Brier (0.0824 vs 0.0914/0.0964), **ties DeepSurv** (0.0825); loses GBSG2 to
   RSF as predicted (D-021/049). CLV shortfall 72.5/27.5. Below n=250 nothing beats KM.
