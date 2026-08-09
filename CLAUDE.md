@@ -29,10 +29,11 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 
 ## Status
 
-**Phases 0-1 and 3 done, 3 real-RCT validations, Phase 2 BUILT + Churn Autopsy report.**
-302 tests. CI green. Phase 2 gate (paying client) OPEN.
-**Next: Phase 4** — hierarchical Bayesian CATE + abstention. Phase 2's gate needs a
-*client*, not code; Phase 3 built the money layer Phase 4 multiplies by.
+**Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phase 4 BUILT (gate PARTIAL).**
+327 tests. CI green.
+**Next: Phase 5** — offer ladder + reason codes. Phase 4 is BUILT but its gate is only
+partially met (D-054): abstention prevents damage, it does not create profit at n<=4000.
+Do NOT tune it until it passes; the full threshold sweep is reported including failures.
 
 | # | Phase | Status | Gate |
 |---|---|---|---|
@@ -40,7 +41,7 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 | 1 | Canonical schema, PIT feature store, ingest | ✅ **done** | leakage suite green in CI |
 | 2 | Dunning / involuntary churn + retry-timing model | 🟨 **built** | **first revenue — get a paying client (OPEN)** |
 | 3 | Discrete-time survival hazard + CLV | ✅ **done** | beats Cox+RSF 10/10 on Telco, **ties DeepSurv**; best-calibrated (D-049) |
-| 4 | Hierarchical Bayesian CATE + abstention | ⬜ | **paper 2**; beats baselines on net revenue at small n |
+| 4 | Hierarchical Bayesian CATE + abstention | 🟨 **built** | gate **PARTIAL** — beats ranking 65-80%, does NOT beat do-nothing (D-054) |
 | 5 | Offer-ladder optimizer + reason codes + dashboard | ⬜ | owner can act without asking us |
 | 6 | Holdout infra + incrementality reports + cancel widget | ⬜ | **real client ROI number**; paper 3 |
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
@@ -95,6 +96,7 @@ keel/sim/        config · latents (copula) · hazard (ONE defn, two regimes) ·
                  counterfactual (exact τ, CRN, LADDER) · calibration · dunning
 keel/policy/     dunning — 6 retry policies (processor_default … aggressive)
 keel/report/     autopsy (analysis) + render (self-contained HTML)
+keel/models/uplift/     bayesian (Laplace posterior, validated vs NUTS) · abstention
 keel/models/survival/  discrete (person-period hazard + competing risks) · metrics
                  (KM, IPCW Brier, D-calibration — numpy-only so CI runs them) ·
                  baselines (Cox · RSF · DeepSurv, each optional)
@@ -111,7 +113,7 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 302 tests + calibration gates — run before every commit
+make check      # lint + 327 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
@@ -141,7 +143,7 @@ Message leads with what it **establishes or fixes**, not files touched; numbers 
 body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first. Never commit on red —
 if blocked, commit *with the failure described*.
 
-Keep under **~165 lines** (raised 120→150→165 as phases, decisions and the paper accumulated — deliberate, not
+Keep under **~175 lines** (raised 120→150→165→175 as phases, decisions and the paper accumulated — deliberate, not
 drift). If it grows, cut checkpoints first; never invariants.
 
 ---
@@ -154,6 +156,12 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   three real-RCT validations (Hillstrom D-020/023 · Criteo D-024/026 · Lenta D-031),
   Phase 2 dunning (D-033/034) and the Churn Autopsy (D-035/036). CI fixes D-028/030.
   **Phase 2's gate is a sales task: run the Autopsy against 10 real businesses.**
+- **CP-10** — **Phase 4 built, gate PARTIAL (D-054).** Abstention beats ranking 65-80%
+  of draws spending 1/3 as much; beats do-nothing on 0-10%. At alpha=0.05 it treats
+  ZERO and correctly returns the do-nothing baseline — damage prevention, not profit.
+  Cross-tenant pooling cuts losses -457→-62 at n=500. Laplace posterior validated
+  against NUTS (widths within 1%, D-053); residual under-coverage is empirical Bayes
+  and runs AGAINST the claim. Paper §8 now reports results. 327 tests.
 - **CP-08** — **Phase 3 done** + merged paper drafted. Telco: beats Cox and RSF 10/10
   on integrated Brier (0.0824 vs 0.0914/0.0964), **ties DeepSurv** (0.0825); loses
   GBSG2 to RSF as predicted (D-021/049). CLV shortfall 72.5/27.5; top value-at-risk

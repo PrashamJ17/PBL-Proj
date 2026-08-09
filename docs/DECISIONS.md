@@ -1303,3 +1303,97 @@ those still present at its edge. The invariant worth testing is the cap itself.
 Both follow the pattern of D-037: the test encoded an assumption about the data model
 rather than checking the data model. When a new test fails, the first question is which
 of the two is wrong — and roughly half the time in this project it has been the test.
+
+---
+
+## D-053 — The Laplace posterior is validated against NUTS; the residual is empirical Bayes
+
+**The worry.** `HierarchicalCATE` approximates the coefficient posterior with a Gaussian
+at the mode. A logistic posterior at n=250 is skewed, and a Gaussian fitted at its mode
+is narrower than what it approximates. If the posterior is over-confident, the
+abstention rule built on it acts when it should not, and the phase's own claim is
+inflated.
+
+**Measured.** Same model fitted with NUTS (`keel/models/uplift/mcmc_check.py`), same
+discipline the survival metrics use against lifelines and scikit-survival (D-048):
+
+| n | posterior sd ratio (Laplace / NUTS) | mean correlation |
+|---|---|---|
+| 250 | 0.993 | 0.9998 |
+| 500 | 1.003 | 1.0000 |
+| 2000 | 0.988 | 1.0000 |
+
+**The Laplace approximation is not the problem.** It reproduces NUTS to three decimals.
+
+**What is.** Simulation-based calibration still shows narrow intervals — 90% covering
+79% at n=250, 86% at n=2000 — and NUTS shows the same deviation. The cause is the
+**empirical-Bayes treatment of `sigma_gamma`**: weighting a grid by marginal likelihood
+is a posterior conditional on the grid being the prior, and it under-propagates
+hyperparameter uncertainty. This is a known property of empirical Bayes, not a bug.
+
+Mixing over the grid (rather than plugging in the mode) already narrowed the gap; it did
+not close it.
+
+**Why this is recorded rather than patched.** The error runs **against** the claim.
+An over-confident posterior abstains *less* than it should, so the policy behaves more
+like the top-k rule it is being compared to, and the differentiation this phase must
+demonstrate gets *harder* to show. Inflating the variance until coverage looked right
+would be tuning the estimator until the result improved — the thing D-005 and D-011
+exist to prevent.
+
+**Consequence for the paper:** the limitations section must state that intervals are
+narrow at small n, that the direction is conservative for our claim, and that a fully
+Bayesian treatment of `sigma_gamma` is the obvious next step.
+
+---
+
+## D-054 — Phase 4 gate: PARTIALLY MET. The rule prevents damage; it does not create profit
+
+The gate was: *"beats baselines on net revenue at small n"*. Stated precisely, with
+ground truth withheld from every policy and the comparator being the strong version
+(same estimator's point estimate, same customer values, ranking and filling the budget),
+the result is:
+
+| n | abstention beats ranking | abstention beats doing nothing | treated (abstain vs top-k) |
+|---|---|---|---|
+| 250 | 75% | **10%** | 7 vs 23 |
+| 500 | 80% | **10%** | 15 vs 46 |
+| 1000 | 70% | **5%** | 32 vs 90 |
+| 2000 | 65% | **0%** | 72 vs 181 |
+| 4000 | 80% | **10%** | 127 vs 359 |
+
+**What is established.** Abstention beats ranking on 65–80% of draws, and it does so by
+spending roughly a third as much. Sweeping the confidence threshold shows the safety
+property working exactly as specified: at `alpha = 0.05` the rule treats **zero**
+customers and returns the do-nothing baseline rather than losing money. It correctly
+recognises that it does not know enough.
+
+**What is not.** There is no threshold at which it *makes* money. It either loses (loose
+threshold) or does nothing (strict). Both it and the ranking comparator are
+value-destroying against the do-nothing baseline at every size tested.
+
+**Why, and why this was predictable.** D-023 established that conventional methods beat
+random on only 75% of draws at n=500 -- the estimates are unreliable at this scale. A
+decision rule inherits the quality of its inputs. Abstention makes the *consequences* of
+unreliable estimates survivable; it cannot manufacture reliability that is not there.
+The Phase 0 precursor (209 contacts beating 718) used **oracle** effects and was always
+an upper bound on an estimated rule, which the paper said at the time.
+
+**Cross-tenant pooling helps and does not close the gap.** A prior from ten established
+firms cuts mean losses from −457 to −62 at n=500, by making the small firm treat 2
+customers instead of 12. Damage limitation again, not profit.
+
+**Not tuned until it passed.** The obvious moves -- widen the posterior until coverage
+looks right, pick the alpha with the best realised number, drop the losing sizes -- are
+exactly what D-005 and D-011 exist to prevent. The threshold sweep is reported in full,
+including the settings where the rule loses money.
+
+**The honest claim this supports:** *given that ranking loses money (Phase 0), a rule
+that reliably returns to zero is worth real money relative to what businesses actually
+do.* That is a defensible and useful statement. It is **not** the statement the gate
+asked for, and the paper must say so.
+
+**What would change it:** more informative data per customer rather than more customers;
+a genuinely fully-Bayesian treatment of `sigma_gamma` (D-053); or a setting with larger
+average treatment effects, since SubSim's calibrated `mean tau = -0.010` leaves very
+little margin over the offer cost by construction (D-011).

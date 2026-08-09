@@ -48,3 +48,6 @@ check: lint test calibrate  ## Everything CI runs, locally
 clean:  ## Remove caches and build artifacts
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	rm -rf .pytest_cache .ruff_cache build dist *.egg-info
+
+abstention:  ## Phase 4 gate — abstention vs ranking on realised money
+	@python -m keel.experiments.abstention

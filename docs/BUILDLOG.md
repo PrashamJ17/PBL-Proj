@@ -1090,3 +1090,91 @@ written during this project have been the test rather than the code — worth as
 is wrong before reaching for the source.
 
 **302 tests, up from 277. Lint clean, both calibration gates green.**
+
+---
+
+## Phase 4 — hierarchical Bayesian CATE with abstention
+
+**Gate:** beat baselines on realised money at small *n*. **Result: PARTIALLY MET.**
+
+### Step 4.1 — The estimator
+
+`keel/models/uplift/bayesian.py`. Bayesian logistic with a treatment interaction, so
+`tau(x) = tau_0 + x'gamma`. The split matters because identifiability differs wildly:
+the sign of `tau_0` is usually settled by a few hundred subjects, `gamma` almost never
+is.
+
+`sigma_gamma` is **marginalised over a grid weighted by marginal likelihood**, not fixed
+and not plugged in at its mode. When heterogeneity is unsupported the weight moves to
+small values, every `tau_i` collapses onto `tau_0`, and the model degrades into
+"estimate one average effect well" rather than "estimate n effects badly". Measured: at
+n=2000 with no true heterogeneity, `sigma_gamma` → 0.0013 and the spread of estimated
+`tau_i` → 0.0000.
+
+`tau_i` is linear in the coefficients, so each mixture component is exactly Gaussian and
+the decision rule needs no sampling.
+
+### Step 4.2 — Is the posterior honest? ⭐ the useful detour
+
+Coverage was under nominal: 90% intervals containing truth 83% of the time at n=250.
+Over-confidence is the dangerous direction, so this needed diagnosis rather than a note.
+
+**Suspected the Laplace approximation. It was not the cause.** Fitting the same model
+with NUTS (`mcmc_check.py`, the discipline of D-048):
+
+| n | posterior sd ratio (Laplace/NUTS) | mean correlation |
+|---|---|---|
+| 250 | 0.993 | 0.9998 |
+| 500 | 1.003 | 1.0000 |
+| 2000 | 0.988 | 1.0000 |
+
+Laplace reproduces NUTS to three decimals, and **NUTS shows the same deviation**. The
+cause is the empirical-Bayes treatment of `sigma_gamma` (D-053), a known limitation.
+
+Mixing over the grid rather than plugging in the mode narrowed the gap; it did not close
+it. **Not patched further, because the error runs against the claim**: an over-confident
+posterior abstains *less*, making the differentiation harder to demonstrate. Inflating
+variance until coverage looked right would be tuning until the result improved.
+
+### Step 4.3 — The gate
+
+Ground truth withheld from every policy. Comparator is the strong version: same
+estimator's point estimate, same customer values, ranks and fills the budget — so the
+comparison isolates **abstention**, not the fact that customers differ in worth.
+
+| n | beats ranking | beats doing nothing | treated (abstain / rank) |
+|---|---|---|---|
+| 250 | 75% | **10%** | 7 / 23 |
+| 500 | 80% | **10%** | 15 / 46 |
+| 1,000 | 70% | **5%** | 32 / 90 |
+| 2,000 | 65% | **0%** | 72 / 181 |
+| 4,000 | 80% | **10%** | 127 / 359 |
+
+**Beats ranking consistently, spending a third as much. Beats doing nothing almost
+never.**
+
+Threshold sweep: at `alpha=0.05` the rule treats **zero** customers and returns exactly
+the do-nothing baseline. The safety property works — it correctly recognises it does not
+know enough. There is no alpha at which it turns a profit.
+
+Cross-tenant pooling with a prior from ten established firms cuts mean losses from −457
+to −62 at n=500, by making the small firm treat 2 customers instead of 12. Same
+character: damage limitation, not profit.
+
+### Step 4.4 — What this means
+
+The result is what Section 6 predicts. A decision rule inherits the quality of its
+inputs; at these sample sizes the inputs are unreliable (D-023). Abstention makes the
+*consequences* survivable, it cannot manufacture reliability that is not in the data.
+The Phase 0 precursor used oracle effects and was always an upper bound — which is
+exactly what these numbers demonstrate.
+
+Paper §8 now reports results rather than a specification, and says plainly that the gate
+is half met. The defensible claim is narrower than intended: *given that ranking
+destroys value, a rule that reliably returns to zero is worth real money relative to
+current practice*.
+
+**25 new tests, 327 total.** They pin the mechanism — pooling collapse, the rule
+reducing to a point threshold as the posterior concentrates and to treating nobody as it
+widens, budget as a ceiling rather than a quota — because a negative result is only
+worth anything if the thing that produced it demonstrably works.

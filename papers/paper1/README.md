@@ -30,22 +30,26 @@ This is the part to read before showing the draft to anyone.
 | 5 | `corr(τ, π)` governs whether uplift pays | ✅ Four real datasets + simulator |
 | 6 | Reliability at small *n* | ✅ Real data (Hillstrom), evaluation set held fixed |
 | 7 | From probability to money (survival + CLV) | ✅ Phase 3, 10 resplits, public data |
-| **8** | **Abstention under posterior uncertainty** | ❌ **SPECIFICATION ONLY — Phase 4 not built** |
+| **8** | **Abstention under posterior uncertainty** | 🟨 **Built and evaluated. Gate PARTIALLY met — beats ranking, does not beat doing nothing (D-054)** |
 | 9 | Limitations | Written to match the above |
 
-**Section 8 carries a `\todo` marker in the source and says in its own first line that
-it reports no results.** Do not remove that marker until Phase 4 exists. The paper as it
-stands is a diagnosis with a proposed treatment, and the abstract, the conclusion and
-the limitations section all say so. The precursor result in Table 1
-(`oracle_uplift_abstain`, 209 contacts beating 718) uses **ground-truth** effects and is
-an upper bound on what an estimated rule can achieve — it is not evidence for one, and
-the draft states that explicitly.
+**Section 8 now reports results, and they are a partial negative.** The rule beats
+ranking on 65–80% of draws while spending a third as much, and beats doing nothing on
+0–10%. Its `\todo` marker now says exactly that rather than "no results"; do not
+soften it. The precursor in Table 1 (`oracle_uplift_abstain`, 209 contacts beating 718)
+uses **ground-truth** effects and was always an upper bound on an estimated rule — which
+is precisely what the Phase 4 numbers turned out to demonstrate.
 
-**A submission decision, not a drafting one:** whether to submit without Section 8 is
-open. Submitting the diagnosis alone is defensible (Sections 5 and 6 stand on their own
-and Section 6 is the strongest real-data result in the project), but the referee
-question "so what should I do instead?" is then unanswered by anything but a
-specification.
+**The submission question has changed shape.** The paper now answers "so what should I
+do instead?" with a real, tested answer that is honest about its own limits: *abstention
+prevents the damage that ranking causes; it does not manufacture profit the data cannot
+support*. That is a weaker claim than intended and a more defensible one. A referee who
+wanted a positive result will be disappointed; a referee who wanted an honest one will
+not.
+
+**Do not fix this by tuning.** The threshold sweep is reported in full, including the
+settings where the rule loses money. Selecting the best alpha post hoc, or dropping the
+sizes where it fails, is exactly what D-005 and D-011 exist to prevent.
 
 ---
 
@@ -64,6 +68,8 @@ bug in the paper.
 | §5 Hillstrom / Criteo / Lenta headline figures | `python -m keel.benchmarks.run` |
 | Table 4 (Telco survival head-to-head) | `make survival` |
 | §7 CLV, 21% decile overlap, 72.5/27.5 split | `make clv` |
+| Table 5 (abstention gate) | `python -m keel.experiments.abstention` |
+| §8 Laplace-vs-NUTS validation | `python -m keel.models.uplift.mcmc_check` (needs `numpyro`) |
 | Figures 1–5 | `make figures` |
 
 The benchmark commands need the public datasets in `data/` (Hillstrom and Telco

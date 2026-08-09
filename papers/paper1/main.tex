@@ -520,9 +520,10 @@ one with entirely different remedies.
 \section{Abstention under posterior uncertainty}
 \label{sec:abstain}
 
-\todo{Phase 4. This section specifies the estimator and the decision rule; it
-reports no results, because the estimator is not yet built. Nothing in this section
-should be read as demonstrated.}
+\todo{Phase 4 is now built and evaluated. The gate this section set --- does the rule
+beat both ranking and doing nothing on realised money --- is \emph{partially} met:
+it beats ranking, and it does not beat doing nothing. The results below and in
+Section~\ref{sec:limitations} say so.}
 
 Sections~\ref{sec:corr} and \ref{sec:smalln} together pose a problem a practitioner
 cannot solve by choosing a better estimator. They cannot know in advance which
@@ -546,10 +547,58 @@ population effect whose sign is far better identified than any individual's.
 Table~\ref{tab:killtest} contains a crude precursor --- a threshold rule on an
 oracle effect estimate treating 209 customers and earning more than a ranking rule
 treating 718 --- but that uses ground-truth effects and is therefore an upper bound
-on what an estimated rule can achieve, not evidence for one. The evaluation this
-section requires is: does Equation~\eqref{eq:abstain}, with estimated posteriors,
-beat both ranking and doing nothing on realised money at $n \in [250, 2000]$, on
-what proportion of draws?
+on what an estimated rule can achieve, not evidence for one.
+
+\subsection{What the estimated rule achieves}
+
+We implement Equation~\eqref{eq:abstain} with a hierarchical Bayesian logistic model
+whose heterogeneity scale $\sigma_\gamma$ is marginalised over rather than fixed, and
+whose posterior is validated against NUTS (widths agree to within 1\%, means to four
+decimals). Ground truth is withheld from every policy. The comparator is deliberately
+the strong one: it ranks by $-\hat\CATE_i V_i - c$ using the \emph{same} estimator and
+the same customer values, so the comparison isolates abstention rather than the fact
+that customers differ in worth.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+$n$ & Beats ranking & Beats doing nothing & Treated (abstain / rank) \\
+\midrule
+250   & 75\% & 10\% & 7 / 23 \\
+500   & 80\% & 10\% & 15 / 46 \\
+1{,}000 & 70\% & 5\%  & 32 / 90 \\
+2{,}000 & 65\% & 0\%  & 72 / 181 \\
+4{,}000 & 80\% & 10\% & 127 / 359 \\
+\bottomrule
+\end{tabular}
+\caption{Realised money, 20 draws per size, ground truth withheld. Abstention beats
+ranking consistently, and spends roughly a third as much doing it. Neither beats the
+do-nothing baseline.}
+\label{tab:abstain}
+\end{table}
+
+Table~\ref{tab:abstain} splits the gate. Abstention beats ranking on 65--80\% of draws
+while contacting roughly a third as many customers. It does \emph{not} beat doing
+nothing at any size tested, and neither does the comparator.
+
+Sweeping $\alpha$ shows the safety property behaving exactly as specified. At
+$\alpha = 0.05$ the rule treats \emph{zero} customers and returns the do-nothing
+baseline rather than losing money: it correctly identifies that it does not know
+enough. There is no $\alpha$ at which it turns a profit --- it either loses money or
+declines to act.
+
+This is the result Section~\ref{sec:smalln} predicts. A decision rule inherits the
+quality of its inputs, and at these sample sizes the inputs are unreliable. Abstention
+makes the \emph{consequences} of that unreliability survivable; it cannot manufacture
+reliability that is not in the data. Cross-tenant pooling, with a prior drawn from ten
+established firms, cuts mean losses from $-457$ to $-62$ at $n = 500$ by making the
+small firm treat two customers instead of twelve --- the same character of result.
+
+The defensible claim is therefore narrower than the one we set out to make: \emph{given
+that risk-ranked targeting destroys value (Section~\ref{sec:instrument}), a rule that
+reliably returns to zero is worth real money relative to current practice}. That is not
+the same as beating the do-nothing baseline, and we do not claim it is.
 
 \section{Limitations}
 \label{sec:limitations}
