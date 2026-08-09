@@ -1178,3 +1178,65 @@ current practice*.
 reducing to a point threshold as the posterior concentrates and to treating nobody as it
 widens, budget as a ceiling rather than a quota — because a negative result is only
 worth anything if the thing that produced it demonstrably works.
+
+---
+
+## Step 4.5 — Probing the gate at larger effect sizes (D-055, D-056)
+
+D-054 named an untested explanation for the Phase 4 failure: the calibrated effect may
+simply be too small to pay for the offer. Tested as a **sensitivity** —
+`keel/experiments/sensitivity.py`, `make sensitivity`. `run_once`/`sweep` gained optional
+`config` and `offer` arguments; both default to the calibrated simulator and the reference
+discount, and a test asserts the no-argument path is numerically identical, so every D-054
+number is reproduced unchanged.
+
+### What the arithmetic said before any policy ran
+
+Treating pays iff `-tau * CLV > cost`. Break-even is **0.040**; the mean effect is
+**0.010**. An oracle knowing every `tau_i` treats **5.8%** of customers. Phase 4 asked an
+estimated rule to find profit inside that 5.8%, from a pilot of a few hundred people. The
+gate was out of reach on arithmetic, not on decision theory.
+
+### Axis 1 — effect size (requested)
+
+The gate flips: `saveability_scale = -5` beats do-nothing on 57% of draws. It is not worth
+having. The two win rates move in **opposite** directions — at no swept setting is either
+significantly above chance while the other also is — and the regime where abstention beats
+inaction is the regime where blanket treatment beats abstention. Sleeping dogs fall 27% →
+3% along the way, so a passing row describes a world without the mechanism the project
+studies. Past −5.0 the settings also leave the calibration band of invariant 4.
+
+### Axis 2 — offer choice (free, and the one that mattered)
+
+Phase 4 ran on `discount_20_3mo`, cost 32 — the second dearest rung of a ladder fixed in
+Phase 0 and unmodified here. `feature_nudge` costs 0.10 and clears break-even for 69% of
+customers. No rung passes the gate, and the failure modes are opposite: discounts are
+detectable but unprofitable, the nudge is profitable but undetectable at n≈250.
+**Detectability and profitability are anti-correlated across the ladder.**
+
+### A hypothesis raised and refuted
+
+Axis 1 made abstention look like a minimax-regret hedge (max regret 34.9%, versus 100%
+for both `do_nothing` and `treat_all`). Formed *after* seeing the failure, so it was
+pre-registered and tested on axis 2, which played no part in forming it. **It failed** —
+`random_30pct` has lower max regret (58.9% vs 85.7%). Withdrawn.
+
+The failure localised a real defect. The rule fixes `alpha = 0.30` for every decision; the
+best alpha per rung is 0.49 on cheap offers and 0.05 on discounts, and `pause_offer` —
+cheap but harmful on average — wants 0.05, showing the driver is payoff *asymmetry*, not
+cost. A constant alpha is wrong by construction. **Not fixed in this commit**: repairing a
+flaw in the same pass that found it is how a sensitivity becomes tuning. It is specified
+as a Phase 5 item, to be run on the axis that refuted its predecessor.
+
+### Measurement fix found on the way
+
+`summarise` scored "beats do-nothing" with a strict `> 0`, which counts a rule that
+correctly treats **nobody** (value exactly 0) as a failure, identically to one that loses
+money. Since declining to act is the entire safety claim, that conflation hid the property
+being claimed. Added `abstain_ties`, `abstain_not_worse`, and the `treat_all` comparator.
+The D-054 headline is unaffected — at those settings the rule was treating and losing.
+
+**10 new tests, 337 total.** Most assert *absence* of change: that parameterising `run_once`
+left the default path identical, and that sweeping a nested config does not mutate the
+shared default. A sensitivity that moved its own baseline would be indistinguishable from
+the recalibration it exists to avoid.

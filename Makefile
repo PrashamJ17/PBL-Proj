@@ -51,3 +51,6 @@ clean:  ## Remove caches and build artifacts
 
 abstention:  ## Phase 4 gate — abstention vs ranking on realised money
 	@python -m keel.experiments.abstention
+
+sensitivity:  ## Why the Phase 4 gate failed — effect size and offer cost (D-055/056)
+	@python -m keel.experiments.sensitivity

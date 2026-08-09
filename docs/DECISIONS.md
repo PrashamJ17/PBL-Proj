@@ -1397,3 +1397,114 @@ asked for, and the paper must say so.
 a genuinely fully-Bayesian treatment of `sigma_gamma` (D-053); or a setting with larger
 average treatment effects, since SubSim's calibrated `mean tau = -0.010` leaves very
 little margin over the offer cost by construction (D-011).
+
+---
+
+## D-055 — The Phase 4 gate failed on arithmetic, and asked for two things that trade off
+
+**Context.** D-054 closed by naming the untested explanation: SubSim's calibrated
+`mean tau = -0.010` may simply leave too little margin over the offer cost. That is a
+checkable claim and it was checked, as a **sensitivity** — no default was changed,
+`SimConfig` and `REFERENCE_OFFER` are untouched, and the D-054 numbers stand.
+`keel/experiments/sensitivity.py`; a test pins that the default path is unchanged.
+
+**First, the arithmetic.** Treating pays iff `-tau_i * CLV_i > cost_i`, so the break-even
+effect is `cost_i / CLV_i`. Under the reference offer that is **0.040** against a mean
+effect of **0.010** — a factor of four. An oracle knowing every `tau_i` exactly would
+treat **5.8%** of customers. That is the ceiling. Phase 4 asked an estimated rule to find
+profit inside 5.8% of a population, from a pilot of a few hundred. The gate was
+arithmetically out of reach before any decision theory ran.
+
+**Axis 1 — effect size (20 seeds × {500, 1000}, Clopper–Pearson 95% CI).**
+
+| `saveability_scale` | mean tau | sleeping dogs | beats ranking | beats do-nothing |
+|---|---|---|---|---|
+| **−2.0 (default)** | −0.0096 | 27% | **75% [.59,.87]** | 8% [.02,.20] |
+| −3.0 | −0.0248 | 16% | 55% [.38,.71] | 20% [.09,.36] |
+| −4.0 | −0.0381 | 10% | 55% [.38,.71] | 40% [.25,.57] |
+| −5.0 | −0.0498 | 7% | 32% [.19,.49] | 57% [.41,.73] |
+| −6.0 *(outside band)* | −0.0601 | 5% | 20% [.09,.36] | **72% [.56,.85]** |
+| −8.0 *(outside band)* | −0.0772 | 3% | 20% [.09,.36] | **85% [.70,.94]** |
+
+**The gate does flip — and the flip is worthless.** At no setting is either win rate
+significantly above chance while the other also is; they move in *opposite* directions.
+The regime where abstention beats inaction is the regime where blanket treatment beats
+abstention (`treat_all` profits on 88% of draws at −6.0). And buying the gate costs the
+mechanism: sleeping dogs fall 27% → 3%, so a passing row describes a world where this
+project's thesis does not apply. Rows past −5.0 also leave the calibration band of
+invariant 4.
+
+**Axis 2 — offer choice, and this one is on us.** The ladder was fixed in Phase 0 and is
+unmodified. Phase 4 ran on `discount_20_3mo` — cost 32, the second most expensive rung
+the ladder has.
+
+| offer | cost | break-even | oracle treats | beats do-nothing |
+|---|---|---|---|---|
+| `feature_nudge` | 0.10 | 0.0001 | **69%** | 8% |
+| `checkin_call` | 6.00 | 0.0079 | 39% | 20% |
+| `discount_20_3mo` **(Phase 4)** | 32.22 | 0.0399 | **6%** | 8% |
+| `discount_40_6mo` | 127.39 | 0.1574 | 0% | 0% |
+
+No rung passes, and the cheap rungs fail for the **opposite** reason to the expensive
+ones: the discounts are detectable but unprofitable; the nudge is profitable but its
+effect (−0.0021) is too small to detect at n≈250, so the rule abstains on half of draws
+and picks badly on the rest. Detectability and profitability are anti-correlated across
+the ladder. That squeeze, not the effect size, is the real Phase 4 finding.
+
+**Conclusion.** The gate as written — beat ranking *and* beat inaction — is not
+achievable anywhere in the swept range. That is a defect in the gate, not evidence the
+method works: the correct response is to state what abstention is *for*, which D-056
+does, and not to relabel the existing numbers as a pass.
+
+---
+
+## D-056 — A post-hoc hypothesis, refuted out-of-sample, that localised a real defect
+
+**The hypothesis.** Axis 1 suggested abstention is never best but never catastrophic:
+normalised max regret across the effect-size range was 34.9%, against 49.0% for ranking
+and **100%** for both `do_nothing` (which forgoes 10,213 at −8.0) and `treat_all` (which
+loses 4,735 at the default). That reads as a minimax-regret hedge — attractive, and
+exactly the epistemic position a business is in, since it cannot know its own
+`tau`/cost ratio in advance.
+
+**It was generated after seeing the failure**, which is when a claim is most likely to be
+self-serving. This project has a standard for that (D-031: predict, then test on data not
+used to form the idea). Axis 2 varies cost on a Phase-0 ladder and played no part in
+forming it, so it is a valid held-out test. The prediction was recorded first: abstention
+lowest max regret, `do_nothing` catastrophic on `feature_nudge`, `treat_all` catastrophic
+on `discount_40_6mo`.
+
+**It failed.** `random_30pct` has lower max regret (58.9%) than abstention (85.7%).
+The minimax reading is **refuted and withdrawn**, not quietly dropped.
+
+**What the failure localised.** Abstention's worst regret is on the *cheap* rungs — 158
+against `treat_all`'s 753 on `feature_nudge`. The rule demands `P(benefit > 0) > 1 - alpha`
+with alpha fixed at 0.30 for every decision, i.e. the same evidential standard whether
+being wrong costs 0.10 or 33. Sweeping alpha per rung confirms the diagnosis:
+
+| offer | cost | best alpha |
+|---|---|---|
+| `feature_nudge` | 0.10 | **0.49** |
+| `checkin_call` | 6.00 | **0.49** |
+| `downgrade_offer` | 0.50 | **0.49** |
+| `pause_offer` | 0.50 | **0.05** |
+| `discount_20_3mo` | 33.50 | **0.05** |
+| `discount_40_6mo` | 132.50 | **0.05** |
+
+The optimum moves with the payoff, so **a constant alpha is wrong by construction**.
+`pause_offer` shows the driver is not cost but *asymmetry*: it is cheap yet wants 0.05,
+because its mean tau is **positive** (46% sleeping dogs) and treating is harmful on
+average. Equation 8 conflates "I am uncertain" with "I should not act"; when the downside
+is 0.10 and the upside is a retained customer worth 700, uncertainty is not
+decision-relevant and the rule should act on the expected value.
+
+**Deliberately not fixed here.** Diagnosing a flaw and repairing it in the same commit is
+how a sensitivity becomes the tuning it was built to guard against. The correction —
+alpha as a function of the payoff ratio rather than a constant — is a Phase 5 item, and
+it must be specified before it is run, on the axis that refuted its predecessor.
+
+**Residual gap even at the best alpha.** On `feature_nudge` the tuned rule reaches 260
+against `treat_all`'s 753, so it still under-treats by a wide margin. Consistent with the
+empirical-Bayes shrinkage of D-053: pooling pulls small-but-real effects toward zero, and
+what is shrunk cannot be detected. Both defects point the same way, and neither is
+addressed by more customers.

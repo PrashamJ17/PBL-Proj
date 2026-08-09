@@ -47,6 +47,21 @@ support*. That is a weaker claim than intended and a more defensible one. A refe
 wanted a positive result will be disappointed; a referee who wanted an honest one will
 not.
 
+**§8.1 is the section to defend, and it must not be softened** (D-055/056). It reports
+three things a referee will otherwise find on their own: the gate demanded two properties
+that trade off against each other and so was unpassable as written; we evaluated on the
+second most expensive rung of our own offer ladder, which is our error and is stated as
+such; and detectability and profitability are anti-correlated across that ladder, which we
+regard as the substantive finding. It also records a **refuted** hypothesis — the
+minimax-regret reading, pre-registered and then beaten by random assignment on held-out
+settings. Keep it. A withdrawn conjecture with its falsification attached is worth more to
+a referee than a section with no dead ends in it.
+
+**Do not evaluate the $\alpha$ correction in this paper.** §8.1 diagnoses a constant
+$\alpha$ as wrong by construction and deliberately stops there. Fixing it and reporting
+the improvement in the same submission would make the diagnosis unfalsifiable after the
+fact.
+
 **Do not fix this by tuning.** The threshold sweep is reported in full, including the
 settings where the rule loses money. Selecting the best alpha post hoc, or dropping the
 sizes where it fails, is exactly what D-005 and D-011 exist to prevent.
@@ -69,6 +84,7 @@ bug in the paper.
 | Table 4 (Telco survival head-to-head) | `make survival` |
 | §7 CLV, 21% decile overlap, 72.5/27.5 split | `make clv` |
 | Table 5 (abstention gate) | `python -m keel.experiments.abstention` |
+| §8.1 sensitivity — why the gate was unpassable | `make sensitivity` |
 | §8 Laplace-vs-NUTS validation | `python -m keel.models.uplift.mcmc_check` (needs `numpyro`) |
 | Figures 1–5 | `make figures` |
 

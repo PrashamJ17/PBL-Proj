@@ -36,7 +36,7 @@ import pandas as pd
 from keel.models.uplift import AbstentionPolicy, HierarchicalCATE
 from keel.models.uplift.abstention import top_k_by_point_estimate
 from keel.sim import SimConfig, simulate
-from keel.sim.counterfactual import potential_outcomes
+from keel.sim.counterfactual import REFERENCE_OFFER, Offer, potential_outcomes
 
 #: Features a real business would have at the decision point. Deliberately the same
 #: observable set the Phase 0 kill test uses -- no latents, nothing post-treatment.
@@ -72,9 +72,11 @@ def _realised(po: pd.DataFrame, treat: np.ndarray) -> PolicyOutcome:
     return PolicyOutcome("", int(len(t)), value, harmed, len(po))
 
 
-def _experiment_frame(sim, decision_month: int, horizon: int) -> pd.DataFrame:
+def _experiment_frame(
+    sim, decision_month: int, horizon: int, offer: Offer = REFERENCE_OFFER
+) -> pd.DataFrame:
     """Join potential outcomes to the observable features a policy may use."""
-    po = potential_outcomes(sim, decision_month=decision_month, horizon=horizon)
+    po = potential_outcomes(sim, decision_month=decision_month, horizon=horizon, offer=offer)
     snap = sim.snapshot(decision_month)[["customer_id", *FEATURES]]
     return po.merge(snap, on="customer_id", how="inner")
 
@@ -87,15 +89,22 @@ def run_once(
     decision_month: int = 6,
     horizon: int = 6,
     train_fraction: float = 0.5,
+    config: SimConfig | None = None,
+    offer: Offer = REFERENCE_OFFER,
 ) -> dict[str, PolicyOutcome]:
     """One business, one draw. Every policy sees the same split.
 
     The training half stands for a randomised pilot the business already ran: it has
     treatment assignment and observed outcomes. The evaluation half is the population
     the policy must then decide about, and where realised value is measured.
+
+    `config` and `offer` exist for the sensitivity analysis (D-055) and default to the
+    calibrated simulator and the reference discount, so the Phase 4 headline numbers
+    are reproduced exactly by calling this with neither.
     """
-    sim = simulate(SimConfig(n_customers=n_customers, n_months=24, seed=seed))
-    frame = _experiment_frame(sim, decision_month, horizon)
+    cfg = config or SimConfig()
+    sim = simulate(replace(cfg, n_customers=n_customers, n_months=24, seed=seed))
+    frame = _experiment_frame(sim, decision_month, horizon, offer)
     if len(frame) < 60:
         return {}
 
@@ -151,12 +160,15 @@ def sweep(
     seeds: int = 20,
     alpha: float = 0.30,
     budget: float = 0.30,
+    config: SimConfig | None = None,
+    offer: Offer = REFERENCE_OFFER,
 ) -> pd.DataFrame:
     """Every size, every seed. One row per (size, seed, policy)."""
     rows = []
     for n in sizes:
         for s in range(seeds):
-            res = run_once(n, seed=1000 + s, alpha=alpha, budget=budget)
+            res = run_once(n, seed=1000 + s, alpha=alpha, budget=budget,
+                           config=config, offer=offer)
             for name, r in res.items():
                 rows.append({
                     "n_customers": n, "seed": s, "policy": name,
@@ -172,6 +184,12 @@ def summarise(frame: pd.DataFrame) -> pd.DataFrame:
     The headline is `beats_topk` -- the proportion of draws on which abstention
     earned more than ranking-and-filling-the-budget did. Means are reported beside
     it, not instead of it.
+
+    `abstain_positive` and `abstain_ties` must be read together. A draw where the rule
+    treats nobody scores exactly zero, which is not `> 0` -- so a policy that correctly
+    declines an unprofitable population is indistinguishable from one that loses money
+    if only the first is reported. Separating them is what makes the safety property
+    (D-054) measurable rather than merely asserted.
     """
     rows = []
     for n, g in frame.groupby("n_customers"):
@@ -188,7 +206,13 @@ def summarise(frame: pd.DataFrame) -> pd.DataFrame:
             "beats_topk": (wide["abstention"] > wide["top_k_expected_value"]).mean(),
             "beats_random": (wide["abstention"] > wide.filter(like="random").mean(axis=1)).mean(),
             "abstain_positive": (wide["abstention"] > 0).mean(),
+            "abstain_ties": (wide["abstention"] == 0).mean(),
+            "abstain_not_worse": (wide["abstention"] >= 0).mean(),
             "topk_positive": (wide["top_k_expected_value"] > 0).mean(),
+            "treat_all_mean": wide["treat_all"].mean() if "treat_all" in wide else np.nan,
+            "treat_all_positive": (
+                (wide["treat_all"] > 0).mean() if "treat_all" in wide else np.nan
+            ),
             "abstain_treated": treated["abstention"].mean(),
             "topk_treated": treated["top_k_expected_value"].mean(),
         })

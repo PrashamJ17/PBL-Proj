@@ -3,16 +3,18 @@
 **This document is updated as the project progresses. Everything else in this folder is
 relatively stable; this is the living record.**
 
-**Last updated:** Phase 3 complete (prediction models and customer value), on top of
-Phases 0-1, three external validations on real data, and Phase 2 built but unsold.
+**Last updated:** Phase 4 built and its limits diagnosed (the decision method, and why
+it only half works), on top of Phases 0-1 and 3, three external validations on real data,
+and Phase 2 built but unsold.
 
 ---
 
 ## Where we are in one line
 
 **The founding claim has been tested and survived; the data plumbing that keeps future
-results honest is built; and we can now put a pound figure on each customer and on how
-much of it is at risk. Nothing has been sold to a real customer yet.**
+results honest is built; we can put a figure on each customer and on how much of it is at
+risk; and our decision method reliably beats the standard approach without yet beating
+doing nothing. Nothing has been sold to a real customer yet.**
 
 ---
 
@@ -27,15 +29,16 @@ much of it is at risk. Nothing has been sold to a real customer yet.**
 | **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts — see [below](#what-phase-2-found-about-failed-payments) |
 | **A report a business can actually receive** | ✅ Built | Three spreadsheet exports in, one web page out |
 | **Predicting when a customer leaves, and what they are worth** | ✅ Done | Matches or beats established methods on public data — see below |
-| **Quality controls** | ✅ Done | 302 automated tests, all passing |
+| **Quality controls** | ✅ Done | 337 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
-| **The practical version of our method** | ⬜ Not started | **The main research risk** |
+| **The practical version of our method** | 🟨 Built | Beats the standard approach on 65–80% of runs; does **not** yet beat doing nothing — [see below](#what-phase-4-was-about-and-what-it-honestly-found) |
 | Customer-facing product | ⬜ Not started | — |
 | Proof with a real business | ⬜ Not started | — |
 | Paying customers | ⬜ **None** | — |
 
-**Nine rows of thirteen.** But note *which* nine: everything complete so far is
-groundwork and evidence. **Nothing yet has earned anyone money**, and the two rows that
+**Ten rows of thirteen.** But note *which* ten: everything complete so far is
+groundwork and evidence, and the tenth is complete only in the sense that it was built,
+tested, and found wanting. **Nothing yet has earned anyone money**, and the two rows that
 would prove the idea works outside our own machinery are both still empty.
 
 ---
@@ -178,6 +181,69 @@ constraint on who this can help, and it is stated here rather than buried.
 
 ---
 
+## What Phase 4 was about, and what it honestly found
+
+Phase 4 is the part of the project everything else was clearing the way for. The idea:
+rather than ranking customers by who looks likely to leave and contacting the top slice,
+**estimate how much each customer's mind would actually be changed by an offer, admit how
+uncertain that estimate is, and decline to act when the uncertainty is too wide to justify
+spending money.** We call declining to act *abstention*.
+
+**What it achieved.** Against the ranking approach it works. It earned more money on
+65–80% of runs while contacting roughly a third as many people. And the safety mechanism
+does what it was designed to do: when we demand near-certainty before acting, the system
+contacts *nobody* and simply leaves the money alone, rather than spending it badly.
+
+**What it did not achieve.** It did not beat *doing nothing at all*. There is no setting
+of the dial at which it turns a profit. It either loses a little, or it correctly declines
+and breaks even.
+
+We then spent a second pass asking **why**, and the answer was unflattering but simple.
+
+**First, the arithmetic never worked.** Contacting someone with our standard offer costs
+about £32. For that to pay off, the offer has to change a customer's decision by a certain
+minimum amount. Our simulated offer changes it by about **a quarter of what would be
+needed**. Even a hypothetical system with perfect knowledge of every customer's true
+response — something no real method can have — would find only **6 customers in 100**
+worth contacting. We asked our method to find profit in that 6%, using a trial of a few
+hundred people. It was never going to.
+
+**Second, we tested it with the wrong offer, and that one is our fault.** The project has
+always argued that discounts should be a business's *last* resort, and we built a ladder of
+cheaper things to try first — a nudge to use an unused feature, a check-in call, a pause
+instead of a cancellation. Then we ran the whole evaluation on a 20% discount, the second
+most expensive rung on our own ladder. A feature nudge costs about **10 pence** and is
+worth doing for 69 customers in 100.
+
+**But the cheap options fail too, for the opposite reason** — and this is the finding that
+actually matters. Expensive offers produce effects big enough to *measure* but too small to
+*pay for*. Cheap offers are comfortably worth doing but their effect is too small for any
+method to reliably *detect* at these sample sizes. **The things you can measure aren't worth
+doing, and the things worth doing you can't measure.** That squeeze, not the size of the
+effect, is the real obstacle.
+
+**A promising idea that we tested and threw away.** Partway through, the results suggested
+our method might be valuable as a *hedge* — never the best choice, but never a disaster,
+which is attractive when a business cannot know in advance which situation it is in. We
+wrote that prediction down first and then tested it on data we had not used to come up with
+it. **It failed.** Assigning offers at random turned out to hedge better. We are recording
+that here rather than quietly dropping it, because an idea that only ever gets tested
+against the data that inspired it is not evidence.
+
+That failure did point at a genuine flaw. Our system uses one fixed confidence level for
+every decision — it demands the same standard of proof whether being wrong costs 10 pence
+or £33. That is clearly wrong, and the correction is the first job of Phase 5. We have
+deliberately **not** fixed it yet: repairing a flaw in the same breath as discovering it
+would mean the fix was never independently tested.
+
+**What a reader should take from this.** The honest claim is narrower than the one we set
+out to make: *given that the standard approach actively loses money, a method that reliably
+declines to lose money is worth real money compared with what businesses do today.* That is
+useful and it is defensible. It is **not** the same as making a profit, and we do not claim
+it is.
+
+---
+
 ## The plan, in order
 
 Each phase has a **gate** — a condition that must be met before moving on. Gates exist to
@@ -189,7 +255,7 @@ force early failure rather than late failure.
 | **1** | **Connect to real billing data; guard against using future information** | Automated checks pass | ✅ **Passed** |
 | **2** | **Failed-payment recovery** | **First paying client** | 🟨 **Built — gate still open** |
 | **3** | Prediction models for who leaves and what they're worth | Beat established methods on public data | ✅ **Passed** (2 of 3 beaten, 1 tied) |
-| **4** | **The practical version of our method** | Beat existing approaches on money earned, at small scale | ⬜ **Next** |
+| **4** | **The practical version of our method** | Beat existing approaches on money earned, at small scale | 🟨 **Built — gate half passed** |
 | **5** | Decision engine, plain-language explanations, dashboard | An owner can act without asking us | ⬜ |
 | **6** | Control-group infrastructure; proof-of-results reporting | **A real client's verified return** | ⬜ |
 | **7** | Cross-business learning; retail support | Client #10 outperforms client #1 on day one | ⬜ |
@@ -214,7 +280,7 @@ have no data to fit it with.
 | # | Subject | Depends on | Status |
 |---|---|---|---|
 | 1 | The simulator as a shared benchmark for the research community | Phase 0 | ⬜ Ready to draft |
-| 2 | **Estimating causal effects reliably with very little data** | Phase 4 | ⬜ The core contribution |
+| 2 | **Estimating causal effects reliably with very little data** | Phase 4 | 🟨 Drafted — reports a partial result, honestly |
 | 3 | Choosing interventions under a budget, with real client results | Phase 6 | ⬜ |
 
 Paper 1 is writable now. Paper 2 is the one that matters, and it is gated on the hardest
@@ -227,8 +293,11 @@ technical problem in the project.
 1. **Get the failed-payment work in front of real businesses.** This is not a coding
    task and no further code completes it. The report described above needs to be run
    against real billing exports and shown to the people who own them.
-2. **Phase 4 — the practical version of our method.** The core research risk, and the
-   thing everything else has been clearing the way for.
+2. **Phase 5 — make the confidence threshold depend on what is at stake.** Phase 4 is
+   built and its limitation is now precisely identified rather than merely suspected:
+   the system applies one fixed standard of proof no matter whether a mistake costs
+   pennies or tens of pounds. Fixing that is the next piece of work, and we wrote down
+   what it must achieve before starting it.
 3. **In parallel, keep talking to businesses.** Twenty conversations with subscription
    founders will reshape this plan more than twenty more pages of it. This does not
    depend on the product existing.
@@ -265,6 +334,36 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### Phase 4 — built; the gate is half passed
+
+Built the decision method: estimate how much an offer would change each customer's mind,
+carry the uncertainty of that estimate honestly, and decline to act when it is too wide.
+
+**It beats the standard ranking approach on 65–80% of runs while contacting a third as
+many people. It does not beat doing nothing.** Tightening the confidence requirement makes
+it contact nobody at all — which is the safety mechanism working, not a bug, but it is also
+not a profit.
+
+A follow-up pass established *why*, and the reasons were unflattering. The offer we tested
+with was about four times too weak to cover its own cost, so even perfect knowledge would
+have justified contacting only 6 customers in 100. We had also run the test on a 20%
+discount — the second most expensive option on our own ladder of interventions, despite the
+project's whole argument being that discounts should come last. The cheaper options fail
+too, for the opposite reason: they are worth doing but their effect is too small to detect
+reliably at these sample sizes.
+
+We also proposed, tested, and **discarded** an appealing idea — that the method's value
+lies in being a hedge that is never a disaster. Assigning offers at random hedged better.
+It is recorded rather than dropped, because a prediction only counts if it is tested
+against data that did not inspire it.
+
+The one clear defect it did surface: the system uses a single fixed standard of proof
+regardless of whether being wrong costs pennies or tens of pounds. That is the first job
+of Phase 5, and it has been left deliberately unfixed so the fix can be tested honestly.
+
+**337 automated tests.** Most of the new ones check that this diagnostic work did *not*
+quietly change the baseline it was measuring.
 
 ### Phase 3 — complete
 

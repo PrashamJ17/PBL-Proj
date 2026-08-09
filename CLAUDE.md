@@ -30,10 +30,12 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phase 4 BUILT (gate PARTIAL).**
-327 tests. CI green.
-**Next: Phase 5** — offer ladder + reason codes. Phase 4 is BUILT but its gate is only
-partially met (D-054): abstention prevents damage, it does not create profit at n<=4000.
-Do NOT tune it until it passes; the full threshold sweep is reported including failures.
+337 tests. CI green.
+**Next: Phase 5** — offer ladder + reason codes, and it now has a *specified* first job:
+make `alpha` a function of the payoff ratio (D-056). Phase 4's gate is unachievable as
+written — beating ranking and beating inaction trade off against each other (D-055) — so
+do NOT tune Phase 4 to pass it. Sensitivity is done; the diagnosis is deliberately
+unfixed, and the fix must be specified before it is run.
 
 | # | Phase | Status | Gate |
 |---|---|---|---|
@@ -47,7 +49,7 @@ Do NOT tune it until it passes; the full threshold sweep is reported including f
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
 
 **Papers (D-042):** merged 1+2 **drafted** → `papers/paper1/` (read its README first —
-§8 abstention is a SPEC, not results; Phase 4 gates it). Lead = corr(τ,propensity) +
+§8 abstention now REPORTS results + why the gate was unpassable). Lead = corr(τ,propensity) +
 small-*n* reliability; simulator is the *instrument*. arXiv → EJOR/DSS, not JMR
 (Ascarza's turf). Novelty is NOT "churn scores are bad" — that is Ascarza 2018.
 **Go-to-market (D-040/041):** reports before dashboards; report (built) → dunning
@@ -102,10 +104,10 @@ keel/models/survival/  discrete (person-period hazard + competing risks) · metr
                  baselines (Cox · RSF · DeepSurv, each optional)
 keel/models/clv/   value — CLV, value at risk, exact shortfall-by-cause
 keel/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark · clv ·
-                   figures · survival_figures
+                   abstention (P4 gate) · sensitivity (D-055/056) · figures
 keel/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           302 — fairness, realism, edge cases, leakage gate
+tests/           337 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -113,10 +115,11 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 327 tests + calibration gates — run before every commit
+make check      # lint + 337 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
+make sensitivity # why the Phase 4 gate failed — effect size and offer cost
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
 ```
@@ -156,14 +159,22 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   three real-RCT validations (Hillstrom D-020/023 · Criteo D-024/026 · Lenta D-031),
   Phase 2 dunning (D-033/034) and the Churn Autopsy (D-035/036). CI fixes D-028/030.
   **Phase 2's gate is a sales task: run the Autopsy against 10 real businesses.**
-- **CP-10** — **Phase 4 built, gate PARTIAL (D-054).** Abstention beats ranking 65-80%
-  of draws spending 1/3 as much; beats do-nothing on 0-10%. At alpha=0.05 it treats
-  ZERO and correctly returns the do-nothing baseline — damage prevention, not profit.
-  Cross-tenant pooling cuts losses -457→-62 at n=500. Laplace posterior validated
-  against NUTS (widths within 1%, D-053); residual under-coverage is empirical Bayes
-  and runs AGAINST the claim. Paper §8 now reports results. 327 tests.
-- **CP-08** — **Phase 3 done** + merged paper drafted. Telco: beats Cox and RSF 10/10
-  on integrated Brier (0.0824 vs 0.0914/0.0964), **ties DeepSurv** (0.0825); loses
-  GBSG2 to RSF as predicted (D-021/049). CLV shortfall 72.5/27.5; top value-at-risk
-  decile overlaps top churn-risk decile by only **21%**. Below n=250 nothing reliably
-  beats Kaplan-Meier. Two metric bugs caught by external reference (D-048).
+- **CP-08** — **Phase 3 done** + merged paper drafted. Telco: beats Cox and RSF 10/10 on
+  integrated Brier (0.0824 vs 0.0914/0.0964), **ties DeepSurv** (0.0825); loses GBSG2 to
+  RSF as predicted (D-021/049). CLV shortfall 72.5/27.5. Below n=250 nothing beats KM.
+- **CP-10** — **Phase 4 built, gate PARTIAL (D-054).** Abstention beats ranking 65-80% of
+  draws spending 1/3 as much; beats do-nothing on 0-10%. At alpha=0.05 it treats ZERO and
+  correctly returns the baseline — damage prevention, not profit. Pooling cuts losses
+  -457→-62 at n=500. Laplace validated vs NUTS (D-053); residual under-coverage is
+  empirical Bayes and runs AGAINST the claim.
+- **CP-11** — **The gate was unpassable, and we tested the wrong rung** (D-055/056).
+  Break-even |τ|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**; the gate was out
+  of reach on arithmetic. Raising the effect DOES flip it at τ=-0.050 (57%) but the two
+  win rates move in OPPOSITE directions — never both above chance — while sleeping dogs
+  collapse 27%→3%, so passing means deleting the mechanism. Phase 4 also ran on
+  `discount_20_3mo` (cost 32, 2nd dearest rung); `feature_nudge` costs 0.10 and pays for
+  69%. **Detectability and profitability are anti-correlated across the ladder** — the
+  real finding. A minimax-regret reading was pre-registered and **REFUTED** out-of-sample
+  (random hedges better, 58.9% vs 85.7%) — recorded, not dropped. It localised a genuine
+  defect: best alpha moves 0.49 (nudge) → 0.05 (discount), so **constant alpha is wrong by
+  construction**. Left unfixed on purpose → Phase 5. 337 tests.

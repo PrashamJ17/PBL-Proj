@@ -520,10 +520,12 @@ one with entirely different remedies.
 \section{Abstention under posterior uncertainty}
 \label{sec:abstain}
 
-\todo{Phase 4 is now built and evaluated. The gate this section set --- does the rule
-beat both ranking and doing nothing on realised money --- is \emph{partially} met:
-it beats ranking, and it does not beat doing nothing. The results below and in
-Section~\ref{sec:limitations} say so.}
+\todo{Phase 4 is built and evaluated. The gate this section set --- does the rule beat
+both ranking and doing nothing on realised money --- is \emph{partially} met: it beats
+ranking, and it does not beat doing nothing. Section~\ref{sec:sensitivity} shows the
+gate was not achievable as written, since the two halves trade off against each other,
+and localises a genuine defect in Equation~\ref{eq:abstain} (a constant $\alpha$).
+That correction is unevaluated; this marker stays until it is.}
 
 Sections~\ref{sec:corr} and \ref{sec:smalln} together pose a problem a practitioner
 cannot solve by choosing a better estimator. They cannot know in advance which
@@ -599,6 +601,59 @@ The defensible claim is therefore narrower than the one we set out to make: \emp
 that risk-ranked targeting destroys value (Section~\ref{sec:instrument}), a rule that
 reliably returns to zero is worth real money relative to current practice}. That is not
 the same as beating the do-nothing baseline, and we do not claim it is.
+
+\subsection{Why the gate could not have been passed}
+\label{sec:sensitivity}
+
+A negative result is only informative if one can say what would have changed it, so we
+swept the two quantities that govern the answer. Neither sweep changes a default; the
+numbers above stand as reported.
+
+Begin with arithmetic that precedes any decision rule. Treating $i$ pays exactly when
+$-\CATE_i V_i > c_i$, so the break-even effect is $c_i / V_i$. Under our calibration and
+the reference offer that threshold is $0.040$ against a mean effect of $0.010$. An oracle
+knowing every $\CATE_i$ would treat $5.8\%$ of customers. That is a ceiling, not an
+estimate: the gate asked an estimated rule to locate profit inside $5.8\%$ of a
+population from a pilot of a few hundred.
+
+Raising the effect size does flip the gate --- at a mean effect of $-0.050$ the rule
+beats doing nothing on $57\%$ of draws --- but the flip is not worth having, for three
+reasons visible in the same sweep. The two win rates move in \emph{opposite} directions,
+and at no setting is either significantly above chance while the other also is: the
+regime in which abstention beats inaction is the regime in which blanket treatment beats
+abstention, which profits on $88\%$ of draws by the time the gate passes. The share of
+harmed customers falls from $27\%$ to $3\%$ along the way, so a passing configuration is
+one in which the adversarial mechanism of Section~\ref{sec:corr} has been removed. And
+the settings that pass most clearly lie outside the band our calibration procedure
+targets. \textbf{The gate as we wrote it demanded two properties that trade off against
+each other}; that is a defect in the gate, and we do not read it as evidence for the
+method.
+
+The second sweep is the more useful one, and it is a criticism of our own design. We
+evaluated on a $20\%$ discount costing $32$ --- the second most expensive rung of the
+offer ladder. A feature nudge costs $0.10$ and clears its break-even for $69\%$ of
+customers. No rung passes the gate, but the cheap and expensive rungs fail for opposite
+reasons: discounts produce effects large enough to detect and too small to pay for,
+while the nudge is comfortably profitable and its effect ($-0.002$) is too small to
+detect at $n \approx 250$. \emph{Detectability and profitability are anti-correlated
+across the ladder}, and we regard this squeeze, rather than the effect size, as the
+substantive finding of the section.
+
+Finally, one hypothesis is recorded as refuted. The effect-size sweep suggested
+abstention was a minimax-regret hedge --- never best, but never catastrophic, with
+normalised maximum regret of $34.9\%$ against $100\%$ for both doing nothing and
+treating everyone. Because that reading was formed after seeing the failure, we
+pre-registered it and tested it on the offer ladder, which played no part in forming it.
+It failed: random assignment attains lower maximum regret ($58.9\%$ versus $85.7\%$).
+The failure is nonetheless diagnostic. Abstention's worst regret falls on the cheap
+rungs, and the per-rung optimum of $\alpha$ moves from $0.49$ on a $0.10$ nudge to
+$0.05$ on a $33$ discount --- with a cheap-but-harmful pause offer also wanting $0.05$,
+showing the driver is payoff asymmetry rather than cost. \textbf{A constant $\alpha$ is
+therefore wrong by construction}: Equation~\ref{eq:abstain} conflates uncertainty with a
+reason not to act, when uncertainty about a nearly free intervention is not
+decision-relevant. We state the correction --- $\alpha$ as a function of the payoff ratio
+--- and deliberately do not evaluate it here, since repairing a flaw in the same pass
+that discovers it forfeits the independence that made the diagnosis credible.
 
 \section{Limitations}
 \label{sec:limitations}
