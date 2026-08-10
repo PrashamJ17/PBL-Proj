@@ -40,6 +40,16 @@ from keel.report.autopsy import INVOLUNTARY_WINDOW_DAYS
 __all__ = ["unrecovered_failures", "departures", "write_worklists"]
 
 
+def _as_date(col: pd.Series) -> pd.Series:
+    """Dates as plain `YYYY-MM-DD` for a spreadsheet.
+
+    pandas writes a nanosecond-resolution timestamp as `2024-04-01 07:40:48.000000000`,
+    which is noise in a client-facing sheet and makes the column awkward to sort in
+    Excel. Nobody chasing a failed payment needs the second it happened.
+    """
+    return pd.to_datetime(col, errors="coerce").dt.strftime("%Y-%m-%d")
+
+
 def _failures(data) -> pd.DataFrame:
     """Unpaid invoice attempts, with a `recovered` flag, or an empty frame."""
     inv = data.invoices
@@ -94,6 +104,7 @@ def unrecovered_failures(data) -> pd.DataFrame:
                                open_fails["still_subscribed"], strict=True)
     ]
     open_fails["amount"] = open_fails["amount"].round(2)
+    open_fails["attempted_at"] = _as_date(open_fails["attempted_at"])
     out = open_fails.rename(columns={
         "attempted_at": "failed_on", "failure_code": "decline_reason",
     })[[
@@ -146,7 +157,12 @@ def departures(data) -> pd.DataFrame:
             flagged = set(m.loc[(gap >= -1) & (gap <= INVOLUNTARY_WINDOW_DAYS), "customer_id"])
             ended["preceded_by_failed_payment"] = ended["customer_id"].isin(flagged)
 
-    return ended[cols].sort_values("annual_value_lost", ascending=False)
+    out = ended[cols].sort_values("annual_value_lost", ascending=False)
+    # Formatted last, after every date has been used as a date. Doing it earlier turned
+    # `ended_at` into a string before the failed-payment join needed to subtract it.
+    out["started_at"] = _as_date(out["started_at"])
+    out["ended_at"] = _as_date(out["ended_at"])
+    return out
 
 
 def write_worklists(data, outdir: Path | str = ".", prefix: str = "") -> list[Path]:
