@@ -1365,3 +1365,37 @@ ids and business names cannot inject markup.
 **Phase 5's gate is met on its own terms and the evidence is unchanged.** The optimiser
 still wins 58% [0.42, 0.72]. Presenting a recommendation better does not make it better,
 which is what the banner is there to say.
+
+---
+
+## Step 2.1 — Making the Autopsy deliverable (D-062)
+
+Phase 2's gate is a paying client. It is a sales task, but there was an engineering
+blocker hiding behind that description: **no command took a business's CSV export and
+produced a report**. Tested against a realistic Stripe dashboard export and found four
+failures in a row -- `Created (UTC)` matching nothing, bare `id` binding to the wrong
+column, `Email` beating the real id column, and required columns a real export simply does
+not contain. All fixed; the alias resolution is now table-aware.
+
+`keel/ingest/preflight.py` is the new piece and the important one. It answers one question
+before anything is computed: *is this file safe, and what have we had to assume?* The check
+that motivates it is currency units -- Stripe exports cents, so a `Plan Amount` of 2900 is
+$29.00, and loading it as MRR makes every figure in the report 100x too large. It blocks
+rather than converting, because silently dividing by 100 would be the same class of error
+as the one it catches (D-057).
+
+`keel/cli.py` (`make preflight`, `make autopsy`) is argparse-only, no new dependency. The
+report command re-runs the checks and refuses to render on a blocker.
+
+`docs/SALES-RUNBOOK.md` covers the non-code half, including a table of claims that are
+**not** permitted, each tied to the experiment that forbids it -- D-058's 58% among them.
+Making delivery easy also made overselling easy, so the limits were written down in the
+same pass.
+
+**20 new tests, 408 total**, mostly pinning refusals. One preflight check was **deleted**
+for being unreachable: duplicate keys are caught by `Dataset.validate` during load, so a
+check at that level could never fire, and a safety net that cannot catch anything is worse
+than none.
+
+**The gate is unchanged: nobody has paid anything.** What changed is that it can no longer
+fail for a reason we control.

@@ -30,22 +30,22 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-388 tests. CI green.
-**Phase 5 COMPLETE** (optimizer + reason codes + dashboard). Its gate is met *on its own
-terms* — an owner can act unaided — but the evidence did NOT improve: still 58% [.42,.72].
-**Next: Phase 2's gate (a paying client) or Phase 6 holdout infra — NOT more modelling.** **D-057: Phase 4 multiplied log-odds by money for a whole phase** — fixed in
-`keel/policy/economics.py`, losses -3,531→-1,070, but NO qualitative conclusion changed;
-predictions were pre-registered (`docs/PREREG-phase5.md`) and 2 of 5 FAILED.
-**D-058: choosing the offer beats choosing the customer** — but 58% [.42,.72] is not
-beating chance. Do NOT tune to close it. **D-060:** sibling project RetainIQ independently
-replicated our P1 leakage result — its published ROC-AUC 1.0 is pre-fix; re-running its
-own code gives **0.543**, worse than "always predict churn".
+408 tests. CI green.
+**Phase 5 COMPLETE**; gate met on its own terms, evidence did NOT improve (58% [.42,.72]).
+**Phase 2's delivery path is BUILT (D-062)** — `make preflight` then `make autopsy` on real
+CSVs — but its gate is a sales task and **nobody has paid anything**. Next action is
+`docs/SALES-RUNBOOK.md`, NOT more modelling.
+Watch: **D-057** (Phase 4 multiplied log-odds by money for a whole phase; fixed, losses
+-3,531→-1,070, no conclusion changed; 2 of 5 pre-registered predictions FAILED) ·
+**D-058** (choosing the offer beats choosing the customer, but 58% is not beating chance —
+do NOT tune to close it) · **D-060** (RetainIQ independently replicated our P1 leakage
+result: published ROC-AUC 1.0 is pre-fix, its own code now gives **0.543**).
 
 | # | Phase | Status | Gate |
 |---|---|---|---|
 | 0 | SubSim + kill test | ✅ **done** | churn-score policy provably loses money |
 | 1 | Canonical schema, PIT feature store, ingest | ✅ **done** | leakage suite green in CI |
-| 2 | Dunning / involuntary churn + retry-timing model | 🟨 **built** | **first revenue — get a paying client (OPEN)** |
+| 2 | Dunning + retry-timing + **CLI delivery path** | 🟨 **built** | **first revenue — a paying client. STILL OPEN (D-062)** |
 | 3 | Discrete-time survival hazard + CLV | ✅ **done** | beats Cox+RSF 10/10 on Telco, **ties DeepSurv**; best-calibrated (D-049) |
 | 4 | Hierarchical Bayesian CATE + abstention | 🟨 **built** | gate **PARTIAL** — beats ranking 93% post-D-057, still not do-nothing |
 | 5 | Offer-ladder optimizer + reason codes + dashboard | ✅ **done** | owner can act unaided (met); **but** only beats achievable rival 58% [.42,.72] |
@@ -96,7 +96,8 @@ before dashboards → dunning autopilot → retention decisions, ordered by *tru
 ```
 keel/core/       schema (occurred_at+available_at) · features (_visible = ONLY data path)
                  leakage (availability audit, time-travel, canary injection)
-keel/ingest/     stripe (pure, fixture-tested) · csv_ingest · subsim_adapter
+keel/ingest/     stripe · csv_ingest (alias resolution, recorded defaults) ·
+                 preflight (is this export safe? D-062) · subsim_adapter
 keel/sim/        config · latents (copula) · hazard (ONE defn, two regimes) · subsim
                  counterfactual (exact τ, CRN, LADDER) · calibration · dunning
 keel/policy/     dunning (6 retry policies) · economics (log-odds→money, D-057) ·
@@ -112,7 +113,7 @@ keel/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark
                    abstention (P4 gate) · sensitivity (D-055/056) · figures
 keel/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           388 — fairness, realism, edge cases, leakage gate
+tests/           408 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -120,13 +121,15 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 388 tests + calibration gates — run before every commit
+make check      # lint + 408 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
 make sensitivity # why the Phase 4 gate failed — effect size and offer cost
 make ladder     # Phase 5 gate — rung-matching vs one good offer
 make dashboard  # build the retention dashboard (self-contained HTML)
+make preflight ARGS="--customers c.csv --subscriptions s.csv"  # CHECK A CLIENT EXPORT FIRST
+make autopsy   ARGS="..."   # then the report
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
 ```
@@ -153,9 +156,9 @@ Message leads with what it **establishes or fixes**, not files touched; numbers 
 body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first. Never commit on red —
 if blocked, commit *with the failure described*.
 
-Keep under **~205 lines** (raised 120→150→165→175→180→195→205 as phases, decisions and
-the paper accumulated — deliberate, not drift; every raise follows a real trim, this one
-after merging CP-08/10 and compressing CP-01…07/11/14). Cut checkpoints; never invariants.
+Keep under **~215 lines** (raised 120→…→205→215 as phases and decisions accumulated —
+deliberate, not drift; every raise follows a real trim, this one after compressing the
+status block and CP-11). Cut checkpoints; never invariants.
 
 ---
 
@@ -179,19 +182,27 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-16** — **The Autopsy can finally be delivered (D-062).** No command took a client
+  CSV → report; the "it's a sales task" framing hid an engineering blocker. Tested against
+  a real Stripe export: **4 failures in a row** (`Created (UTC)` matched nothing; bare `id`
+  bound to customer_id; `Email` beat the real id column; required cols absent). Alias
+  resolution is now table-aware. **`preflight` is the important piece** — Stripe exports
+  CENTS, so `Plan Amount=2900` is $29.00 and a report would quote churn cost at **100x**.
+  It BLOCKS, never converts (converting silently = the D-057 error again). `keel/cli.py`,
+  argparse only. Deleted an unreachable duplicate-key check — `Dataset.validate` already
+  catches it. `docs/SALES-RUNBOOK.md` lists claims that are FORBIDDEN, each tied to the
+  experiment forbidding it. **Gate still open: nobody has paid.** 408 tests.
 - **CP-15** — **Dashboard shipped; Phase 5 done (D-061).** Self-contained HTML, no
   server, no new dep — Streamlit/Next.js rejected (invariant 7; a runtime for a project
   whose gate is still "does it earn"). **Reliability banner is FIRST and cannot be
   disabled**: the inverse of a dashboard shouting "SAVE NOW" over a 0.543 model (D-060).
   Looking at the render (not the tests) caught a **47%-confidence 1,972 discount** ranked
   4th — sub-60% rows now flag inline. Verified both themes in-browser (D-038). 388 tests.
-- **CP-14** — **Reason codes (D-059) + RetainIQ compared (D-060).** Attribution is
-  EXACT not SHAP: `tau` is linear so contribution = `gamma_j*xs_ij`, no dependency.
-  Explains the *decision* (`-Δp*V - c`, and why this rung) not the prediction; says
-  "nothing specific to this customer drives it" when sigma_gamma collapses, and carries
-  D-058's 58% on every line. Ran RetainIQ's own pipeline: published ROC-AUC **1.000** is
-  pre-leakage-fix, actual **0.543** — worse than "always predict churn". **Independent
-  replication of P1.**
+- **CP-14** — **Reason codes (D-059) + RetainIQ compared (D-060).** Attribution is EXACT
+  not SHAP: `tau` is linear so contribution = `gamma_j*xs_ij`, no dependency. Explains the
+  *decision* (`-Δp*V - c`, and why this rung), says "nothing specific to this customer
+  drives it" when sigma_gamma collapses, and carries D-058's 58% on every line. Ran
+  RetainIQ's own pipeline: published ROC-AUC **1.000** is pre-fix, actual **0.543**.
 - **CP-13** — **Phase 5 optimizer built; gate UNMET (D-058).** Per-rung effects from a
   multi-arm pilot (~35/arm at n=500), pooled across rungs via D-041 machinery. First
   estimated policy here to make money (655/1,039/2,252): **28% of oracle vs 13%** for the
@@ -200,10 +211,8 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   n=1000, while a hindsight uniform rung captures **73%** vs the optimizer's 28%.
   **Choosing the offer beats choosing the customer.** Risk aversion HURT. 357 tests.
 - **CP-11** — **The gate was unpassable, and we tested the wrong rung** (D-055/056).
-  Break-even |τ|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**. Raising the
-  effect flips it at τ=-0.050 but the two win rates move in OPPOSITE directions — never
-  both above chance — while sleeping dogs collapse 27%→3%, so passing deletes the
-  mechanism. **Detectability and profitability are anti-correlated across the ladder** —
-  the real finding. A minimax-regret reading was pre-registered and **REFUTED**
-  out-of-sample (random hedges better). Localised: best alpha moves 0.49→0.05, so
-  **constant alpha is wrong by construction**.
+  Break-even |τ|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**. Raising the effect
+  flips it, but the two win rates move in OPPOSITE directions — never both above chance —
+  while sleeping dogs collapse 27%→3%. **Detectability and profitability are
+  anti-correlated across the ladder.** A minimax-regret reading was pre-registered and
+  **REFUTED** out-of-sample; best alpha moves 0.49→0.05, so **constant alpha is wrong**.

@@ -60,3 +60,9 @@ ladder:  ## Phase 5 gate — does matching a rung to a customer beat one good of
 
 dashboard:  ## Build the retention dashboard (self-contained HTML, D-061)
 	@python -m keel.experiments.dashboard_demo
+
+autopsy:  ## Churn Autopsy from a real export: make autopsy ARGS="--customers c.csv --subscriptions s.csv"
+	@python -m keel.cli autopsy $(ARGS)
+
+preflight:  ## Check a client export is safe to compute from (run this FIRST, D-062)
+	@python -m keel.cli preflight $(ARGS)

@@ -1785,3 +1785,74 @@ unfalsifiable. The page ends by saying the randomised holdout must stay in place
 without us present -- and this changes none of the evidence. The optimiser still beats a
 single well-chosen offer on 58% of draws. A better-presented recommendation is not a
 better recommendation, and the banner exists to stop the page implying otherwise.
+
+---
+
+## D-062 — The delivery path was the blocker, not the modelling
+
+**Context.** Phase 2's gate is a paying client, and CLAUDE.md has said for six checkpoints
+that it is a sales task. That was true and also an excuse: there was **no command that
+turned a business's export into a report**. The Autopsy was reachable only from Python,
+against simulator output. Prospect number one would have failed before any conversation
+about retention happened.
+
+**Tested against a realistic Stripe dashboard export rather than assumed.** Four separate
+failures, in order:
+
+1. **`Created (UTC)` matched nothing.** Every Stripe export carries parenthetical timezone
+   suffixes; the normaliser lowercased and swapped separators but kept `(utc)`. Fixed by
+   stripping parentheticals.
+2. **`id` on the subscriptions file loaded as `customer_id`.** A bare `id` was a global
+   alias for `customer_id`, so subscription ids went into the customer column and the load
+   then failed two steps later claiming `subscription_id` was missing. Resolution is now
+   table-aware: `id` means the key of the entity the file is about.
+3. **`Email` beat the real id column.** `email` is a plausible customer identifier and sat
+   earlier in the alias list, so it won; every subscription then referenced a customer that
+   did not exist. The table's own key now tries `id` **first**.
+4. **Required columns a real export simply lacks** (`plan`, `interval`, `attempt_number`).
+   Filled from `SAFE_DEFAULTS`, each one recorded rather than applied silently.
+
+**The split that governs the defaults.** A missing *label* costs nothing to invent -- no
+decision follows from a plan's name. A missing *measurement* must never be invented
+quietly. `interval` is the case that matters: assuming monthly on an annual book
+overstates MRR twelvefold, so its recorded note is deliberately alarming and the CLI
+exposes `--interval` to set it explicitly.
+
+**`keel/ingest/preflight.py` exists because of how this engagement actually fails.** Not a
+crash -- a crash is recoverable and honest. It is a confident report with the client's own
+revenue wrong in it, found by the client. The check that motivates the module:
+
+> **Stripe exports amounts in minor units.** `Plan Amount = 2900` is $29.00. Loaded as
+> MRR it makes every figure in the report 100x too large -- including "churn costs you X
+> per year", which is the number the engagement is sold on. Nothing downstream can detect
+> it, because 100x of a plausible number is still a plausible number.
+
+That is **D-057 in a different costume**: a units error, self-consistent everywhere,
+invisible to every test. It has now happened once inside our own decision rule and once at
+the front door. The difference is that this one would have been printed on a document with
+a prospect's name on it.
+
+The heuristic requires two signals (implausible median *and* every value a whole number)
+and **never converts** -- it blocks and makes a human answer. Silently dividing by 100
+would be the same failure mode it exists to catch. `autopsy` re-runs the checks and refuses
+to render on a blocker; `--force` exists and is recorded.
+
+Other checks: end-before-start dates, under six months of history, zero cancellations,
+over 90% ended (an export already filtered to churned accounts), free-tier records
+inflating the denominator, and sample size below the 250 where our own benchmarks show
+nothing beating a population average -- phrased so the operator knows a *report* is still
+honest at that size and a *model* is not.
+
+**A check was deleted for being unreachable.** Duplicate keys are rejected by
+`Dataset.validate` during load, so a preflight check for them could never fire on the real
+path. A safety net that cannot catch anything is worse than none, because it implies
+coverage that does not exist. The test now pins the guard where it actually lives.
+
+**`docs/SALES-RUNBOOK.md`** records the non-code half: who to approach, the two-line ask,
+the data-protection precondition, and -- most importantly -- a table of things that must
+**not** be claimed, each tied to the experiment that forbids it. D-058's 58% is in it.
+Building the delivery path made it easier to oversell, so the constraints were written
+down at the same time.
+
+**The gate is still open.** This removed the reasons it would fail for engineering
+reasons. Nobody has paid anything.
