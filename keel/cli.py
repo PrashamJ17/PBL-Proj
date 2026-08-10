@@ -83,6 +83,10 @@ def main(argv: list[str] | None = None) -> int:
     _common(ap)
     ap.add_argument("--name", default="Your business", help="business name for the report")
     ap.add_argument("--out", default="churn_autopsy.html", help="output HTML path")
+    ap.add_argument("--worklists", action="store_true",
+                    help="also write CSV worklists (unrecovered payments, departures) "
+                         "next to the report. These are the rows to act on; the report "
+                         "is the argument for acting.")
     ap.add_argument("--force", action="store_true",
                     help="generate even if preflight found a blocker. Recorded in the "
                          "output; use only when you know why the check fired.")
@@ -113,6 +117,12 @@ def main(argv: list[str] | None = None) -> int:
 
     out = generate(ds, business_name=args.name, out=Path(args.out))
     print(f"\nwrote {out.resolve()}")
+
+    if args.worklists:
+        from keel.report.worklist import write_worklists
+
+        for p in write_worklists(ds, outdir=Path(args.out).parent or Path(".")):
+            print(f"wrote {p.resolve()}")
     if report.assumptions:
         print("Before sending this, confirm the assumptions listed above with the client.")
     return 0

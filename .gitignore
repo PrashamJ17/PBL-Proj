@@ -33,3 +33,7 @@ data/
 # Generated dashboards (reproducible via `make dashboard`)
 retention_dashboard.html
 sample_churn_autopsy.html
+sample_*.csv
+churn_autopsy.html
+*_departures.csv
+*_unrecovered_failed_payments.csv

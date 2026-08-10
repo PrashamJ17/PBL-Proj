@@ -25,6 +25,7 @@ from pathlib import Path
 from keel.ingest.subsim_adapter import to_canonical
 from keel.report.autopsy import analyse
 from keel.report.render import render
+from keel.report.worklist import write_worklists
 from keel.sim import SimConfig, simulate
 
 #: Fixed, not searched. Changing it to find a more alarming number would make the sample
@@ -89,14 +90,20 @@ def build(out: Path | None = None, n_customers: int = N_CUSTOMERS, seed: int = S
     data = _rescale_money(to_canonical(sim, seed=seed), TARGET_MEDIAN_MRR)
     autopsy = analyse(data)
     autopsy.notes.extend(SAMPLE_NOTES)
-    return render(
+    path = render(
         autopsy,
         business_name=BUSINESS_NAME,
         out=out or Path("sample_churn_autopsy.html"),
         demo=True,
     )
+    # The worklists ship with the sample so a prospect sees both halves: the argument,
+    # and the rows they would actually work through on Monday.
+    write_worklists(data, outdir=path.parent, prefix="sample_")
+    return path
 
 
 if __name__ == "__main__":
     p = build()
     print(f"wrote {p.resolve()}")
+    for extra in sorted(p.parent.glob("sample_*.csv")):
+        print(f"wrote {extra.resolve()}")

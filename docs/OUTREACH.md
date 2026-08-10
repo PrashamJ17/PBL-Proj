@@ -177,6 +177,18 @@ One line is usually enough:
 > I've attached a sample built on simulated data so you can see the shape of it before
 > deciding anything.
 
+`make sample` also writes two **CSV worklists** alongside it. Attach those too. The
+report is the argument; the worklists are what somebody actually works through on Monday
+— unrecovered failed payments (flagged by whether that customer is still subscribed) and
+departures (with the value lost, and whether a failed payment preceded it). A spreadsheet
+is the right format for a list because they will sort, filter and assign it.
+
+**For a PDF**, open the HTML and print to PDF — the report already carries a print
+stylesheet that forces light colours, hides the theme toggle and stops findings splitting
+across pages. Send the PDF for forwarding and the HTML for reading; a founder forwards a
+PDF to a co-founder in a way they never forward an HTML attachment. Do not export the
+report itself to Excel: it is a narrative with charts, and a spreadsheet makes it worse.
+
 It carries a banner saying it is simulated, above everything else on the page. **Do not
 remove it.** A prospect who thinks they are looking at another client's real numbers has
 just learned that we circulate client data, which is the exact fear the engagement has to

@@ -109,6 +109,10 @@ python -m keel.cli autopsy \
   --name "Their Company" --out their_company_autopsy.html
 ```
 
+Add `--worklists` to write the two CSV action lists next to the report, and print the
+HTML to PDF before sending — the print stylesheet is already there. Send all three: PDF
+to forward, HTML to read, CSVs to work through.
+
 Every assumption preflight printed is a question for the client. Ask them **before**
 sending. An assumption they discover themselves costs more than the engagement is worth.
 

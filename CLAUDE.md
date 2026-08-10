@@ -102,8 +102,8 @@ keel/sim/        config · latents (copula) · hazard (ONE defn, two regimes) ·
                  counterfactual (exact τ, CRN, LADDER) · calibration · dunning
 keel/policy/     dunning (6 retry policies) · economics (log-odds→money, D-057) ·
                  ladder (per-customer rung choice, multi-arm pilot, D-058)
-keel/report/     autopsy · render (HTML) · reasons (exact attribution, D-059) ·
-                 dashboard (self-contained, banner-first, D-061)
+keel/report/     autopsy · render (HTML+print) · reasons (D-059) · worklist (CSV,
+                 descriptive only) · dashboard (self-contained, banner-first, D-061)
 keel/models/uplift/     bayesian (Laplace posterior, validated vs NUTS) · abstention
 keel/models/survival/  discrete (person-period hazard + competing risks) · metrics
                  (KM, IPCW Brier, D-calibration — numpy-only so CI runs them) ·

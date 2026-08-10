@@ -8,6 +8,7 @@ than decorative ones.
 
 from __future__ import annotations
 
+import pandas as pd
 import pytest
 
 from keel.experiments.sample_autopsy import (
@@ -155,3 +156,90 @@ def test_the_sample_is_emailable(html):
     assert "<script src=" not in html and "<link " not in html
     assert "currentColor" in html          # charts follow the theme (D-038)
     assert "#abcdef" not in html
+
+
+# --- the CSV worklists ------------------------------------------------------
+
+
+def _sim_data(n=400, seed=SEED):
+    from keel.experiments.sample_autopsy import _rescale_money
+
+    sim = simulate(SimConfig(n_customers=n, n_months=N_MONTHS, seed=seed))
+    return _rescale_money(to_canonical(sim, seed=seed), TARGET_MEDIAN_MRR)
+
+
+def test_worklists_contain_no_prediction():
+    """Every column must be a fact from the client's own export. A column implying we
+    know who will leave would claim exactly what D-054 and D-058 say we cannot deliver."""
+    from keel.report.worklist import departures, unrecovered_failures
+
+    banned = ("risk", "probability", "score", "predict", "likely", "propensity", "churn_prob")
+    for frame in (unrecovered_failures(_sim_data()), departures(_sim_data())):
+        for col in frame.columns:
+            assert not any(b in col.lower() for b in banned), col
+
+
+def test_failures_list_is_named_for_what_it_holds():
+    """The first draft called this "recoverable"; on the sample every row was a customer
+    who had already left, so the total recoverable from active customers was zero and
+    the name was a promise the data did not keep."""
+    from keel.report.worklist import unrecovered_failures
+
+    f = unrecovered_failures(_sim_data())
+    assert "still_subscribed" in f.columns
+    assert f["still_subscribed"].dtype == bool
+    # Still-subscribed rows sort first: collectable money before winbacks.
+    if f["still_subscribed"].any() and (~f["still_subscribed"]).any():
+        assert f["still_subscribed"].iloc[0]
+
+
+def test_suggested_action_differs_for_lost_and_retained_customers():
+    from keel.report.worklist import _action
+
+    assert "collect" in _action("expired_card", True).lower()
+    assert "win back" in _action("expired_card", False).lower()
+    assert "salary" in _action("insufficient_funds", True)
+
+
+def test_money_is_rounded_for_a_spreadsheet():
+    """Raw floats like 25048.241928 read as amateurish in a client-facing sheet."""
+    from keel.report.worklist import departures, unrecovered_failures
+
+    amt = unrecovered_failures(_sim_data())["amount"]
+    assert (amt.round(2) == amt).all()
+    dep = departures(_sim_data())
+    assert (dep["annual_value_lost"].round(2) == dep["annual_value_lost"]).all()
+
+
+def test_departures_flag_failures_that_preceded_them():
+    """The join most billing tools never make: cancellations and payment failures are
+    counted in separate reports and never against each other."""
+    from keel.report.worklist import departures
+
+    d = departures(_sim_data())
+    assert "preceded_by_failed_payment" in d.columns
+    assert d["preceded_by_failed_payment"].any()
+
+
+def test_worklists_survive_an_export_with_no_invoices():
+    """Customers and subscriptions are the only required files; a client who sends just
+    those must still get a departures list rather than a crash."""
+    from keel.core.schema import INVOICES, empty
+    from keel.report.worklist import departures, unrecovered_failures
+
+    data = _sim_data()
+    data.invoices = empty(INVOICES)
+    assert unrecovered_failures(data).empty
+    d = departures(data)
+    assert len(d) > 0
+    assert not d["preceded_by_failed_payment"].any()
+
+
+def test_write_worklists_produces_readable_csv(tmp_path):
+    from keel.report.worklist import write_worklists
+
+    paths = write_worklists(_sim_data(), outdir=tmp_path, prefix="x_")
+    assert len(paths) == 2
+    for p in paths:
+        assert p.exists() and p.suffix == ".csv"
+        assert len(pd.read_csv(p)) >= 0
