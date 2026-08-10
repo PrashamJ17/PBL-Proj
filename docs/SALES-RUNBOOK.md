@@ -56,6 +56,11 @@ Narrow, on purpose. From the plan's §8.3:
 Best-fit first: seed-stage B2B SaaS. Clean data, literate buyers, they already think in
 NRR.
 
+**Where to find them is a filtering problem, not a search problem** — a business this small
+is not in any directory. `docs/PROSPECTING.md` has the channels that work (founders who
+publish their own MRR, Shopify/Chrome app developers), the qualification order, and the
+lines not to cross when finding contact details.
+
 ## 4. The ask
 
 Exactly two files, and say it in one line so nobody has to involve an engineer:
