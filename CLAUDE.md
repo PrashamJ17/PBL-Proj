@@ -52,6 +52,12 @@ result: published ROC-AUC 1.0 is pre-fix, its own code now gives **0.543**).
 | 6 | Holdout infra + incrementality reports + cancel widget | ⬜ | **real client ROI number**; paper 3 |
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
 
+**Research/IP plan → `docs/RESEARCH-PLAN.md`** — learning curriculum, the one addition
+that would elevate the paper (derive `corr(τ,π)`, do not only measure it), and the IP
+call. **Repo is PRIVATE and nothing is published: India/EPO need absolute novelty, so the
+file-or-publish decision must be made BEFORE arXiv.** Recommendation is publish, not file
+(Sec 3(k) excludes maths + business method + program *per se*).
+
 **Papers (D-042):** merged 1+2 **drafted** → `papers/paper1/` (read its README first; §8
 REPORTS results + why the gate was unpassable). Lead = corr(τ,propensity) + small-*n*
 reliability; simulator is the *instrument*. arXiv → EJOR/DSS, not JMR (Ascarza's turf).
