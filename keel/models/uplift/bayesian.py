@@ -381,6 +381,43 @@ class HierarchicalCATE:
         """Point estimate, for comparison against methods that only offer one."""
         return self.posterior(X).mean
 
+    def standardised_features(self, X) -> np.ndarray:
+        """`X` on the scale the coefficients act on, so callers can say whether a
+        customer is above or below typical without re-deriving the training moments."""
+        if self.theta_ is None:
+            raise RuntimeError("fit() first")
+        return self._standardise(X)
+
+    def effect_contributions(self, X) -> np.ndarray:
+        """Exact per-feature contribution to `tau_i`, shape `(n, p)`.
+
+        `tau_i = tau_0 + x_i'gamma` is **linear**, and for a linear model the Shapley
+        value of feature `j` is exactly `gamma_j (x_ij - E[x_j])`. Features are
+        standardised here, so `E[x_j] = 0` and the contribution is `gamma_j * xs_ij` --
+        no sampling, no background dataset, no approximation, and no dependency on a
+        SHAP implementation (invariant 7 keeps the core on numpy/scipy).
+
+        Rows sum to `tau_i - tau_0`: what makes this customer differ from the average
+        customer. The intercept `tau_0` is deliberately excluded, because "the offer
+        works on people in general" is not a reason to treat *this* person.
+
+        Uses the mixture-averaged coefficients, which reproduce the posterior mean of
+        `tau_i` exactly -- again because `tau_i` is linear, so averaging the
+        coefficients and averaging the predictions are the same operation.
+        """
+        if self.theta_ is None:
+            raise RuntimeError("fit() first")
+        p_in = np.asarray(X).shape[1]
+        if p_in != self.n_features_:
+            raise ValueError(
+                f"expected {self.n_features_} features, got {p_in}. The columns must "
+                "match those seen during fit, in the same order."
+            )
+        Xs = self._standardise(X)
+        p = self.n_features_
+        gamma = self.theta_[p + 2 : 2 * p + 2]
+        return Xs * gamma
+
     def joint_samples(
         self, X, n_samples: int = 500, seed: int | None = 0
     ) -> tuple[np.ndarray, np.ndarray]:

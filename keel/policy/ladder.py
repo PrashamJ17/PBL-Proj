@@ -70,6 +70,11 @@ class Recommendation:
     """`P(net benefit > 0)` for the chosen rung. Zero where abstaining."""
     value_by_rung: np.ndarray
     """`(n, K)` risk-adjusted value of every rung, for reason codes and audit."""
+    budget_trimmed: np.ndarray
+    """Boolean: a rung *did* clear zero for this customer, but the budget was spent on
+    someone worth more. An owner told 'no action' deserves to know which of the two
+    happened, because one is a verdict about the customer and the other is a verdict
+    about the budget."""
 
     @property
     def n_treated(self) -> int:
@@ -208,6 +213,7 @@ class LadderOptimiser:
         best = np.argmax(adjusted, axis=1)
         best_val = adjusted[np.arange(n), best]
         rung = np.where(best_val > 0, best, ABSTAIN)
+        trimmed = np.zeros(n, dtype=bool)
 
         if self.budget is not None:
             k_max = int(round(self.budget * n))
@@ -217,6 +223,7 @@ class LadderOptimiser:
                 order = np.argsort(-np.where(treated, best_val, -np.inf))
                 keep = np.zeros(n, dtype=bool)
                 keep[order[:k_max]] = True
+                trimmed = treated & ~keep
                 rung = np.where(keep, rung, ABSTAIN)
 
         chosen = rung != ABSTAIN
@@ -225,4 +232,5 @@ class LadderOptimiser:
             expected_value=np.where(chosen, best_val, 0.0),
             confidence=np.where(chosen, confidence[np.arange(n), best], 0.0),
             value_by_rung=adjusted,
+            budget_trimmed=trimmed,
         )

@@ -1621,3 +1621,119 @@ opposite is what the abstention thesis would have predicted.
 
 **Not attempted here:** reason codes and the dashboard, so the phase gate ("an owner can act
 without asking us") is not met on those grounds either, independently of the numbers.
+
+---
+
+## D-059 — Reason codes explain the decision, and admit when there is no reason
+
+**Provenance.** Ported from RetainIQ (a sibling project of the author's) after a
+head-to-head comparison. RetainIQ's version is SHAP over an XGBoost churn classifier,
+producing "87% risk because days-since-purchase = 400". Two things were changed rather
+than copied.
+
+**1. It explains the decision, not the prediction.** "This customer has not bought in
+400 days" is something the owner can already see; it does not tell them whether *doing
+something* pays. So the explanation decomposes the money identity instead:
+
+```
+expected money  =  -delta_p * V  -  c
+```
+
+Every term is separately actionable — how much the offer moves this person, what keeping
+them is worth, what the offer costs — and each implies a different response when it is
+the binding constraint. The output also states **why this rung and not the next**, which
+a risk score cannot express at all.
+
+**2. The attribution is exact, and needs no dependency.** `tau_i = tau_0 + x_i'gamma` is
+linear, and for a linear model the Shapley value of feature `j` is exactly
+`gamma_j (x_ij - E[x_j])`. Features are standardised, so it is `gamma_j * xs_ij`. No
+sampling, no background dataset, no approximation error, and no `shap` package —
+invariant 7 keeps the core on numpy/scipy. A test asserts the rows sum to `tau_i - tau_0`.
+
+`tau_0` is deliberately excluded from the attribution: "the offer works on people in
+general" explains the policy, not the customer.
+
+**Three honesty properties the SHAP-over-a-classifier pattern cannot express.**
+
+- **"Nothing specific to this customer drives it."** When `sigma_gamma` collapses — the
+  normal situation at these sample sizes — every contribution is near zero and the
+  recommendation rests on the customer's *value* and the average effect. The explainer
+  says exactly that instead of ranking three near-zero numbers and dressing them up.
+  This is D-058's `corr(tau_hat, tau_true) = 0.13` surfaced at the point of use.
+- **"Their profile argues against this."** When the top drivers sum the wrong way, the
+  recommendation is being carried by value alone, and the text says so rather than
+  listing three reasons that contradict the action. Caught by dogfooding: the first
+  output read "here are three reasons this will not work, so do it".
+- **Every recommendation carries D-058's reliability.** 58% [0.42, 0.72] is not
+  distinguishable from chance, so a per-customer line reading "contact this customer, it
+  will earn 340" would overclaim by exactly the margin this project has spent five
+  phases refusing. `reliability_note` propagates to every treated customer and a test
+  enforces it.
+
+**Abstention now says which kind.** `Recommendation.budget_trimmed` separates "no offer
+we can measure pays for itself here" from "the budget was spent on customers where it
+earns more". These are a verdict about the customer and a verdict about the budget
+respectively, and an owner told "no action" can act on the second (raise the budget) but
+not the first.
+
+**A direction bug found by reading the output.** The first implementation described every
+driver as "higher than typical" regardless of the customer's actual value, because it
+took the sign of the *contribution* and ignored the sign of the *feature*. Two
+independent signs, conflated. Fixed, and pinned by a test that picks the customer
+furthest below average and asserts the words say "lower".
+
+**Phase 5's gate is still not met**: the dashboard is absent, and D-058's win rate is
+unchanged by explaining it better. What this closes is the "without asking us" half —
+the output is now legible to an owner without an analyst present.
+
+---
+
+## D-060 — RetainIQ compared: an independent replication of our leakage result
+
+**What it is.** A sibling project by the same author — an e-commerce retention dashboard
+on the Olist Brazilian marketplace dataset: RFM + K-Means segmentation, XGBoost churn
+classifier, XGBoost CLV regressor, SHAP explanations, FastAPI + Next.js, deployed. Its
+codebase was cloned and **its pipeline was run**, rather than reading its report, because
+the report's numbers are the claim under examination.
+
+**The finding, and it is ours as much as theirs.** RetainIQ's report headlines
+**Accuracy 0.9987, F1 0.9992, ROC-AUC 1.0000**, describing the model as having "learned
+the patterns flawlessly", with a footnote that "Recency acts as a near-perfect
+deterministic feature". That footnote is the whole story: the label was "no purchase in
+90 days" and `recency` is days since last purchase, so `recency >= 90` **is** the label.
+
+Its commit `d513bc3` ("resolve feature leakage and implement OOT split") fixed this
+correctly — features from before a cutoff, target after, recency measured to the cutoff.
+**The report was never re-run.** Executing the current code gives:
+
+| | reported | actual (current code) | trivial baseline |
+|---|---|---|---|
+| Accuracy | 0.9987 | **0.8676** | 0.9945 (always predict churn) |
+| F1 | 0.9992 | **0.9290** | 0.9972 (always predict churn) |
+| ROC-AUC | 1.0000 | **0.5434** | 0.5000 |
+| churn rate | 80.2% | **99.4%** | — |
+
+A constant "everyone churns" beats the trained model on both accuracy and F1.
+
+**Why this matters to Keel.** It is an independent replication of P1 (0.603 correct vs
+0.954 leaked) at larger magnitude — 0.543 vs 1.000 — on real data, by a different
+pipeline, in a different vertical. Two projects, same trap, and in both cases the leaked
+number was the one that looked like success. This is the strongest external evidence we
+have that invariant 9 (`available_at` on every fact, `_visible` as the sole data path)
+earns its cost, and it belongs in the paper's motivation: the failure is not hypothetical.
+
+**A second lesson, which is about framing rather than leakage.** At a 99.4% base rate the
+problem is degenerate — Olist is a *marketplace* with mostly one-time buyers, so churn is
+latent and a binary 90-day label is the wrong construct entirely (Fader & Hardie). This
+is exactly why Keel started with contractual subscriptions and deferred non-contractual
+to Phase 7 behind a BTYD router. The comparison confirms that sequencing was right.
+
+**What we took.** The reason-code layer (D-059), rebuilt rather than copied: theirs
+explains a prediction with approximate SHAP over a classifier, ours explains a decision
+with exact closed-form attribution over a linear CATE.
+
+**What they have that we do not, and it is not nothing.** A deployed frontend, a live
+API, Docker orchestration, RFM segmentation, and a CRM activation layer. Keel has 373
+tests, CI and 60 decision entries, and **nothing a buyer can look at**. Their gate
+("someone can use it") is met and ours is not; ours ("it demonstrably makes money") is
+the harder one and is still open. Recorded because the comparison cuts both ways.

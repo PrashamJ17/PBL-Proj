@@ -1298,3 +1298,38 @@ predicted, and is reported because it was swept rather than chosen.
 
 **20 new tests, 357 total.** Reason codes and the dashboard are not built, so the phase gate
 is unmet on those grounds too, independently of the numbers.
+
+---
+
+## Step 5.2 — Reason codes (D-059), ported from RetainIQ and rebuilt
+
+Closes the "without asking us" half of Phase 5's gate. `keel/report/reasons.py`.
+
+**Explains the decision, not the prediction.** The donor implementation is SHAP over an
+XGBoost churn classifier: "87% risk because days-since-purchase = 400". An owner can
+already see that, and it does not say whether acting pays. Ours decomposes the money
+identity `-delta_p * V - c` — how much the offer moves this person, what keeping them is
+worth, what it costs — and states why this rung rather than the next best.
+
+**Attribution is exact and dependency-free.** `tau_i = tau_0 + x_i'gamma` is linear, so
+the Shapley value of feature `j` is exactly `gamma_j * xs_ij` after standardisation. No
+sampling, no `shap` package, invariant 7 intact. A test pins that rows sum to
+`tau_i - tau_0`.
+
+**Three things it can say that a SHAP-over-a-classifier cannot.** That nothing specific
+to this customer drives the recommendation (the normal case here — `sigma_gamma`
+collapses at these sample sizes, D-058). That their profile argues *against* the offer
+and it is recommended on value alone. And D-058's reliability, on every line, so no
+per-customer output claims more than 58% [0.42, 0.72] supports.
+
+**Two bugs found by reading the output rather than the tests.** Every driver was labelled
+"higher than typical" regardless of the customer's actual value — the sign of the
+*contribution* and the sign of the *feature* are independent and had been conflated, and
+the first render read "here are three reasons this will not work, so do it". And
+abstention could not distinguish "nothing pays here" from "the budget went to someone
+better", which are a verdict about the customer and a verdict about the budget;
+`Recommendation.budget_trimmed` now separates them.
+
+**16 new tests, 373 total.** D-060 records the full comparison, including that running
+RetainIQ's own pipeline reproduces our P1 leakage finding independently (ROC-AUC 0.543
+against a published 1.000).
