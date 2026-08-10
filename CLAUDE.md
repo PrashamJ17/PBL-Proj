@@ -153,9 +153,9 @@ Message leads with what it **establishes or fixes**, not files touched; numbers 
 body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first. Never commit on red —
 if blocked, commit *with the failure described*.
 
-Keep under **~195 lines** (raised 120→150→165→175→180→195 as phases, decisions and the
-paper accumulated — deliberate, not drift; each raise followed a real trim first, and
-this one followed compressing CP-08/10/11). If it grows, cut checkpoints; never invariants.
+Keep under **~205 lines** (raised 120→150→165→175→180→195→205 as phases, decisions and
+the paper accumulated — deliberate, not drift; every raise follows a real trim, this one
+after merging CP-08/10 and compressing CP-01…07/11/14). Cut checkpoints; never invariants.
 
 ---
 
@@ -166,11 +166,10 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
 - **CP-01…07** — Phases 0-1, three real-RCT validations (Hillstrom D-020/023 · Criteo
   D-024/026 · Lenta D-031), Phase 2 dunning + Autopsy (D-033/036), CI fixes (D-028/030).
   **Phase 2's gate is a sales task: run the Autopsy against 10 real businesses.**
-- **CP-08** — **Phase 3 done** + paper drafted. Telco: beats Cox/RSF 10/10 on integrated
-  Brier, **ties DeepSurv**; loses GBSG2 as predicted (D-021/049). n<250: KM wins.
-- **CP-10** — **Phase 4 built, gate PARTIAL (D-054).** Beats ranking 65-80% spending 1/3
-  as much; beats do-nothing 0-10%. Laplace validated vs NUTS (D-053); under-coverage runs
-  AGAINST the claim.
+- **CP-08/10** — **Phase 3 done** (Telco: beats Cox/RSF 10/10 on integrated Brier, **ties
+  DeepSurv**; loses GBSG2 as predicted, D-021/049; n<250 KM wins) + paper drafted.
+  **Phase 4 built, gate PARTIAL (D-054):** beats ranking 65-80% spending 1/3 as much,
+  do-nothing 0-10%. Laplace validated vs NUTS (D-053); under-coverage runs AGAINST us.
 - **CP-12** — **D-057: a units bug ran for a whole phase.** `decide` multiplied a
   **log-odds** tau by CLV as if it were a probability difference — believed -104.5 where
   truth was +20.5. Overstatement `1/(p0(1-p0))` → **worst for low-risk customers**: the
