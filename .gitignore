@@ -29,3 +29,6 @@ data/
 
 # Editor workspace config (Obsidian vault settings, machine-local)
 .obsidian/
+
+# Generated dashboards (reproducible via `make dashboard`)
+retention_dashboard.html

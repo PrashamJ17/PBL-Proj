@@ -1333,3 +1333,35 @@ better", which are a verdict about the customer and a verdict about the budget;
 **16 new tests, 373 total.** D-060 records the full comparison, including that running
 RetainIQ's own pipeline reproduces our P1 leakage finding independently (ROC-AUC 0.543
 against a published 1.000).
+
+---
+
+## Step 5.3 — The retention dashboard (D-061)
+
+`keel/report/dashboard.py`, `make dashboard`. Self-contained HTML: inline CSS, inline SVG,
+no server, no new dependency. Reuses the Autopsy's stylesheet, theme toggle and the D-038
+sentinel-colour machinery, so the charts follow light/dark rather than baking a colour at
+render time. `keel/experiments/dashboard_demo.py` runs the whole Phase 5 path end to end --
+simulate a tenant, randomised multi-arm pilot, per-rung fits, rung choice, reason codes,
+page -- so the numbers on it are the numbers the gate measured, not a mock-up.
+
+Structure: reliability banner, headline counts, what we recommend (chart), who to contact
+(sortable table, click a row for its reasoning, filter by offer), why we are leaving most
+customers alone, and what this cannot tell you.
+
+**Two things found by looking at the rendered page, not by running the tests.** The
+top-ranked rows included a 40% discount costing ~1,972 at a **47%** chance of paying --
+correct behaviour for an expected-value rule, and unreadable as presented, because the
+caution was inside the collapsed detail. Sub-60% rows are now flagged inline. And the
+first dark-mode render was checked visually rather than assumed, because D-038 was exactly
+this failure.
+
+Verified in the browser in both themes; row expansion and the offer filter exercised
+directly. **15 new tests, 388 total** -- mostly that the page cannot become more confident
+than the evidence: the banner is unconditional and precedes the table, weak rows are
+marked where the money is, the two kinds of abstention stay distinct, and tenant-supplied
+ids and business names cannot inject markup.
+
+**Phase 5's gate is met on its own terms and the evidence is unchanged.** The optimiser
+still wins 58% [0.42, 0.72]. Presenting a recommendation better does not make it better,
+which is what the banner is there to say.

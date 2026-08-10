@@ -1737,3 +1737,51 @@ API, Docker orchestration, RFM segmentation, and a CRM activation layer. Keel ha
 tests, CI and 60 decision entries, and **nothing a buyer can look at**. Their gate
 ("someone can use it") is met and ours is not; ours ("it demonstrably makes money") is
 the harder one and is still open. Recorded because the comparison cuts both ways.
+
+---
+
+## D-061 — The dashboard is a file, and it leads with what it does not know
+
+**Form: self-contained HTML, no server.** Same shape as the Churn Autopsy (D-035/036) --
+inline CSS, inline SVG, no external requests. It can be emailed, opened offline, printed,
+or put behind an unguessable URL, and none of that is a deployment. D-040 orders the
+go-to-market by *trust required*, and a file someone opens asks for less than a login.
+
+Rejected: Streamlit and Next.js. Both add a runtime, a build step and a hosting bill to a
+project whose gate is still "does this make money", and invariant 7 keeps the core on
+numpy/pandas/scipy. The plan said from the start that Streamlit would not survive a real
+launch, so building on it now would be building something to throw away. RetainIQ's
+deployed Next.js stack (D-060) is the counter-example worth respecting -- it is genuinely
+more impressive to look at -- but it is also the part of that project that is cheapest to
+rebuild later, and the part we would have to rebuild anyway.
+
+**The design decision that matters: the reliability banner is first, above the
+recommendations, and there is no argument that removes it.** The conventional retention
+dashboard leads with a large red number -- "92.4% churn risk, SAVE NOW" -- and puts model
+accuracy in a methodology tab if anywhere. We measured a sibling product doing exactly
+that on top of ROC-AUC 0.543 (D-060). The failure there is not that a number is wrong; it
+is that the page is arranged so nobody asks. So D-058's "58% of tests, CI [0.42, 0.72],
+not distinguishable from a coin flip" sits at the top in the same weight as the headline,
+and a test asserts it precedes the recommendation table.
+
+**Weak rows are marked in the table, not inside the collapsed detail.** Found by looking
+at the rendered page rather than the tests: the top-ranked recommendations included a 40%
+discount costing ~1,972 at a **47%** chance of paying. That is a coin flip on a four-digit
+spend, and it ranked fourth because the list sorts by expected value, which is correct and
+also exactly why the uncertainty cannot be one click further away than the money it
+qualifies. Rows below 60% now carry an inline warning.
+
+**Both kinds of "no" are reported separately.** "No offer we can measure pays for itself
+here" is a verdict about the customer and more budget will not change it; "the budget ran
+out" is a verdict about the budget and raising it would. Collapsing them into one number
+would make the largest group on the page unactionable.
+
+**What it deliberately does not do.** No webhooks, no "fire discount to Klaviyo" button.
+Phase 6 is the holdout and incrementality infrastructure, and wiring automated sends
+before the thing that measures whether they worked is how a retention product becomes
+unfalsifiable. The page ends by saying the randomised holdout must stay in place.
+
+**Phase 5's gate is now met on its own terms** -- an owner can read the page and act
+without us present -- and this changes none of the evidence. The optimiser still beats a
+single well-chosen offer on 58% of draws. A better-presented recommendation is not a
+better recommendation, and the banner exists to stop the page implying otherwise.

@@ -57,3 +57,6 @@ sensitivity:  ## Why the Phase 4 gate failed — effect size and offer cost (D-0
 
 ladder:  ## Phase 5 gate — does matching a rung to a customer beat one good offer? (D-058)
 	@python -m keel.experiments.ladder
+
+dashboard:  ## Build the retention dashboard (self-contained HTML, D-061)
+	@python -m keel.experiments.dashboard_demo

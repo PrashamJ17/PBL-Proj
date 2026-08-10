@@ -30,9 +30,10 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-373 tests. CI green.
-**Next: Phase 5 remainder = dashboard only** (reason codes DONE, D-059). Gate still
-unmet. **D-057: Phase 4 multiplied log-odds by money for a whole phase** — fixed in
+388 tests. CI green.
+**Phase 5 COMPLETE** (optimizer + reason codes + dashboard). Its gate is met *on its own
+terms* — an owner can act unaided — but the evidence did NOT improve: still 58% [.42,.72].
+**Next: Phase 2's gate (a paying client) or Phase 6 holdout infra — NOT more modelling.** **D-057: Phase 4 multiplied log-odds by money for a whole phase** — fixed in
 `keel/policy/economics.py`, losses -3,531→-1,070, but NO qualitative conclusion changed;
 predictions were pre-registered (`docs/PREREG-phase5.md`) and 2 of 5 FAILED.
 **D-058: choosing the offer beats choosing the customer** — but 58% [.42,.72] is not
@@ -47,7 +48,7 @@ own code gives **0.543**, worse than "always predict churn".
 | 2 | Dunning / involuntary churn + retry-timing model | 🟨 **built** | **first revenue — get a paying client (OPEN)** |
 | 3 | Discrete-time survival hazard + CLV | ✅ **done** | beats Cox+RSF 10/10 on Telco, **ties DeepSurv**; best-calibrated (D-049) |
 | 4 | Hierarchical Bayesian CATE + abstention | 🟨 **built** | gate **PARTIAL** — beats ranking 93% post-D-057, still not do-nothing |
-| 5 | Offer-ladder optimizer + reason codes + dashboard | 🟨 **built (optimizer + reasons)** | **UNMET** — beats achievable rival 58% [.42,.72]; dashboard absent |
+| 5 | Offer-ladder optimizer + reason codes + dashboard | ✅ **done** | owner can act unaided (met); **but** only beats achievable rival 58% [.42,.72] |
 | 6 | Holdout infra + incrementality reports + cancel widget | ⬜ | **real client ROI number**; paper 3 |
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
 
@@ -100,7 +101,8 @@ keel/sim/        config · latents (copula) · hazard (ONE defn, two regimes) ·
                  counterfactual (exact τ, CRN, LADDER) · calibration · dunning
 keel/policy/     dunning (6 retry policies) · economics (log-odds→money, D-057) ·
                  ladder (per-customer rung choice, multi-arm pilot, D-058)
-keel/report/     autopsy (analysis) · render (HTML) · reasons (exact attribution, D-059)
+keel/report/     autopsy · render (HTML) · reasons (exact attribution, D-059) ·
+                 dashboard (self-contained, banner-first, D-061)
 keel/models/uplift/     bayesian (Laplace posterior, validated vs NUTS) · abstention
 keel/models/survival/  discrete (person-period hazard + competing risks) · metrics
                  (KM, IPCW Brier, D-calibration — numpy-only so CI runs them) ·
@@ -110,7 +112,7 @@ keel/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark
                    abstention (P4 gate) · sensitivity (D-055/056) · figures
 keel/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           373 — fairness, realism, edge cases, leakage gate
+tests/           388 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -118,12 +120,13 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 373 tests + calibration gates — run before every commit
+make check      # lint + 388 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
 make sensitivity # why the Phase 4 gate failed — effect size and offer cost
 make ladder     # Phase 5 gate — rung-matching vs one good offer
+make dashboard  # build the retention dashboard (self-contained HTML)
 make figures    # regenerate figures, auto-syncs explainer/figures/
 make help       # everything else
 ```
@@ -160,15 +163,14 @@ this one followed compressing CP-08/10/11). If it grows, cut checkpoints; never 
 
 Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
 
-- **CP-01…07** — Phases 0-1 (SubSim + kill test; schema, PIT store, leakage, ingest), three
-  real-RCT validations (Hillstrom D-020/023 · Criteo D-024/026 · Lenta D-031), Phase 2
-  dunning + Autopsy (D-033/036), CI fixes (D-028/030). **Phase 2's gate is a sales task:
-  run the Autopsy against 10 real businesses.**
+- **CP-01…07** — Phases 0-1, three real-RCT validations (Hillstrom D-020/023 · Criteo
+  D-024/026 · Lenta D-031), Phase 2 dunning + Autopsy (D-033/036), CI fixes (D-028/030).
+  **Phase 2's gate is a sales task: run the Autopsy against 10 real businesses.**
 - **CP-08** — **Phase 3 done** + paper drafted. Telco: beats Cox/RSF 10/10 on integrated
-  Brier, **ties DeepSurv**; loses GBSG2 to RSF as predicted (D-021/049). n<250: KM wins.
+  Brier, **ties DeepSurv**; loses GBSG2 as predicted (D-021/049). n<250: KM wins.
 - **CP-10** — **Phase 4 built, gate PARTIAL (D-054).** Beats ranking 65-80% spending 1/3
-  as much; beats do-nothing 0-10%. At alpha=0.05 treats ZERO. Laplace validated vs NUTS
-  (D-053); under-coverage runs AGAINST the claim.
+  as much; beats do-nothing 0-10%. Laplace validated vs NUTS (D-053); under-coverage runs
+  AGAINST the claim.
 - **CP-12** — **D-057: a units bug ran for a whole phase.** `decide` multiplied a
   **log-odds** tau by CLV as if it were a probability difference — believed -104.5 where
   truth was +20.5. Overstatement `1/(p0(1-p0))` → **worst for low-risk customers**: the
@@ -178,13 +180,19 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-15** — **Dashboard shipped; Phase 5 done (D-061).** Self-contained HTML, no
+  server, no new dep — Streamlit/Next.js rejected (invariant 7; a runtime for a project
+  whose gate is still "does it earn"). **Reliability banner is FIRST and cannot be
+  disabled**: the inverse of a dashboard shouting "SAVE NOW" over a 0.543 model (D-060).
+  Looking at the render (not the tests) caught a **47%-confidence 1,972 discount** ranked
+  4th — sub-60% rows now flag inline. Verified both themes in-browser (D-038). 388 tests.
 - **CP-14** — **Reason codes (D-059) + RetainIQ compared (D-060).** Attribution is
   EXACT not SHAP: `tau` is linear so contribution = `gamma_j*xs_ij`, no dependency.
   Explains the *decision* (`-Δp*V - c`, and why this rung) not the prediction; says
   "nothing specific to this customer drives it" when sigma_gamma collapses, and carries
   D-058's 58% on every line. Ran RetainIQ's own pipeline: published ROC-AUC **1.000** is
   pre-leakage-fix, actual **0.543** — worse than "always predict churn". **Independent
-  replication of P1.** They have a deployed UI; we have 373 tests and nothing to look at.
+  replication of P1.**
 - **CP-13** — **Phase 5 optimizer built; gate UNMET (D-058).** Per-rung effects from a
   multi-arm pilot (~35/arm at n=500), pooled across rungs via D-041 machinery. First
   estimated policy here to make money (655/1,039/2,252): **28% of oracle vs 13%** for the
