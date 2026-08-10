@@ -1,11 +1,12 @@
 % ---------------------------------------------------------------------------
 % Keel -- merged paper 1+2 (see docs/DECISIONS.md D-042 for the positioning).
 %
-% STATUS: DRAFT. Sections 4-7 report experiments that are implemented, tested
-% and reproducible from this repository. Section 8 specifies the hierarchical
-% estimator and its abstention rule but reports NO results, because Phase 4 is
-% not built -- do not remove its \todo marker until it does. Every number below
-% is regenerable; papers/paper1/README.md lists the command for each table.
+% STATUS: DRAFT. Every section reports experiments that are implemented, tested
+% and reproducible from this repository, including Section 8. Every number is
+% regenerable; papers/paper1/README.md lists the command for each table.
+%
+% Section 8 numbers post-date the units correction of Section 8.2. Do not restore
+% figures from an earlier revision without re-running the command in the README.
 %
 % Not compiled in this environment (no TeX installation). Compile with:
 %   latexmk -pdf main.tex
@@ -520,12 +521,13 @@ one with entirely different remedies.
 \section{Abstention under posterior uncertainty}
 \label{sec:abstain}
 
-\todo{Phase 4 is built and evaluated. The gate this section set --- does the rule beat
-both ranking and doing nothing on realised money --- is \emph{partially} met: it beats
-ranking, and it does not beat doing nothing. Section~\ref{sec:sensitivity} shows the
-gate was not achievable as written, since the two halves trade off against each other,
-and localises a genuine defect in Equation~\ref{eq:abstain} (a constant $\alpha$).
-That correction is unevaluated; this marker stays until it is.}
+This section reports a partial negative, and we state its shape up front. The rule
+beats ranking almost always and does not beat doing nothing.
+Section~\ref{sec:sensitivity} shows the gate was not achievable as written, because its
+two halves trade off against each other. Section~\ref{sec:units} reports a units error
+that invalidated an earlier revision of these numbers and the discipline that failed to
+catch it. Section~\ref{sec:ladder} reports what did finally make money, which was not
+choosing customers.
 
 Sections~\ref{sec:corr} and \ref{sec:smalln} together pose a problem a practitioner
 cannot solve by choosing a better estimator. They cannot know in advance which
@@ -563,26 +565,30 @@ that customers differ in worth.
 
 \begin{table}[t]
 \centering
-\begin{tabular}{lrrr}
+\begin{tabular}{lrrrr}
 \toprule
-$n$ & Beats ranking & Beats doing nothing & Treated (abstain / rank) \\
+$n$ & Beats ranking & Beats doing nothing & Ties it & Treated (abstain / rank) \\
 \midrule
-250   & 75\% & 10\% & 7 / 23 \\
-500   & 80\% & 10\% & 15 / 46 \\
-1{,}000 & 70\% & 5\%  & 32 / 90 \\
-2{,}000 & 65\% & 0\%  & 72 / 181 \\
-4{,}000 & 80\% & 10\% & 127 / 359 \\
+250   & 95\%  & 20\% & 70\% & 5 / 23 \\
+500   & 85\%  & 5\%  & 70\% & 12 / 46 \\
+1{,}000 & 95\%  & 5\%  & 80\% & 14 / 90 \\
+2{,}000 & 100\% & 0\%  & 70\% & 27 / 181 \\
+4{,}000 & 90\%  & 0\%  & 80\% & 21 / 359 \\
 \bottomrule
 \end{tabular}
 \caption{Realised money, 20 draws per size, ground truth withheld. Abstention beats
-ranking consistently, and spends roughly a third as much doing it. Neither beats the
-do-nothing baseline.}
+ranking almost always, spending a fraction as much; it does not beat doing nothing,
+and on roughly three-quarters of draws it \emph{is} doing nothing.}
 \label{tab:abstain}
 \end{table}
 
-Table~\ref{tab:abstain} splits the gate. Abstention beats ranking on 65--80\% of draws
-while contacting roughly a third as many customers. It does \emph{not} beat doing
-nothing at any size tested, and neither does the comparator.
+Table~\ref{tab:abstain} splits the gate. Abstention beats ranking on 93\% of draws
+overall while contacting a small fraction as many customers (mean realised value
+$-524$ against $-2{,}919$ for ranking). It does \emph{not} beat doing nothing, and the
+third column explains why the second is so low: on about three-quarters of draws the
+rule treats nobody and scores exactly zero. Reporting only ``beats doing nothing''
+would score a rule that correctly declines identically to one that loses money, which
+is precisely the property under examination, so both are given.
 
 Sweeping $\alpha$ shows the safety property behaving exactly as specified. At
 $\alpha = 0.05$ the rule treats \emph{zero} customers and returns the do-nothing
@@ -616,12 +622,14 @@ knowing every $\CATE_i$ would treat $5.8\%$ of customers. That is a ceiling, not
 estimate: the gate asked an estimated rule to locate profit inside $5.8\%$ of a
 population from a pilot of a few hundred.
 
-Raising the effect size does flip the gate --- at a mean effect of $-0.050$ the rule
-beats doing nothing on $57\%$ of draws --- but the flip is not worth having, for three
-reasons visible in the same sweep. The two win rates move in \emph{opposite} directions,
-and at no setting is either significantly above chance while the other also is: the
-regime in which abstention beats inaction is the regime in which blanket treatment beats
-abstention, which profits on $88\%$ of draws by the time the gate passes. The share of
+Raising the effect size does flip the gate --- at a mean effect of $-0.077$ the rule
+beats doing nothing on $68\%$ of draws --- but the flip is not worth having, for three
+reasons visible in the same sweep. The two win rates move in \emph{opposite} directions
+and monotonically: as the effect grows, beating ranking falls from $90\%$ to $48\%$
+while beating inaction rises from $5\%$ to $68\%$, and at no swept setting is either
+significantly above chance while the other also is. The regime in which abstention beats
+inaction is the regime in which blanket treatment beats abstention, which profits on
+$88\%$ of draws by the time the gate passes. The share of
 harmed customers falls from $27\%$ to $3\%$ along the way, so a passing configuration is
 one in which the adversarial mechanism of Section~\ref{sec:corr} has been removed. And
 the settings that pass most clearly lie outside the band our calibration procedure
@@ -654,6 +662,93 @@ reason not to act, when uncertainty about a nearly free intervention is not
 decision-relevant. We state the correction --- $\alpha$ as a function of the payoff ratio
 --- and deliberately do not evaluate it here, since repairing a flaw in the same pass
 that discovers it forfeits the independence that made the diagnosis credible.
+
+\subsection{A units error, and why every test passed}
+\label{sec:units}
+
+An earlier revision of Table~\ref{tab:abstain} was produced by a decision rule that
+multiplied a log-odds ratio by money. We report it because the failure is general and
+the way it survived is more instructive than the bug.
+
+The estimator returns $\CATE_i$ on the \textbf{log-odds} scale, as its definition
+requires. Equation~\eqref{eq:abstain} then formed $-\CATE_i V_i - c$, which is money
+only if $\CATE_i$ is a difference in \emph{probability}. On one draw the rule valued
+treating at $-104.5$ where the truth was $+20.5$, against an offer costing $31.5$.
+
+The distortion is not a constant. Since
+$\partial(\Delta p)/\partial\CATE \approx p_0(1-p_0)$, treating log-odds as probability
+overstates the benefit by roughly $1/(p_0(1-p_0))$: a factor of four at $p_0 = 0.5$ and
+\emph{twenty-five} at $p_0 = 0.05$. The inflation is therefore largest for the customers
+least likely to leave --- the Sure Thing quadrant --- which is the precise error this
+paper exists to characterise, reproduced inside our own decision rule.
+
+\paragraph{Every test passed, and none of them was wrong.} The rule's own test compared
+it against $(-\hat\CATE V - c) > 0$: the same expression, so it agreed. The estimator's
+tests used synthetic effects generated on the logit scale, so they were internally
+consistent too. \textbf{A units error is consistent with itself, and a suite of
+self-consistency checks cannot detect one.} The test that now catches it asserts a value
+computed by hand: a log-odds shift of $-0.8$ applied to $p_0 = 0.25$ moves the
+probability by $-0.1197$, not by $-0.8$.
+
+The correction converts on the probability scale before touching money, using the
+baseline from the same fit, and samples $(\eta_{0i}, \CATE_i)$ jointly because they are
+correlated and the logistic transform destroys the closed form. The repaired rule
+consumes a posterior already denominated in currency, which makes the original mistake
+unrepresentable rather than merely fixed.
+
+\paragraph{What it changed, and what it did not.} Mean realised losses fell from
+$-3{,}531$ to $-1{,}070$ at $n=2{,}000$, treating $27$ customers rather than $72$, and
+the rule now beats ranking on $93\%$ of draws rather than $75\%$. \textbf{No qualitative
+conclusion moved.} The gate still fails, for the reason Section~\ref{sec:sensitivity}
+gives: the offer is roughly four times too weak to pay for itself, and
+$\corr(\hat\CATE, \CATE)$ is $0.13$ at these sample sizes. Corrections to five
+pre-registered predictions were recorded before the fix was run; two failed, including
+the prediction that the per-offer dependence of $\alpha$ would disappear. It did not,
+which means the defect identified in Section~\ref{sec:sensitivity} survived a challenge
+we raised against our own conclusion.
+
+\subsection{Choosing the offer rather than the customer}
+\label{sec:ladder}
+
+Every experiment to this point holds the intervention fixed and asks who should receive
+it. Section~\ref{sec:sensitivity} shows that question is close to degenerate: when the
+offer is nearly free, treat everyone; when it is expensive, treat nobody. We therefore
+ask the question the ladder was built for --- \emph{which} intervention for which
+customer --- learning a separate effect per rung from a randomised multi-arm pilot. This
+is a harder test, not an easier one: the pilot splits $K+1$ ways, leaving roughly $35$
+customers per arm at $n = 500$.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Policy & Mean realised value & Share of oracle & Beaten by optimiser \\
+\midrule
+Optimiser (per-customer rung) & $655$ / $1{,}039$ / $2{,}252$ & 28\% & --- \\
+Best rung from the pilot      & $502$ / $-562$ / $1{,}869$    & 13\% & 58\% [0.42, 0.72] \\
+Best single rung, hindsight   & $1{,}997$ / $2{,}554$ / $5{,}892$ & 73\% & 13\% [0.05, 0.27] \\
+Oracle over rungs             & $2{,}348$ / $3{,}747$ / $8{,}242$ & 100\% & --- \\
+\bottomrule
+\end{tabular}
+\caption{Offer-ladder allocation at $n = 500 / 1{,}000 / 2{,}000$, 15 draws each.
+``Hindsight'' selects the best uniform rung on the evaluation set itself and is not
+achievable; it is included as an upper bound on ``pick one good offer''.}
+\label{tab:ladder}
+\end{table}
+
+This is the first estimated policy in this paper to make money on average, and it
+captures roughly twice what the achievable alternative does. It is still not a result we
+will claim: $58\%$ on 45 draws is not distinguishable from chance.
+
+The finding we do claim is about the comparator. \textbf{A pilot-chosen best rung agrees
+with the true best rung on $13\%$ of draws} --- against $17\%$ for a uniform guess among
+six --- and returns \emph{negative} expected money at $n = 1{,}000$. Meanwhile the
+hindsight-chosen uniform rung captures $73\%$ of the oracle against the optimiser's
+$28\%$. Choosing the right default intervention is worth considerably more than matching
+interventions to customers, and it is the choice a small business is least equipped to
+make for itself. Risk aversion did not help: the risk-neutral setting dominated at every
+size, which is the opposite of what the abstention argument would predict, and we report
+it because the parameter was swept rather than chosen.
 
 \section{Limitations}
 \label{sec:limitations}

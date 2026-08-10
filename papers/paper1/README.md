@@ -60,7 +60,20 @@ a referee than a section with no dead ends in it.
 **Do not evaluate the $\alpha$ correction in this paper.** §8.1 diagnoses a constant
 $\alpha$ as wrong by construction and deliberately stops there. Fixing it and reporting
 the improvement in the same submission would make the diagnosis unfalsifiable after the
-fact.
+fact. The diagnosis was, however, re-tested after the §8.2 units correction and
+**survived** — the per-offer dependence did not disappear, which is recorded in §8.2.
+
+**§8.2 is the section a referee will respect and an author will want to cut.** It reports
+that an earlier revision of Table 5 was produced by a rule that multiplied a log-odds
+ratio by money, and that every test passed because a units error is self-consistent.
+Keep it. The numbers changed (losses −3,531 → −1,070, beats ranking 75% → 93%) and no
+conclusion did, which is exactly what makes it safe to publish and worth publishing.
+
+**§8.3 is the strongest positive result in the paper and is still not a claim.** The
+optimiser is the first estimated policy here to make money on average, and it beats the
+achievable alternative on 58% [0.42, 0.72] — chance. What is claimed is the comparator's
+failure: a pilot-chosen best rung matches the true best rung 13% of the time against 17%
+for a random guess. Do not upgrade the first into a headline.
 
 **Do not fix this by tuning.** The threshold sweep is reported in full, including the
 settings where the rule loses money. Selecting the best alpha post hoc, or dropping the
@@ -83,8 +96,9 @@ bug in the paper.
 | §5 Hillstrom / Criteo / Lenta headline figures | `python -m keel.benchmarks.run` |
 | Table 4 (Telco survival head-to-head) | `make survival` |
 | §7 CLV, 21% decile overlap, 72.5/27.5 split | `make clv` |
-| Table 5 (abstention gate) | `python -m keel.experiments.abstention` |
+| Table 5 (abstention gate, post-fix) | `python -m keel.experiments.abstention` |
 | §8.1 sensitivity — why the gate was unpassable | `make sensitivity` |
+| Table 6 + §8.3 offer ladder | `make ladder` |
 | §8 Laplace-vs-NUTS validation | `python -m keel.models.uplift.mcmc_check` (needs `numpyro`) |
 | Figures 1–5 | `make figures` |
 

@@ -3,9 +3,9 @@
 **This document is updated as the project progresses. Everything else in this folder is
 relatively stable; this is the living record.**
 
-**Last updated:** Phase 4 built and its limits diagnosed (the decision method, and why
-it only half works), on top of Phases 0-1 and 3, three external validations on real data,
-and Phase 2 built but unsold.
+**Last updated:** Phase 5 complete (the decision engine, plain-language explanations and
+the dashboard), a serious bug found and fixed in our own decision rule, and the diagnostic
+made deliverable against real Stripe and Razorpay exports. Still nothing sold.
 
 ---
 
@@ -13,8 +13,9 @@ and Phase 2 built but unsold.
 
 **The founding claim has been tested and survived; the data plumbing that keeps future
 results honest is built; we can put a figure on each customer and on how much of it is at
-risk; and our decision method reliably beats the standard approach without yet beating
-doing nothing. Nothing has been sold to a real customer yet.**
+risk; our decision method reliably beats the standard approach without yet beating doing
+nothing; and a business can now send us two spreadsheets and get a report back. Nothing
+has been sold to a real customer yet, and that is the only thing still in the way.**
 
 ---
 
@@ -27,19 +28,20 @@ doing nothing. Nothing has been sold to a real customer yet.**
 | **Connecting to real billing data** | ✅ Done | Stripe and CSV adapters; one common data shape |
 | **Guard against using future information** | ✅ Done | Measured: prevents a 0.35 inflation in apparent accuracy |
 | **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts — see [below](#what-phase-2-found-about-failed-payments) |
-| **A report a business can actually receive** | ✅ Built | Three spreadsheet exports in, one web page out |
+| **A report a business can actually receive** | ✅ Built | Two spreadsheet exports in, one web page out — tested against real Stripe and Razorpay formats |
 | **Predicting when a customer leaves, and what they are worth** | ✅ Done | Matches or beats established methods on public data — see below |
-| **Quality controls** | ✅ Done | 337 automated tests, all passing |
+| **Quality controls** | ✅ Done | 414 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
-| **The practical version of our method** | 🟨 Built | Beats the standard approach on 65–80% of runs; does **not** yet beat doing nothing — [see below](#what-phase-4-was-about-and-what-it-honestly-found) |
-| Customer-facing product | ⬜ Not started | — |
+| **The practical version of our method** | 🟨 Built | Beats the standard approach on 93% of runs; does **not** yet beat doing nothing — [see below](#what-phase-4-was-about-and-what-it-honestly-found) |
+| **Customer-facing product** | 🟨 Built | Decision engine, plain-language reasons, and a dashboard an owner can act from — not yet in anyone's hands |
 | Proof with a real business | ⬜ Not started | — |
 | Paying customers | ⬜ **None** | — |
 
-**Ten rows of thirteen.** But note *which* ten: everything complete so far is
-groundwork and evidence, and the tenth is complete only in the sense that it was built,
-tested, and found wanting. **Nothing yet has earned anyone money**, and the two rows that
-would prove the idea works outside our own machinery are both still empty.
+**Eleven rows of thirteen.** But note *which* eleven: all of it is groundwork, evidence
+or machinery, and two of those rows are complete only in the sense that they were built,
+tested and found wanting. **Nothing yet has earned anyone money**, and the two rows that
+would prove the idea works outside our own machinery are both still empty. Those two are
+now the entire remaining risk.
 
 ---
 
@@ -190,9 +192,12 @@ uncertain that estimate is, and decline to act when the uncertainty is too wide 
 spending money.** We call declining to act *abstention*.
 
 **What it achieved.** Against the ranking approach it works. It earned more money on
-65–80% of runs while contacting roughly a third as many people. And the safety mechanism
-does what it was designed to do: when we demand near-certainty before acting, the system
-contacts *nobody* and simply leaves the money alone, rather than spending it badly.
+**93% of runs** while contacting a small fraction as many people. (That figure was 65–80%
+when this section was first written; the improvement came from fixing a mistake of ours,
+described under Phase 5 below, and it did not change any conclusion.) The safety mechanism
+also does what it was designed to do: when we demand near-certainty before acting, the
+system contacts *nobody* and leaves the money alone rather than spending it badly — which
+is what it chooses on roughly three-quarters of runs.
 
 **What it did not achieve.** It did not beat *doing nothing at all*. There is no setting
 of the dial at which it turns a profit. It either loses a little, or it correctly declines
@@ -244,6 +249,98 @@ it is.
 
 ---
 
+## What Phase 5 was about, and the bug we found in ourselves
+
+Phase 5 turned the method into something a business owner could actually use: decide
+which offer to make to whom, explain each decision in plain English, and show it all on
+one page.
+
+### We found a serious mistake in our own work
+
+Before building anything new, we re-read the decision rule from Phase 4. It was wrong.
+
+The model measures how much an offer shifts someone's chance of leaving, but it reports
+that shift on a **mathematical scale**, not as a plain percentage. Our rule multiplied
+that scale by the customer's value as though it *were* a percentage. The two are not the
+same thing, and the gap is large: on one test the rule believed contacting a customer was
+worth **−£104** when the truth was **+£20**, against an offer costing £31.
+
+Worse, the error was not uniform. It exaggerated most for customers who were **least
+likely to leave** — exactly the people this entire project exists to warn against paying.
+We had reproduced our own central criticism inside our own machinery.
+
+**Every one of our automated tests passed.** They were not badly written; they were
+checking that the code agreed with itself, and a units mistake agrees with itself
+perfectly. The test that now catches it checks a number we worked out by hand.
+
+We wrote down what we expected the fix to change *before* running it, because "we fixed a
+bug and our results improved" is the easiest way in the world to fool yourself. **Two of
+our five predictions were wrong.** The fix cut losses substantially — from −3,531 to
+−1,070 in one setting — and changed **no conclusion at all**. The method still does not
+beat leaving customers alone.
+
+### What Phase 5 built
+
+**Choosing the offer, not just the customer.** Instead of one fixed discount, the system
+now picks from a ladder — a nudge, a check-in, a pause, a downgrade, a discount — using
+whichever costs least while still being worth doing.
+
+This produced the best result the project has yet had, and it is still not one we will
+claim. The system made money on average for the first time, capturing about twice as much
+as the realistic alternative. But it beat that alternative on only **58 runs out of 100**,
+which is not distinguishable from a coin toss.
+
+**The finding underneath it is the useful one.** We also tested what a business would do
+on its own: run a small trial of each offer, pick the winner, use it for everyone. That
+approach picks the genuinely best offer only **13% of the time** — barely better than
+guessing at random among six — and loses money at realistic sizes. Meanwhile, simply
+using one *well-chosen* offer for everybody captured nearly three-quarters of what was
+theoretically available, against our system's quarter.
+
+Put plainly: **choosing the right offer matters much more than choosing the right
+customers — and it is the thing a small business is least able to work out for itself.**
+That is a smaller and far more defensible product than "AI picks who to save".
+
+**Explanations, and admitting when there aren't any.** Every recommendation now says what
+it rests on: what the customer is worth, how much the offer moves them, what it costs, and
+why that offer rather than the next one. When there is genuinely nothing distinctive about
+a customer — which at these sample sizes is common — it says so, instead of manufacturing
+three convincing-sounding reasons. Most tools in this space do the opposite.
+
+**A dashboard that leads with what it does not know.** The page opens with a warning that
+the engine beat a single well-chosen offer on 58% of tests and that this is not
+distinguishable from chance, and there is no setting that turns that warning off. A
+competing product we examined displays confident "SAVE NOW" instructions on top of a model
+that is barely better than a coin flip. We built the inverse on purpose.
+
+---
+
+## The diagnostic can now actually be delivered
+
+For six months the note in our own plan said Phase 2's remaining work was sales, not code.
+That was true, and it was also hiding something: **no command existed that turned a
+business's spreadsheet into a report.** The analysis only ran on our own simulated data.
+The first real customer would have failed before any conversation happened.
+
+We tested it against real export formats and it broke four times in a row — column names
+with time zones in them, an ID column being read as the wrong thing, an email address
+being mistaken for a customer number, and columns that real exports simply do not contain.
+
+The most dangerous problem was none of those. **Payment systems export money in the
+smallest unit** — Stripe in cents, Razorpay in paise. A plan priced at 2900 means £29.00.
+Read straight, every financial figure in the report would be **100 times too large**,
+including the headline number the whole engagement is sold on. Nothing further down the
+line could catch it, because 100 times a plausible number is still a plausible number.
+
+So the system now refuses. It checks the file first and **stops** if the amounts look like
+cents, rather than quietly dividing by a hundred and hoping — because guessing would be
+the same kind of mistake it is there to prevent. It also stops on impossible dates, on
+histories too short to measure, and on exports that contain no cancellations at all. Every
+assumption it has to make is printed as a question to ask the client before the report is
+sent.
+
+---
+
 ## The plan, in order
 
 Each phase has a **gate** — a condition that must be met before moving on. Gates exist to
@@ -256,7 +353,8 @@ force early failure rather than late failure.
 | **2** | **Failed-payment recovery** | **First paying client** | 🟨 **Built — gate still open** |
 | **3** | Prediction models for who leaves and what they're worth | Beat established methods on public data | ✅ **Passed** (2 of 3 beaten, 1 tied) |
 | **4** | **The practical version of our method** | Beat existing approaches on money earned, at small scale | 🟨 **Built — gate half passed** |
-| **5** | Decision engine, plain-language explanations, dashboard | An owner can act without asking us | ⬜ |
+| **5** | Decision engine, plain-language explanations, dashboard | An owner can act without asking us | ✅ **Passed** — with a caution, below |
+
 | **6** | Control-group infrastructure; proof-of-results reporting | **A real client's verified return** | ⬜ |
 | **7** | Cross-business learning; retail support | Client #10 outperforms client #1 on day one | ⬜ |
 
@@ -280,7 +378,7 @@ have no data to fit it with.
 | # | Subject | Depends on | Status |
 |---|---|---|---|
 | 1 | The simulator as a shared benchmark for the research community | Phase 0 | ⬜ Ready to draft |
-| 2 | **Estimating causal effects reliably with very little data** | Phase 4 | 🟨 Drafted — reports a partial result, honestly |
+| 2 | **Estimating causal effects reliably with very little data** | Phase 4 | 🟨 Drafted and ready to submit — reports a partial result, honestly |
 | 3 | Choosing interventions under a budget, with real client results | Phase 6 | ⬜ |
 
 Paper 1 is writable now. Paper 2 is the one that matters, and it is gated on the hardest
@@ -293,11 +391,10 @@ technical problem in the project.
 1. **Get the failed-payment work in front of real businesses.** This is not a coding
    task and no further code completes it. The report described above needs to be run
    against real billing exports and shown to the people who own them.
-2. **Phase 5 — make the confidence threshold depend on what is at stake.** Phase 4 is
-   built and its limitation is now precisely identified rather than merely suspected:
-   the system applies one fixed standard of proof no matter whether a mistake costs
-   pennies or tens of pounds. Fixing that is the next piece of work, and we wrote down
-   what it must achieve before starting it.
+2. **Nothing further to build until somebody uses it.** Phases 6 and 7 — proving results
+   with a control group, and learning across businesses — both require a real client by
+   definition. They cannot be finished, or honestly started, from a desk. Every remaining
+   gate needs a person outside this project.
 3. **In parallel, keep talking to businesses.** Twenty conversations with subscription
    founders will reshape this plan more than twenty more pages of it. This does not
    depend on the product existing.
@@ -334,6 +431,41 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### The diagnostic becomes deliverable
+
+Built the command that takes a business's spreadsheets and returns a report, and a safety
+check that runs first. Tested against real Stripe and Razorpay export formats, which
+broke it four times. The important addition is the check that **refuses** to proceed when
+amounts look like cents rather than pounds — a mistake that would have put figures 100
+times too large in front of a prospect. It never converts silently; it stops and asks.
+
+Also written: a runbook and outreach drafts, including an India-specific version where
+the relevant problem is failed UPI and e-NACH mandates rather than expired cards. Both
+documents list, in a table, the claims we are **not** allowed to make, each tied to the
+experiment that forbids it.
+
+**414 automated tests.** The gate is unchanged — nobody has paid anything — but it can no
+longer fail for a reason we control.
+
+### Phase 5 — complete, with the evidence unchanged
+
+Built the offer-ladder decision engine, plain-language reason codes, and a dashboard.
+Found and fixed a serious units error in our own Phase 4 decision rule first; it changed
+the numbers substantially and no conclusion at all. Two of five predictions written down
+before the fix turned out wrong.
+
+The system made money on average for the first time, and beat the realistic alternative
+on 58 runs out of 100, which is a coin toss. The result worth keeping is that a small
+business running its own trial identifies the best offer only 13% of the time.
+
+We also compared the project against a sibling product built on real e-commerce data. Its
+published accuracy figure of "1.0 — flawless" turned out to pre-date its own bug fix;
+re-running its current code gives 0.543, which is worse than assuming every customer
+leaves. That is an independent repeat of our own Phase 1 finding, on different data, and
+it is the strongest evidence yet that the guard rails here are worth their cost.
+
+**388 automated tests** at the end of this phase.
 
 ### Phase 4 — built; the gate is half passed
 
