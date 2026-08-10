@@ -66,3 +66,6 @@ autopsy:  ## Churn Autopsy from a real export: make autopsy ARGS="--customers c.
 
 preflight:  ## Check a client export is safe to compute from (run this FIRST, D-062)
 	@python -m keel.cli preflight $(ARGS)
+
+sample:  ## Build the sample Churn Autopsy to attach to outreach (simulated data)
+	@python -m keel.experiments.sample_autopsy

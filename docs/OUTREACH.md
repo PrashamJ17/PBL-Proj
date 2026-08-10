@@ -164,6 +164,32 @@ export, and you will have spent your one introduction discovering it.
 
 ---
 
+## Attach the sample
+
+`make sample` builds `sample_churn_autopsy.html` — a complete report on a **simulated**
+business, structurally identical to what a client would receive. Attach it, or link it,
+in the first email. A prospect deciding whether to hand over billing data reasonably
+wants to see what comes back first, and showing the *output* is far more persuasive than
+describing the method or linking a repository.
+
+One line is usually enough:
+
+> I've attached a sample built on simulated data so you can see the shape of it before
+> deciding anything.
+
+It carries a banner saying it is simulated, above everything else on the page. **Do not
+remove it.** A prospect who thinks they are looking at another client's real numbers has
+just learned that we circulate client data, which is the exact fear the engagement has to
+overcome. `render(demo=True)` makes the banner structural rather than something you
+remember to add.
+
+Do **not** send the GitHub repository as an explanation. A non-technical founder gets
+nothing from it, and it reads as proving cleverness rather than solving their problem. It
+is a credibility signal, not a communication artefact — one line in a signature at most.
+For a reader who wants depth, `explainer/` is written for exactly that audience.
+
+---
+
 # India / Razorpay D2C variant
 
 **Not a find-and-replace of the templates above.** Three things differ materially, and the

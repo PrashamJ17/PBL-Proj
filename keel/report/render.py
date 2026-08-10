@@ -222,8 +222,48 @@ def _decline_chart(a: Autopsy) -> str:
         return _svg(fig)
 
 
-def render(a: Autopsy, business_name: str = "Your business", out: Path | None = None) -> Path:
-    """Write the report and return its path."""
+#: Printed at the very top of a sample report, before anything else on the page.
+#:
+#: A report that *looks* like a real business's numbers must say that it is not, in the
+#: first thing the reader sees. Two reasons, and the second is the one that costs money
+#: if ignored: a prospect who mistakes a demo for a real client's data learns that we
+#: circulate client data, which is precisely the fear the engagement has to overcome.
+DEMO_BANNER = """
+  <div class="demobanner">
+    <h2>This is a sample, not a real business</h2>
+    <p>Every figure on this page comes from a <strong>simulated</strong> subscription
+       business. No real company's data appears here, and none ever will in a sample —
+       your report would be built from your own export and shown to nobody else.</p>
+    <p>It is here so you can see the <em>shape</em> of the output before deciding whether
+       to send anything.</p>
+  </div>"""
+
+DEMO_CSS = """
+.demobanner { border: 2px solid var(--warn, #b45309); border-radius: 8px;
+  padding: 1rem 1.2rem; margin: 0 0 1.6rem; background: var(--warnbg, #fffbeb); }
+.demobanner h2 { margin: 0 0 .4rem; font-size: 1.05rem; color: var(--warn, #b45309);
+  border: none; padding: 0; }
+.demobanner p { margin: .35rem 0; }
+:root { --warn: #b45309; --warnbg: #fffbeb; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --warn: #fbbf24; --warnbg: #2a2005; }
+}
+:root[data-theme="dark"] { --warn: #fbbf24; --warnbg: #2a2005; }
+"""
+
+
+def render(
+    a: Autopsy,
+    business_name: str = "Your business",
+    out: Path | None = None,
+    demo: bool = False,
+) -> Path:
+    """Write the report and return its path.
+
+    `demo=True` marks the page as built from simulated data. It is a parameter rather
+    than something the caller remembers to write into `business_name`, so a sample can
+    never be produced without saying so.
+    """
     findings = a.findings()
 
     stats = "".join(
@@ -281,12 +321,12 @@ def render(a: Autopsy, business_name: str = "Your business", out: Path | None = 
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Churn Autopsy — {business_name}</title>
-<style>{CSS}</style></head>
+<title>Churn Autopsy{" (sample)" if demo else ""} — {business_name}</title>
+<style>{CSS}{DEMO_CSS if demo else ""}</style></head>
 <body>
   {THEME_TOGGLE}
-
-  <h1>Churn Autopsy</h1>
+{DEMO_BANNER if demo else ""}
+  <h1>Churn Autopsy{" &mdash; sample" if demo else ""}</h1>
   <p class="sub">{business_name} &middot; {date.today():%d %B %Y} &middot;
      based on {a.n_customers:,} customers over {a.window_days/30.44:.0f} months
      of billing history</p>
@@ -328,8 +368,13 @@ def render(a: Autopsy, business_name: str = "Your business", out: Path | None = 
     return out
 
 
-def generate(data, business_name: str = "Your business", out: Path | None = None) -> Path:
+def generate(
+    data,
+    business_name: str = "Your business",
+    out: Path | None = None,
+    demo: bool = False,
+) -> Path:
     """Analyse a canonical Dataset and write the report. The whole pipeline."""
     from keel.report.autopsy import analyse
 
-    return render(analyse(data), business_name=business_name, out=out)
+    return render(analyse(data), business_name=business_name, out=out, demo=demo)
