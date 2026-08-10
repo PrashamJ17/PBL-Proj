@@ -254,6 +254,16 @@ retention campaign was compared against random targeting and against doing nothi
 - **A more accurate churn model can reduce profit**, because accuracy at detecting
   disengagement is precision at finding Sleeping Dogs.
 
+![Churn-score targeting destroys value at every budget level, and the mechanism why](papers/figures/fig01_kill_test.png)
+
+***Figure 1.*** *Left: expected incremental value against retention budget. Churn-score
+targeting (red) sits below random targeting (dashed) at every budget, and both sit below
+doing nothing. The oracle curve is an upper bound computed with ground-truth effects, not
+an achievable policy; the gap to it at a 20% budget is roughly 34,000. Right: the
+composition of each predicted-churn-risk decile. **Sleeping Dogs are 48% of decile 1 —
+the customers targeted first — and 2% of decile 10.** That inversion is the mechanism: a
+churn model ranks highest precisely the customers an offer harms.*
+
 ### 5.2 The cost of leakage (Phase 1)
 
 The same features, computed correctly and incorrectly:
@@ -291,6 +301,21 @@ order of magnitude. Retention is the adversarial case.
 predicted that retail promotion would fall *between* advertising and retention. It came in
 at +0.18, as predicted — though underpowered to test the downstream consequence.
 
+**What is not claimed.** The *ordering among the positive-correlation settings is within
+noise* — their confidence intervals overlap heavily, and the table above should not be
+read as a monotone curve. The signal is the order-of-magnitude gap at negative
+correlation, not the fine structure on the right of it.
+
+![Uplift modelling's advantage against corr(treatment effect, outcome propensity) across five settings](papers/figures/fig03_when_uplift_pays.png)
+
+***Figure 2.*** *Each point is one experimental setting. The x-axis is the correlation
+across customers between estimated treatment effect and estimated outcome propensity; the
+y-axis is how much effect-based targeting adds over an outcome model. Four settings with
+positive correlation cluster near zero advantage and are not reliably distinguishable from
+one another. The subscription-retention setting, at −0.19 correlation with 26% of customers
+having a predicted-negative effect, is an order of magnitude away. Five settings, not a
+fitted curve.*
+
 ### 5.4 Reliability at small *n*
 
 Holding the evaluation set fixed and shrinking **only** the training set on a real
@@ -301,6 +326,16 @@ Holding the evaluation set fixed and shrinking **only** the training set on a re
 
 Reported as a **win rate, not a mean**, because a business gets one draw. A method with a
 good average and a wide spread is a gamble.
+
+![Mean uplift performance rises with data, but the win rate against random is near a coin flip at small n](papers/figures/fig02_small_n_reliability.png)
+
+***Figure 3.*** *Left: mean incremental visits at a 30% budget, by training-set size, for
+five methods on the Hillstrom randomised experiment. Every method improves with data and
+every one beats random on average — the shaded ±1 standard deviation bands show why that
+is misleading. Right: the proportion of seeds on which each method actually beat random.
+In the shaded region — the scale small businesses occupy — methods range from 55% to 75%.
+**The left panel is the number usually reported; the right panel is the one a business
+experiences.***
 
 ### 5.5 Survival benchmarks (Phase 3)
 
@@ -321,7 +356,40 @@ As predicted in advance, the method **loses** on GBSG2 (a medical dataset with n
 time-varying covariates), because its advantage is handling covariates that change — which
 that dataset does not have.
 
-### 5.6 Value at risk is not churn risk
+![Calibration against three baselines on Telco, and where the time-varying advantage disappears](papers/figures/fig05_survival_calibration.png)
+
+***Figure 4.*** *Left: predicted against observed (Kaplan–Meier) survival at month 29 on
+Telco. A perfectly calibrated model lies on the diagonal with slope 1. Cox (1.19) and
+Random Survival Forest (1.25) are systematically off; DeepSurv (1.02) and the discrete-time
+hazard (1.06) are close. This matters because these probabilities get multiplied by
+revenue — being correctly scaled is worth more than being correctly ordered. Right: the
+share of simulated businesses where using time-varying covariates beats a signup-time
+snapshot. The advantage is decisive from 500 customers upward and **collapses to a coin
+flip at 250**, which is the honest lower bound on who this can help.*
+
+### 5.6 Involuntary churn: more dunning is not better dunning
+
+Failed payments are 20–40% of subscription churn and need almost no machine learning. Six
+retry-and-email policies were compared on simulated billing data with realistic decline
+codes.
+
+![Aggressive dunning uses far more retries and emails and recovers no more money](papers/figures/fig04_dunning_value.png)
+
+***Figure 5.*** *Left: net value of six dunning policies. The aggressive policy uses roughly
+two and a half times as many retries and nearly four times as many emails as the best
+policy, and recovers **no more money** — it is strictly dominated. What works is
+conditioning on the decline code: `insufficient_funds` means the money has not arrived yet
+and wants a retry timed to payday, while an expired card cannot be charged again however
+many times it is tried. Right: a sensitivity analysis on the one quantity that was assumed
+rather than measured — the goodwill cost of a payment-failure email. It shows where the
+conclusion would flip, so a reader can judge the assumption instead of taking it on trust.*
+
+An early version of this experiment reported the aggressive policy recovering 21.7%, which
+was wrong: retries against a dead card were allowed to compound. After correcting the
+decline-code handling, the aggressive policy became **strictly dominated** — a cleaner and
+more useful finding than the original.
+
+### 5.7 Value at risk is not churn risk
 
 Ranking customers by **probability of leaving** and by **money at risk** (value × that
 probability) produces two top-decile lists that **overlap by only 21%**.
@@ -329,7 +397,7 @@ probability) produces two top-decile lists that **overlap by only 21%**.
 A churn score points at the wrong four-fifths of the money — before any causal argument is
 made. This is arithmetic, not modelling.
 
-### 5.7 The decision layer (Phases 4–5)
+### 5.8 The decision layer (Phases 4–5)
 
 With ground truth withheld from every policy, 20 draws per size:
 
@@ -412,7 +480,7 @@ CI runs on every push across three Python versions with four gates: tests, calib
 The client-facing report is **descriptive**: retention curves, revenue versus logo churn,
 failed payments quantified. Every figure is a count or a sum from the client's own data,
 and therefore checkable by them. The system deliberately does **not** promise per-customer
-prediction, because §5.7 shows it cannot deliver it reliably.
+prediction, because §5.8 shows it cannot deliver it reliably.
 
 ---
 
