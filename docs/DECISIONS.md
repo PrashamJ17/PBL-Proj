@@ -1856,3 +1856,35 @@ down at the same time.
 
 **The gate is still open.** This removed the reasons it would fail for engineering
 reasons. Nobody has paid anything.
+
+---
+
+## D-063 — A test that passed locally and failed on every CI Python
+
+**Symptom.** `test_razorpay_epoch_seconds_are_parsed_not_read_as_nanoseconds` failed on
+3.11, 3.12 and 3.13 in CI while passing locally, with dates landing on
+`1970-01-01 00:00:00.001683158`.
+
+**Cause: the fixture, not the code.** It built epoch seconds as
+`index.astype("int64") // 10**9`, which assumes the index has **nanosecond** resolution.
+pandas 2 may give it microsecond resolution instead, in which case the expression is off
+by a thousand and yields `1683158` where `1683158400` was intended. Local pandas 2.3.3
+returns `datetime64[ns]`; CI's returns microseconds.
+
+**The production code did exactly the right thing.** `1683158` is outside the 1990–2050
+epoch window, so `_to_datetime` declined to treat it as a timestamp and fell through to
+ordinary parsing — which is the designed behaviour, and the reason this was a broken test
+rather than silent data corruption. The preflight backstop then blocks the resulting
+pre-1990 dates, so nothing could have reached a client report.
+
+Fixed with `index.astype("datetime64[s]").astype("int64")`, which is correct at ns, µs,
+ms and s resolution; the old form is correct only at ns. A new test pins the behaviour CI
+accidentally demonstrated: an integer a thousand times too small must **not** be silently
+rescaled into a plausible date, and preflight must block it.
+
+**Third instance of the same lesson** (D-052, D-012): roughly half the failing tests in
+this project have been the test rather than the code. Worth noting what made this one
+hard to see — it was not merely wrong, it was wrong *only in another environment*, so a
+green local run carried no information about it. The general form is that any test
+asserting on a derived timestamp is asserting on a pandas resolution default unless it
+says otherwise.

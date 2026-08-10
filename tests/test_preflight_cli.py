@@ -236,6 +236,18 @@ def test_bad_interval_is_rejected_by_the_parser(tmp_path):
 # --- Razorpay: epoch timestamps and paise ------------------------------------
 
 
+def _epoch_seconds(index):
+    """Epoch seconds, independent of the index's datetime resolution.
+
+    `index.astype("int64") // 10**9` is the obvious form and is **version-fragile**:
+    pandas 2 may give the index microsecond rather than nanosecond resolution, in which
+    case that expression is off by a thousand. It produced a fixture full of values
+    outside the epoch window, `_to_datetime` correctly declined to treat them as
+    timestamps, and the test failed in CI while passing locally.
+    """
+    return index.astype("datetime64[s]").astype("int64")
+
+
 def _end_value(e, epoch):
     if e is None:
         return ""
@@ -250,7 +262,7 @@ def _razorpay(n=400, seed=1, epoch=True, paise=True):
     cust = pd.DataFrame({
         "id": [f"cust_{i:06d}" for i in range(n)],
         "name": [f"C{i}" for i in range(n)],
-        "created_at": start.astype("int64") // 10**9 if epoch else start,
+        "created_at": _epoch_seconds(start) if epoch else start,
     })
     ends = [
         (s + pd.Timedelta(days=int(rng.integers(30, 400)))) if k else None
@@ -261,7 +273,7 @@ def _razorpay(n=400, seed=1, epoch=True, paise=True):
         "customer_id": cust["id"],
         "plan_id": rng.choice(["plan_499", "plan_999"], n),
         "status": np.where(ch, "cancelled", "active"),
-        "start_at": start.astype("int64") // 10**9 if epoch else start,
+        "start_at": _epoch_seconds(start) if epoch else start,
         "ended_at": [_end_value(e, epoch) for e in ends],
         "amount": rng.choice([49900, 99900], n) if paise else rng.choice([499.0, 999.0], n),
     })
@@ -311,4 +323,19 @@ def test_misparsed_dates_are_caught_as_a_backstop():
     cust, subs = _razorpay(epoch=False, paise=False)
     subs.loc[:9, "start_at"] = pd.Timestamp("1970-01-01")
     p = preflight(load(cust, subs))
+    assert any(c.name == "date parsing" and c.level == "block" for c in p.checks)
+
+
+def test_out_of_range_integers_are_not_treated_as_timestamps():
+    """The guard that made the CI failure a *test* bug rather than a data-corruption
+    bug. An integer outside the 1990-2050 epoch window is not a timestamp, so
+    `_to_datetime` must decline to convert it -- and the preflight backstop must then
+    catch the resulting nonsense date rather than letting it reach a report."""
+    cust, subs = _razorpay(epoch=True, paise=False)
+    subs["start_at"] = subs["start_at"] // 1000        # a thousand times too small
+    ds = load(cust, subs)
+    started = pd.to_datetime(ds.subscriptions["started_at"])
+    assert started.max() < pd.Timestamp("1990-01-01"), "must not be silently rescaled"
+    p = preflight(ds)
+    assert p.blocked
     assert any(c.name == "date parsing" and c.level == "block" for c in p.checks)
