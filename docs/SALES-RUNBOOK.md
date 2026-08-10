@@ -68,6 +68,10 @@ Exactly two files, and say it in one line so nobody has to involve an engineer:
 Ask for invoices whenever you can. Involuntary churn is the finding that pays for the
 engagement and needs no modelling at all.
 
+Templates for the cold email, the LinkedIn version, the reply when they say yes, and the
+graceful no are in `docs/OUTREACH.md`. **Charge for the first one** — a free diagnostic
+does not close a gate whose definition is *first revenue*.
+
 **Before they send anything:** confirm in writing that this is a one-off analysis, that
 you will delete the files afterwards, and that you will not share them. If they are in
 the EU or India you are a data *processor* — have the DPA ready (D-039, plan §13.3).
