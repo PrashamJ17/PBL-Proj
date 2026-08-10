@@ -71,6 +71,23 @@ confidential metrics and then pitching a service is misrepresenting your intent,
 the kind of thing that follows you. Use the public tier to calibrate what this market looks
 like; do not mine it under a false persona.
 
+## The hidden disqualifier: billing model
+
+Revenue filters find the right *size* and tell you nothing about whether the business has
+churn you can analyse. Four billing models appear constantly in this band and **all four
+fail**, none of them visibly:
+
+| Model | Example seen in the wild | Why it fails |
+|---|---|---|
+| **Credit-based** | "affordable, credit-based platform" | A customer who stops buying credits never cancels. There is no churn event, so this is non-contractual — the Olist trap in B2B clothing. |
+| **Usage-based** | SMS / messaging platforms | Revenue drifts without anyone leaving; MRR and churn are both ill-defined. |
+| **App-store billing** | Consumer subscription apps | Apple/Google hold the subscription. The exports are different, and the merchant often cannot see cancellation reasons at all. |
+| **Agency / services** | "product teams on demand" | Not a subscription business. Retainers end by conversation, not by cancel button. |
+
+Read the pricing page before the revenue figure. The words to look for are **"per month"**
+and a **cancel** action; the words that should stop you are **credits**, **pay as you go**,
+**top up**, and **App Store**.
+
 ## Qualify before spending an introduction
 
 You have a limited number of first impressions. Check, from their public site, in this
