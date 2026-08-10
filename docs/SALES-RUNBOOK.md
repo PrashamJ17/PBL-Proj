@@ -69,7 +69,8 @@ Ask for invoices whenever you can. Involuntary churn is the finding that pays fo
 engagement and needs no modelling at all.
 
 Templates for the cold email, the LinkedIn version, the reply when they say yes, and the
-graceful no are in `docs/OUTREACH.md`. **Charge for the first one** — a free diagnostic
+graceful no are in `docs/OUTREACH.md` — including an **India/Razorpay D2C variant**, where
+the hook is failed UPI/e-NACH mandates rather than expired cards. **Charge for the first one** — a free diagnostic
 does not close a gate whose definition is *first revenue*.
 
 **Before they send anything:** confirm in writing that this is a one-off analysis, that

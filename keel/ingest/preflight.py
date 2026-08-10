@@ -96,10 +96,9 @@ def _money_units(subs: pd.DataFrame) -> Check:
             "currency units", "block",
             f"median MRR is {median:,.0f} and every value is a whole number — this "
             f"looks like minor units (cents/paise), i.e. {median / 100:,.2f} per month",
-            "Stripe, Paddle and Chargebee all export amounts in minor units. Divide by "
-            "100 before loading, or pass the already-converted frame. Do NOT guess: "
-            "confirm with the business, because every figure in the report scales with "
-            "this one.",
+            "Stripe, Paddle, Chargebee and Razorpay all export amounts in minor units "
+            "(cents/paise). Re-run with --divide-amounts-by 100. Do NOT guess: confirm "
+            "with the business, because every figure in the report scales with this one.",
         )
     if median > IMPLAUSIBLE_MRR:
         return Check(
@@ -127,6 +126,20 @@ def _dates(subs: pd.DataFrame) -> list[Check]:
         ))
 
     if started.notna().any():
+        # Backstop for a misparsed timestamp column. Razorpay exports epoch seconds and
+        # pandas reads a bare integer as nanoseconds, which lands everything on
+        # 1970-01-01. `_to_datetime` handles the common shapes; this catches whatever
+        # it did not, because a date that old is never real billing history.
+        ancient = int((started < pd.Timestamp("1990-01-01")).sum())
+        ancient += int((ended < pd.Timestamp("1990-01-01")).sum())
+        if ancient:
+            out.append(Check(
+                "date parsing", "block",
+                f"{ancient:,} dates fall before 1990",
+                "Almost always a Unix timestamp read as something else. Check whether "
+                "the export stores dates as epoch seconds or milliseconds.",
+            ))
+
         future = int((started > pd.Timestamp.now() + pd.Timedelta(days=1)).sum())
         if future:
             out.append(Check(

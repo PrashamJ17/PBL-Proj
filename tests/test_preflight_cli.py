@@ -231,3 +231,84 @@ def test_bad_interval_is_rejected_by_the_parser(tmp_path):
     with pytest.raises(SystemExit):
         main(["preflight", "--customers", c, "--subscriptions", s,
               "--interval", "fortnight"])
+
+
+# --- Razorpay: epoch timestamps and paise ------------------------------------
+
+
+def _end_value(e, epoch):
+    if e is None:
+        return ""
+    return int(e.timestamp()) if epoch else e
+
+
+def _razorpay(n=400, seed=1, epoch=True, paise=True):
+    """Razorpay's export shape: epoch seconds, amounts in paise, `start_at`/`plan_id`."""
+    rng = np.random.default_rng(seed)
+    start = pd.Timestamp("2023-05-01") + pd.to_timedelta(rng.integers(0, 600, n), "D")
+    ch = rng.random(n) < 0.45
+    cust = pd.DataFrame({
+        "id": [f"cust_{i:06d}" for i in range(n)],
+        "name": [f"C{i}" for i in range(n)],
+        "created_at": start.astype("int64") // 10**9 if epoch else start,
+    })
+    ends = [
+        (s + pd.Timedelta(days=int(rng.integers(30, 400)))) if k else None
+        for s, k in zip(start, ch, strict=True)
+    ]
+    subs = pd.DataFrame({
+        "id": [f"sub_{i:06d}" for i in range(n)],
+        "customer_id": cust["id"],
+        "plan_id": rng.choice(["plan_499", "plan_999"], n),
+        "status": np.where(ch, "cancelled", "active"),
+        "start_at": start.astype("int64") // 10**9 if epoch else start,
+        "ended_at": [_end_value(e, epoch) for e in ends],
+        "amount": rng.choice([49900, 99900], n) if paise else rng.choice([499.0, 999.0], n),
+    })
+    return cust, subs
+
+
+def test_razorpay_epoch_seconds_are_parsed_not_read_as_nanoseconds():
+    """pandas reads a bare integer as nanoseconds and lands every row on 1970-01-01."""
+    ds = load(*_razorpay())
+    started = pd.to_datetime(ds.subscriptions["started_at"])
+    assert started.min() > pd.Timestamp("2020-01-01")
+    assert started.max() < pd.Timestamp("2030-01-01")
+
+
+def test_sparse_epoch_columns_are_converted_too():
+    """`ended_at` is legitimately sparse -- only churned customers have one. Testing
+    what *fraction* of the column was numeric rejected exactly the column that most
+    needed converting, and every cancellation date came back as 1970."""
+    ds = load(*_razorpay())
+    ended = pd.to_datetime(ds.subscriptions["ended_at"]).dropna()
+    assert len(ended) > 0
+    assert ended.min() > pd.Timestamp("2020-01-01")
+
+
+def test_ordinary_date_strings_are_not_mistaken_for_epochs():
+    ds = load(*_razorpay(epoch=False, paise=False))
+    started = pd.to_datetime(ds.subscriptions["started_at"])
+    assert started.min() > pd.Timestamp("2020-01-01")
+
+
+def test_razorpay_column_names_resolve():
+    ds = load(*_razorpay())
+    assert ds.subscriptions["plan"].str.startswith("plan_").all()
+    assert ds.subscriptions["customer_id"].isin(set(ds.customers["customer_id"])).all()
+
+
+def test_paise_are_blocked_like_cents():
+    p = preflight(load(*_razorpay(paise=True)))
+    assert p.blocked
+    unit = next(c for c in p.checks if c.name == "currency units")
+    assert "paise" in unit.fix or "minor units" in unit.detail
+
+
+def test_misparsed_dates_are_caught_as_a_backstop():
+    """If a timestamp shape ever slips past `_to_datetime`, preflight must still stop
+    it: no real billing history predates 1990."""
+    cust, subs = _razorpay(epoch=False, paise=False)
+    subs.loc[:9, "start_at"] = pd.Timestamp("1970-01-01")
+    p = preflight(load(cust, subs))
+    assert any(c.name == "date parsing" and c.level == "block" for c in p.checks)

@@ -46,10 +46,10 @@ ALIASES: dict[str, list[str]] = {
     "subscription_id": ["sub_id", "subscription"],
     "mrr": ["plan_amount", "monthly_revenue", "monthly_value", "amount", "price",
             "revenue", "plan_price", "subscription_amount"],
-    "started_at": ["subscription_start", "current_period_start", "start",
-                   "begin_date", "created"],
+    "started_at": ["subscription_start", "current_period_start", "start_at",
+                   "current_start", "start", "begin_date", "created"],
     "ended_at": ["churn_date", "canceled_at", "cancelled_at", "cancellation_date",
-                 "end_date", "churned_at", "ended"],
+                 "end_date", "end_at", "churned_at", "ended"],
     "status": ["state", "subscription_status", "invoice_status", "payment_status"],
     "plan": ["plan_id", "plan_name", "plan_nickname", "product", "product_name",
              "price_id", "tier"],
@@ -139,6 +139,43 @@ def normalise_columns(frame: pd.DataFrame, table: Table) -> pd.DataFrame:
     return frame.rename(columns=rename)
 
 
+#: Epoch bounds used to recognise Unix timestamps, as seconds and as milliseconds.
+#: 1990-01-01 to 2050-01-01 -- wide enough for any real billing history, narrow enough
+#: that an ordinary integer column will not be mistaken for one.
+_EPOCH_S = (631_152_000, 2_524_608_000)
+
+
+def _to_datetime(series: pd.Series) -> pd.Series:
+    """Parse dates, recognising Unix timestamps.
+
+    Razorpay's exports carry epoch **seconds**; pandas reads a bare integer as
+    nanoseconds and silently returns 1970-01-01 for every row. Unlike a currency-unit
+    mistake this one is not plausible, so it is safe to correct rather than refuse --
+    and the magnitude test is unambiguous: a value inside the 1990-2050 window read as
+    seconds cannot also be a sensible nanosecond count.
+    """
+    # Blanks count as absent, not as data. `ended_at` is legitimately sparse -- only
+    # churned customers have one -- so testing what *fraction* of the column is numeric
+    # rejected exactly the column that most needed converting, and every cancellation
+    # date came back as 1970.
+    present = series.notna() & (series.astype("string").str.strip() != "")
+    if not present.any():
+        return pd.to_datetime(series, errors="coerce")
+
+    numeric = pd.to_numeric(series.where(present), errors="coerce")
+    if numeric[present].isna().any():
+        # Something present is not a number, so this is not an epoch column.
+        return pd.to_datetime(series, errors="coerce")
+
+    finite = numeric.dropna()
+    lo, hi = _EPOCH_S
+    if finite.between(lo, hi).all():
+        return pd.to_datetime(numeric, unit="s", errors="coerce")
+    if finite.between(lo * 1000, hi * 1000).all():
+        return pd.to_datetime(numeric, unit="ms", errors="coerce")
+    return pd.to_datetime(series, errors="coerce")
+
+
 def _coerce(frame: pd.DataFrame, table: Table) -> pd.DataFrame:
     """Cast columns to their declared dtypes, adding nullable ones if absent."""
     out = frame.copy()
@@ -153,7 +190,7 @@ def _coerce(frame: pd.DataFrame, table: Table) -> pd.DataFrame:
             continue
 
         if col.dtype == "datetime64[ns]":
-            out[col.name] = pd.to_datetime(out[col.name], errors="coerce")
+            out[col.name] = _to_datetime(out[col.name])
         elif col.dtype == "float64":
             out[col.name] = pd.to_numeric(out[col.name], errors="coerce").astype(float)
         elif col.dtype == "int64":
