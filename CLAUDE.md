@@ -30,7 +30,7 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-408 tests. CI green.
+440 tests. CI green.
 **Phase 5 COMPLETE**; gate met on its own terms, evidence did NOT improve (58% [.42,.72]).
 **Phase 2's delivery path is BUILT (D-062)** — `make preflight` then `make autopsy` on real
 CSVs — but its gate is a sales task and **nobody has paid anything**. Next action is
@@ -120,7 +120,7 @@ keel/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark
                    ai_channels (D-064) · figures
 keel/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           408 — fairness, realism, edge cases, leakage gate
+tests/           440 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -128,11 +128,12 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 408 tests + calibration gates — run before every commit
+make check      # lint + 440 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
 make sensitivity # why the Phase 4 gate failed — effect size and offer cost
+make ai-channels # can AI outreach drive this? break-even salience (D-064)
 make ladder     # Phase 5 gate — rung-matching vs one good offer
 make dashboard  # build the retention dashboard (self-contained HTML)
 make preflight ARGS="--customers c.csv --subscriptions s.csv"  # CHECK A CLIENT EXPORT FIRST
@@ -189,6 +190,16 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-17** — **AI outreach priced, not argued (D-064).** The pitch is cost per contact
+  (human call 6, AI call 0.5, so send 12x more); cost per contact is not what harms.
+  Salience is unmeasured so it was SWEPT: **break-even salience = 0.80, BELOW neutral.** A
+  channel merely as intrusive as a standard offer loses money sent to everyone (-4.93/cust
+  at sal 1.0, 55% harmed). At MATCHED salience the AI call DOES win (5.31 vs 3.97) — the
+  case fails on a parameter nobody measures. **Cheap actuators make selection matter MORE**
+  (oracle share 70%→14%). AI email (sal 0.35) is the best channel in the table — the
+  finding is intrusiveness, not AI. `docs/AUTOMATION.md`: Keel decides who/whether/how
+  much, LLM only writes wording; policy gate is code not a prompt; TCPA is $500-1,500 PER
+  CALL. **Phase 6 holdout BEFORE any sender.** 440 tests.
 - **CP-16** — **The Autopsy can finally be delivered (D-062).** No command took a client
   CSV → report; the "it's a sales task" framing hid an engineering blocker. Tested against
   a real Stripe export: **4 failures in a row** (`Created (UTC)` matched nothing; bare `id`
