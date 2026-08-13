@@ -1888,3 +1888,65 @@ hard to see — it was not merely wrong, it was wrong *only in another environme
 green local run carried no information about it. The general form is that any test
 asserting on a derived timestamp is asserting on a pandas resolution default unless it
 says otherwise.
+
+---
+
+## D-064 — A nearly-free actuator does not change the answer; it sharpens it
+
+**Question.** Should Keel drive automated outreach — LLM-written email, AI voice calls —
+so that retention runs without a human? The commercial argument is cost per contact: a
+human check-in call costs ~6 units of staff time, an AI call ~0.5, so make twelve times
+as many.
+
+**The premise is correct and the conclusion does not follow.** Cost per contact is not
+what causes the harm. Phase 0's founding result is that contacting a dormant payer can
+*itself* trigger the cancellation, which is why every rung carries a
+`salience_multiplier`. Making contact cheaper leaves salience untouched.
+
+We do not know an AI voice call's salience — nothing here measures it, and it would take a
+live experiment on real customers. So it was **swept** rather than assumed (D-055
+discipline), and the break-even reported.
+
+| channel | cost | salience | mean tau | harmed | treat-all per customer | oracle treats |
+|---|---|---|---|---|---|---|
+| human check-in call | 6.00 | 0.55 | −0.0048 | 27% | **+3.97** | 40% |
+| AI email | 0.02 | 0.35 | −0.0023 | 30% | **+5.41** | 70% |
+| AI voice, matched salience | 0.50 | 0.55 | −0.0012 | 34% | **+5.31** | 62% |
+| AI voice | 0.50 | 1.00 | +0.0111 | 55% | **−4.93** | 42% |
+| AI voice | 0.50 | 2.00 | +0.0503 | 76% | **−38.09** | 22% |
+| AI voice | 0.50 | 3.00 | +0.1046 | 84% | **−85.92** | 14% |
+
+**Break-even salience: 0.80.**
+
+Three findings, in order of importance.
+
+**1. The break-even sits *below* neutral.** A channel merely as intrusive as a standard
+retention offer (salience 1.0) already destroys value when used on everyone. For mass AI
+calling to pay, an unsolicited synthetic voice would have to be **less** intrusive than a
+generic retention email. That is not plausible.
+
+**2. The automation argument is valid on its own terms, and that is why it is dangerous.**
+At *matched* salience the AI call does beat the human one — 5.31 against 3.97, at a
+twelfth of the cost. The case fails on a parameter nobody in the pitch is measuring, which
+is precisely how it gets adopted.
+
+**3. Cheap actuators make selection matter more, not less.** As salience rises the oracle's
+treat share collapses from 70% to 14%. A free channel removes the felt *need* to choose
+whom to contact at exactly the moment choosing correctly becomes most valuable. That
+inversion is the whole argument against "just send it to everyone, it costs nothing".
+
+**AI is not the problem; intrusiveness is.** AI email at salience 0.35 remains the
+strongest channel in the table. The finding is about channel, not about who writes the
+copy.
+
+**Architectural consequence, and it is a hard line.** If Keel drives an actuator, the
+actuator must never decide *who*, *whether*, or *how much*. Keel decides those; the model
+writes wording inside a template and a cap. Letting a generative model choose recipients
+discards every result this project established, and letting it choose discount depth
+re-opens the personalised-pricing exposure that D-039 and plan §13.2 rule out.
+
+**Not built, deliberately.** Phase 6 (holdout and incrementality infrastructure) comes
+first. Wiring an automated sender before the thing that measures whether sending worked is
+how a retention product becomes unfalsifiable — and with a voice channel it is also how it
+becomes a regulatory incident. See `docs/AUTOMATION.md` for the integration design and the
+legal constraints that gate it.

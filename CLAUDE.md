@@ -116,7 +116,8 @@ keel/models/survival/  discrete (person-period hazard + competing risks) · metr
                  baselines (Cox · RSF · DeepSurv, each optional)
 keel/models/clv/   value — CLV, value at risk, exact shortfall-by-cause
 keel/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark · clv ·
-                   abstention (P4 gate) · sensitivity (D-055/056) · figures
+                   abstention (P4 gate) · sensitivity (D-055/056) ·
+                   ai_channels (D-064) · figures
 keel/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
 tests/           408 — fairness, realism, edge cases, leakage gate

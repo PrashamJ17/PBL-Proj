@@ -69,3 +69,6 @@ preflight:  ## Check a client export is safe to compute from (run this FIRST, D-
 
 sample:  ## Build the sample Churn Autopsy to attach to outreach (simulated data)
 	@python -m keel.experiments.sample_autopsy
+
+ai-channels:  ## Does a nearly-free AI actuator change the answer? (D-064)
+	@python -m keel.experiments.ai_channels
