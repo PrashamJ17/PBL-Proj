@@ -1,4 +1,6 @@
-# When Does Targeting on Treatment Effects Pay? A Correlation Criterion, a Small-Sample Reliability Bound, and a Measurement Floor for Subscription Retention
+# When Does Uplift Modelling Pay? A Correlation Criterion and a Measurement Floor for Small-Scale Subscription Retention
+
+*Running head: When Does Uplift Modelling Pay?*
 
 **Prasham Jain**¹, **Rishi Gupta**¹\*
 
