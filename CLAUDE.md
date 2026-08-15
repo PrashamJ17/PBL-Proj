@@ -19,8 +19,11 @@ by *churn risk* by only **21%** — the score finds the wrong 79% of the money, 
 causal argument is made.
 
 **Real data (Hillstrom, Criteo, Lenta RCTs).** Worse-than-random did NOT replicate →
-claim SCOPED (D-020). **Governing quantity = corr(τ, propensity)** (D-026): Criteo
-+0.61→uplift adds 0.6% · Lenta +0.18→10.4% · Hillstrom +0.07→3.9% · churn −0.19→**+107%**.
+claim SCOPED (D-020). **Governing quantity = corr(τ, propensity)** (D-026), re-run
+15 Aug 2026 — use THESE, an older compressed line here had drifted: Hillstrom-mens
++0.69→**−5.6%** · Criteo +0.58→+0.6% · Hillstrom-womens +0.19→+12.7% ·
+Lenta +0.17→+20.3% · SubSim churn −0.19→**+106.9%**. Ordering among the positive
+points is within noise; the signal is the gap at negative correlation.
 When orderings coincide the outcome model wins (easier estimand); retention is the
 adversarial case. Lenta was an out-of-sample prediction that **landed** (D-031), though
 underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
