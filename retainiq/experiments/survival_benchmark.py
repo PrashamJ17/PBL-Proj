@@ -130,17 +130,36 @@ def horizon_grid(
 
 
 def _survival_at_own_time(
-    model, X: pd.DataFrame, duration: np.ndarray, offset: float = 0.0
+    model,
+    X: pd.DataFrame,
+    duration: np.ndarray,
+    offset: float = 0.0,
+    max_time: float | None = None,
 ) -> np.ndarray:
     """S(T_i | x_i) at each subject's own observed time, for D-calibration.
 
     `offset = -1e-9` gives the left limit S(T_i-), which the discreteness correction
     in `d_calibration` needs. Every model is queried the same way, so no model gets a
     correction the others do not.
+
+    `max_time` clips the query grid to the **training** support. A test subject can
+    outlive everything seen in training -- GBSG2 has one at 88 periods against 85
+    observed -- and past that boundary no model is estimating any more. Cox and the
+    survival forest extrapolate silently; our discrete hazard raises (invariant 12,
+    D-050). Clipping applies the same restriction to all of them, so the comparison
+    stays a comparison rather than a test of whose extrapolation is more confident.
     """
-    times = np.unique(duration.astype(float)) + offset
+    obs = np.unique(duration.astype(float))
+    if max_time is not None:
+        obs = obs[obs <= max_time]
+        if obs.size == 0:
+            raise ValueError(
+                f"no evaluation time within the training support (max {max_time}); "
+                "the split leaves nothing to score."
+            )
+    times = obs + offset
     curves = model.survival_at(X, times)
-    col = np.searchsorted(np.unique(duration.astype(float)), duration.astype(float))
+    col = np.searchsorted(obs, np.minimum(duration.astype(float), obs[-1]))
     return curves[np.arange(len(X)), np.clip(col, 0, len(times) - 1)]
 
 
@@ -153,6 +172,7 @@ def score_model(name: str, model, train: SurvivalData, test: SurvivalData) -> Sc
     # given split, so this is a statement about where the metric is defined rather
     # than a choice any model benefits from.
     grid = horizon_grid(test.duration, test.event > 0)
+    grid = grid[grid <= float(np.max(train.duration))]
     ref = float(np.median(train.duration))
 
     surv = model.survival_at(test.X, grid)
@@ -165,12 +185,16 @@ def score_model(name: str, model, train: SurvivalData, test: SurvivalData) -> Sc
     cal = calibration_at_horizon(
         test.duration, event, model.survival_at(test.X, np.array([ref]))[:, 0], ref
     )
+    # Clipped to what training actually observed. See `_survival_at_own_time`: past
+    # that boundary the baselines extrapolate and ours refuses, so scoring there would
+    # compare extrapolation styles rather than models.
+    support = float(np.max(train.duration))
     _, p, _ = d_calibration(
         test.duration,
         event,
-        _survival_at_own_time(model, test.X, test.duration),
+        _survival_at_own_time(model, test.X, test.duration, max_time=support),
         survival_before_observed=_survival_at_own_time(
-            model, test.X, test.duration, offset=-1e-9
+            model, test.X, test.duration, offset=-1e-9, max_time=support
         ),
     )
 
