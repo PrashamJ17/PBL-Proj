@@ -1399,3 +1399,39 @@ than none.
 
 **The gate is unchanged: nobody has paid anything.** What changed is that it can no longer
 fail for a reason we control.
+
+---
+
+## Step 6.1 — Holdout and incrementality infrastructure (D-065)
+
+Phase 6's gate needs a client, but its *machinery* does not, so it was built and validated
+against the one place where the answer is already known: SubSim's exact potential outcomes.
+
+`retainiq/policy/holdout.py` — deterministic `sha256(salt + id)` assignment, an
+append-only ledger that raises rather than let a holdout be edited after the fact, and an
+incrementality estimator that returns a difference in means with a confidence interval and
+refuses outright when one arm is missing. `make holdout`, `retainiq/experiments/
+holdout_validation.py`, figure 6.
+
+**The estimator is unbiased.** Over 60 simulated businesses per size, bias is centred on
+zero (+0.0009 at n=500) and coverage of the nominal 95% interval runs 88–98%.
+
+**And at this scale it cannot detect the effect.** The minimum detectable effect at 80%
+power exceeds the delivered effect at every size tested — 0.2363 against 0.0108 at n=250,
+and still 0.0374 against 0.0108 at n=10,000. Detecting an effect this size needs roughly
+**119,500 customers**, hand-verified against the two-proportion power formula. The variance
+is dominated by the smaller arm: a 10% holdout on 250 customers is 25 people.
+
+This is the most consequential result in the project, and it arrives from a direction
+independent of every modelling argument: a small subscription business cannot measure its
+own retention campaigns, and campaigns looked significant on 0–10% of runs, which is
+simply the false-positive rate. A business reporting only its successful campaigns will
+conclude its retention programme works on noise alone. That is a mechanism for why the
+industry reports save rates instead of incrementality.
+
+**23 new tests, 463 total**, covering the edge cases that matter: a missing arm is refused
+rather than degraded into a save rate, arms under 30 are flagged rather than reported,
+duplicate ids are refused, membership is stable under base growth and row reordering, a
+harmful campaign is reported as harmful, and a horizon with no churn gives zero lift rather
+than a division by zero. A pandas `FutureWarning` on empty-frame concatenation was fixed
+rather than left for a future CI break.

@@ -1950,3 +1950,81 @@ first. Wiring an automated sender before the thing that measures whether sending
 how a retention product becomes unfalsifiable — and with a voice channel it is also how it
 becomes a regulatory incident. See `docs/AUTOMATION.md` for the integration design and the
 legal constraints that gate it.
+
+---
+
+## D-065 — Phase 6 built: the estimator is unbiased, and at this scale it cannot detect the effect
+
+**What was built.** The measurement layer every claim about money depends on:
+deterministic-hash holdout assignment, an append-only ledger, and an incrementality
+estimator with a confidence interval. `retainiq/policy/holdout.py`, `make holdout`.
+
+Three design choices, each defending against a specific failure.
+
+**Assignment is `sha256(salt + customer_id)`, not a random draw.** Reproducible without
+stored state, stable as the customer base grows, and independent of row order. A customer
+in the holdout last month is in it this month, which is what makes a longitudinal
+comparison mean anything; a `shuffle` gives none of those.
+
+**The ledger is append-only and raises on reassignment.** Retention measurement fails in
+practice not through bad statistics but through a holdout that erodes — a campaign
+under-performs, somebody grants a "just this once" exception, and the comparison quietly
+becomes one of self-selected groups.
+
+**Incrementality is a difference in means with an interval, never a save rate.** Save rate
+among the treated is what the industry reports and it is uninterpretable: it counts
+customers who would have stayed anyway. `measure_incrementality` refuses outright when one
+arm is missing rather than returning a number.
+
+### Validation against ground truth (60 seeds per size)
+
+| n | holdout | true lift | measured | bias | CI width | coverage | significant |
+|---|---|---|---|---|---|---|---|
+| 250 | 15 | +0.0107 | +0.0192 | +0.0085 | 0.388 | 88% | 8% |
+| 500 | 32 | +0.0113 | +0.0122 | +0.0009 | 0.275 | 95% | 7% |
+| 1,000 | 61 | +0.0108 | +0.0040 | −0.0069 | 0.195 | 90% | 7% |
+| 2,000 | 121 | +0.0108 | +0.0096 | −0.0012 | 0.141 | 95% | 0% |
+| 4,000 | 242 | +0.0106 | +0.0135 | +0.0029 | 0.101 | 98% | 0% |
+| 10,000 | 601 | +0.0107 | +0.0137 | +0.0030 | 0.064 | 97% | 10% |
+
+**The estimator works.** Bias is centred on zero and shrinks with size; coverage is at or
+near the nominal 95% (88% at n=250 is small-sample and is the expected direction).
+
+### The finding: a measurement floor
+
+| n | 10% holdout | MDE (80% power) | delivered effect | detectable? |
+|---|---|---|---|---|
+| 250 | 25 | 0.2363 | 0.0108 | no |
+| 1,000 | 100 | 0.1181 | 0.0108 | no |
+| 4,000 | 400 | 0.0591 | 0.0108 | no |
+| 10,000 | 1,000 | 0.0374 | 0.0108 | **no** |
+
+**The minimum detectable effect exceeds the delivered effect at every size tested,
+including 10,000 customers.** Detecting an effect of 0.0108 at 80% power with a 10%
+holdout requires roughly **119,500 customers** — hand-verified:
+`0.16 × (1/0.9 + 1/0.1) × (2.8016/0.0108)² ≈ 119,600`.
+
+**Why this matters more than anything else in Phase 6.** It converts the project's central
+theme from an assertion into arithmetic. A small subscription business *cannot measure its
+own retention campaigns*, not because measurement is hard but because the holdout arm is
+too small to resolve an effect of this size. The variance is dominated by the smaller arm:
+at n=250 a 10% holdout is 25 customers, and `1/25` is nine times `1/225`.
+
+**The `significant` column is the corollary and it is the dangerous one.** Campaigns
+looked statistically significant on 0–10% of runs, which is the false-positive rate you
+expect when a real-but-undetectable effect is tested repeatedly. A business that runs
+several campaigns and reports only the ones that "worked" will conclude its retention
+programme is effective on pure noise. This is a mechanism for the industry's reliance on
+save rates, and it is independent of every modelling argument made earlier in this project.
+
+**What it does not say.** It does not say holdouts are pointless. It says that at this
+scale the honest output is an interval that includes zero, and that a vendor quoting a
+point estimate of incremental revenue to a 500-customer business is quoting noise. It also
+gives the constructive version: `required_holdout_size` tells a business what it would
+take, which is a more useful answer than a number that cannot be justified.
+
+**Edge cases pinned** (23 tests): missing arm refused rather than degraded to a save rate;
+arms under 30 flagged as too small rather than reported; duplicate ids refused because
+membership would be ambiguous; salt change reshuffles everyone; membership stable under
+base growth and row reordering; a campaign that harms is reported as harming; and a
+horizon in which nobody churned yields zero lift rather than a division by zero.

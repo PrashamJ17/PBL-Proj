@@ -72,3 +72,6 @@ sample:  ## Build the sample Churn Autopsy to attach to outreach (simulated data
 
 ai-channels:  ## Does a nearly-free AI actuator change the answer? (D-064)
 	@python -m retainiq.experiments.ai_channels
+
+holdout:  ## Phase 6 — does the holdout estimator recover a known effect? (D-065)
+	@python -m retainiq.experiments.holdout_validation

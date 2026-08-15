@@ -30,7 +30,7 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-440 tests. CI green.
+463 tests. CI green.
 **Phase 5 COMPLETE**; gate met on its own terms, evidence did NOT improve (58% [.42,.72]).
 **Phase 2's delivery path is BUILT (D-062)** — `make preflight` then `make autopsy` on real
 CSVs — but its gate is a sales task and **nobody has paid anything**. Next action is
@@ -49,7 +49,7 @@ result: published ROC-AUC 1.0 is pre-fix, its own code now gives **0.543**).
 | 3 | Discrete-time survival hazard + CLV | ✅ **done** | beats Cox+RSF 10/10 on Telco, **ties DeepSurv**; best-calibrated (D-049) |
 | 4 | Hierarchical Bayesian CATE + abstention | 🟨 **built** | gate **PARTIAL** — beats ranking 93% post-D-057, still not do-nothing |
 | 5 | Offer-ladder optimizer + reason codes + dashboard | ✅ **done** | owner can act unaided (met); **but** only beats achievable rival 58% [.42,.72] |
-| 6 | Holdout infra + incrementality reports + cancel widget | ⬜ | **real client ROI number**; paper 3 |
+| 6 | Holdout infra + incrementality reports | 🟨 **infra BUILT + validated (D-065)** | **real client ROI number** — needs a client |
 | 7 | Cross-tenant priors, BTYD router, integrations | ⬜ | tenant #10 beats tenant #1 on day 1 |
 
 **Research/IP plan → `docs/RESEARCH-PLAN.md`** — learning curriculum, the one addition
@@ -107,7 +107,8 @@ retainiq/ingest/     stripe · csv_ingest (alias resolution, recorded defaults) 
 retainiq/sim/        config · latents (copula) · hazard (ONE defn, two regimes) · subsim
                  counterfactual (exact τ, CRN, LADDER) · calibration · dunning
 retainiq/policy/     dunning (6 retry policies) · economics (log-odds→money, D-057) ·
-                 ladder (per-customer rung choice, multi-arm pilot, D-058)
+                 ladder (per-customer rung choice, multi-arm pilot, D-058) ·
+                 holdout (assignment + ledger + incrementality, D-065)
 retainiq/report/     autopsy · render (HTML+print) · reasons (D-059) · worklist (CSV,
                  descriptive only) · dashboard (self-contained, banner-first, D-061)
 retainiq/models/uplift/     bayesian (Laplace posterior, validated vs NUTS) · abstention
@@ -117,10 +118,10 @@ retainiq/models/survival/  discrete (person-period hazard + competing risks) · 
 retainiq/models/clv/   value — CLV, value at risk, exact shortfall-by-cause
 retainiq/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark · clv ·
                    abstention (P4 gate) · sensitivity (D-055/056) ·
-                   ai_channels (D-064) · figures
+                   ai_channels (D-064) · holdout_validation (D-065) · figures
 retainiq/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           440 — fairness, realism, edge cases, leakage gate
+tests/           463 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -128,12 +129,13 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 440 tests + calibration gates — run before every commit
+make check      # lint + 463 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
 make sensitivity # why the Phase 4 gate failed — effect size and offer cost
 make ai-channels # can AI outreach drive this? break-even salience (D-064)
+make holdout    # Phase 6 — can a small business even measure a campaign? (D-065)
 make ladder     # Phase 5 gate — rung-matching vs one good offer
 make dashboard  # build the retention dashboard (self-contained HTML)
 make preflight ARGS="--customers c.csv --subscriptions s.csv"  # CHECK A CLIENT EXPORT FIRST
