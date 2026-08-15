@@ -13,19 +13,19 @@ risk from which cause". Gate met against Cox and RSF; a tie with DeepSurv.**
 
 ### Added
 
-- `keel/models/survival/discrete.py` — person-period discrete-time hazard, two
+- `retainiq/models/survival/discrete.py` — person-period discrete-time hazard, two
   learners, three baseline-hazard bases, and a competing-risks wrapper that keeps
   voluntary and involuntary churn separate all the way to the output.
-- `keel/models/survival/metrics.py` — Kaplan-Meier, IPCW Brier, integrated Brier,
+- `retainiq/models/survival/metrics.py` — Kaplan-Meier, IPCW Brier, integrated Brier,
   D-calibration and binned calibration, on numpy/scipy only so they run in CI, and
   cross-checked against `scikit-survival` where installed.
-- `keel/models/survival/baselines.py` — Cox (lifelines), RSF (scikit-survival) and
+- `retainiq/models/survival/baselines.py` — Cox (lifelines), RSF (scikit-survival) and
   DeepSurv (written directly against torch, ~40 lines, Breslow ties).
-- `keel/models/clv/value.py` — CLV, expected remaining months, value at risk, and an
+- `retainiq/models/clv/value.py` — CLV, expected remaining months, value at risk, and an
   exact decomposition of the value shortfall by cause.
-- `keel/benchmarks/survival_data.py` — Telco (IBM, real subscription churn), GBSG2,
+- `retainiq/benchmarks/survival_data.py` — Telco (IBM, real subscription churn), GBSG2,
   and SubSim adapters.
-- `keel/experiments/survival_benchmark.py`, `keel/experiments/clv.py`, and figure 5.
+- `retainiq/experiments/survival_benchmark.py`, `retainiq/experiments/clv.py`, and figure 5.
 
 ### Results — Telco, mean over 10 resplits
 
@@ -83,9 +83,9 @@ numbers, does none of those three, and needs a ~2GB dependency.
 
 ### Added
 
-- `keel/report/autopsy.py` — retention curve, voluntary/involuntary split,
+- `retainiq/report/autopsy.py` — retention curve, voluntary/involuntary split,
   failed-payment economics and decline-code mix, computed from billing data alone.
-- `keel/report/render.py` — self-contained HTML: inline CSS, inline SVG charts, no
+- `retainiq/report/render.py` — self-contained HTML: inline CSS, inline SVG charts, no
   external requests. Opens offline, prints, emails.
 
 ### How a business uses it
@@ -124,10 +124,10 @@ client and remains OPEN.**
 
 ### Added
 
-- `keel/sim/dunning.py` — decline-code taxonomy, retry-success dynamics conditioned on
+- `retainiq/sim/dunning.py` — decline-code taxonomy, retry-success dynamics conditioned on
   code / attempt / timing, payday cycles, and dunning fatigue.
-- `keel/policy/dunning.py` — six retry policies from `no_retry` to `aggressive`.
-- `keel/experiments/dunning.py` — valuation in money, not recovery rate.
+- `retainiq/policy/dunning.py` — six retry policies from `no_retry` to `aggressive`.
+- `retainiq/experiments/dunning.py` — valuation in money, not recovery rate.
 - Figure 4 (`fig04_dunning_value.png`).
 
 ### Results (n=40,000 failed payments)
@@ -215,7 +215,7 @@ explains both.**
 ### Added
 
 - `load_criteo` — 13.98M-row advertising RCT, 85/15 assignment.
-- `keel/benchmarks/spectrum.py` + figure 3 — when uplift modelling is worth it.
+- `retainiq/benchmarks/spectrum.py` + figure 3 — when uplift modelling is worth it.
 
 ### The contradiction
 
@@ -272,7 +272,7 @@ matters is whether they sit where the outcome model ranks **highest**.
 
 ### Added
 
-- `keel/benchmarks/` — RCT loaders with integrity checks, five targeting models
+- `retainiq/benchmarks/` — RCT loaders with integrity checks, five targeting models
   (outcome propensity, response model, T/S-learner, class transform), policy evaluation
   on RCT data with bootstrap intervals, Qini metrics, and an abstention sweep.
 - Figure 2 — small-n reliability (`papers/figures/fig02_small_n_reliability.png`).
@@ -320,12 +320,12 @@ experiences (D-023).
 
 ### Added
 
-- **Canonical schema** (`keel/core/schema.py`) — six timestamp-native tables. Every
+- **Canonical schema** (`retainiq/core/schema.py`) — six timestamp-native tables. Every
   fact carries both `occurred_at` (when it happened) and `available_at` (when it became
   knowable). Includes `interventions`, the holdout ledger no competitor keeps.
-- **Point-in-time feature store** (`keel/core/features.py`) — 15 features, with the
+- **Point-in-time feature store** (`retainiq/core/features.py`) — 15 features, with the
   leakage guarantee enforced structurally: one gate function, no other path to the data.
-- **Leakage suite** (`keel/core/leakage.py`) — availability audit, time-travel
+- **Leakage suite** (`retainiq/core/leakage.py`) — availability audit, time-travel
   consistency, and adversarial canary injection.
 - **Ingest adapters** — Stripe (pure, fixture-tested, no API key), CSV (the Churn
   Autopsy path), and SubSim → canonical for end-to-end testing.
@@ -375,10 +375,10 @@ gates.
 
 ### Added
 
-- **SubSim** (`keel/sim/`) — a subscription-business simulator emitting *exact*
+- **SubSim** (`retainiq/sim/`) — a subscription-business simulator emitting *exact*
   ground-truth counterfactuals: both potential outcomes per customer, which no real
   dataset can provide.
-- **Kill test** (`keel/experiments/kill_test.py`) — the go/no-go experiment on the
+- **Kill test** (`retainiq/experiments/kill_test.py`) — the go/no-go experiment on the
   project's central thesis.
 - **Figure 1** (`papers/figures/fig01_kill_test.png`) — outcome and mechanism.
 - 58 tests, calibration gates, and full documentation

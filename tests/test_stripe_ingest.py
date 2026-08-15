@@ -10,8 +10,8 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from keel.core.schema import INVOICES, SUBSCRIPTIONS, validate
-from keel.ingest.stripe import (
+from retainiq.core.schema import INVOICES, SUBSCRIPTIONS, validate
+from retainiq.ingest.stripe import (
     map_customers,
     map_invoices,
     map_subscriptions,

@@ -17,8 +17,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from keel.benchmarks.survival_data import subsim_survival
-from keel.models.clv import (
+from retainiq.benchmarks.survival_data import subsim_survival
+from retainiq.models.clv import (
     ExtrapolationError,
     clv,
     expected_remaining_months,
@@ -27,8 +27,8 @@ from keel.models.clv import (
     value_at_risk,
     value_shortfall_by_cause,
 )
-from keel.models.survival.discrete import CompetingRisksHazard
-from keel.sim import SimConfig, simulate
+from retainiq.models.survival.discrete import CompetingRisksHazard
+from retainiq.sim import SimConfig, simulate
 
 
 @pytest.fixture(scope="module")

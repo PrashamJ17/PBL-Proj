@@ -1,4 +1,4 @@
-# Keel — project state
+# RetainIQ — project state
 
 **Read this first. Do not re-explore the repo to rediscover state.**
 Deeper context only if needed: `docs/DECISIONS.md` (why) · `docs/BUILDLOG.md` (what).
@@ -8,7 +8,7 @@ Deeper context only if needed: `docs/DECISIONS.md` (why) · `docs/BUILDLOG.md` (
 ## Thesis (do not re-derive)
 
 Churn prediction is a commodity. The unsolved problem is **retention decisioning under
-small-sample causal uncertainty**. Keel decides *who to treat, with what, at what cost*
+small-sample causal uncertainty**. RetainIQ decides *who to treat, with what, at what cost*
 — and **abstains** when the CATE posterior is too wide. Vertical: subscription
 (contractual) first; e-commerce/BTYD is Phase 7.
 
@@ -38,7 +38,7 @@ CSVs — but its gate is a sales task and **nobody has paid anything**. Next act
 Watch: **D-057** (Phase 4 multiplied log-odds by money for a whole phase; fixed, losses
 -3,531→-1,070, no conclusion changed; 2 of 5 pre-registered predictions FAILED) ·
 **D-058** (choosing the offer beats choosing the customer, but 58% is not beating chance —
-do NOT tune to close it) · **D-060** (RetainIQ independently replicated our P1 leakage
+do NOT tune to close it) · **D-060** (RetainIQ-PBL independently replicated our P1 leakage
 result: published ROC-AUC 1.0 is pre-fix, its own code now gives **0.543**).
 
 | # | Phase | Status | Gate |
@@ -100,25 +100,25 @@ before dashboards → dunning autopilot → retention decisions, ordered by *tru
 ## Map
 
 ```
-keel/core/       schema (occurred_at+available_at) · features (_visible = ONLY data path)
+retainiq/core/       schema (occurred_at+available_at) · features (_visible = ONLY data path)
                  leakage (availability audit, time-travel, canary injection)
-keel/ingest/     stripe · csv_ingest (alias resolution, recorded defaults) ·
+retainiq/ingest/     stripe · csv_ingest (alias resolution, recorded defaults) ·
                  preflight (is this export safe? D-062) · subsim_adapter
-keel/sim/        config · latents (copula) · hazard (ONE defn, two regimes) · subsim
+retainiq/sim/        config · latents (copula) · hazard (ONE defn, two regimes) · subsim
                  counterfactual (exact τ, CRN, LADDER) · calibration · dunning
-keel/policy/     dunning (6 retry policies) · economics (log-odds→money, D-057) ·
+retainiq/policy/     dunning (6 retry policies) · economics (log-odds→money, D-057) ·
                  ladder (per-customer rung choice, multi-arm pilot, D-058)
-keel/report/     autopsy · render (HTML+print) · reasons (D-059) · worklist (CSV,
+retainiq/report/     autopsy · render (HTML+print) · reasons (D-059) · worklist (CSV,
                  descriptive only) · dashboard (self-contained, banner-first, D-061)
-keel/models/uplift/     bayesian (Laplace posterior, validated vs NUTS) · abstention
-keel/models/survival/  discrete (person-period hazard + competing risks) · metrics
+retainiq/models/uplift/     bayesian (Laplace posterior, validated vs NUTS) · abstention
+retainiq/models/survival/  discrete (person-period hazard + competing risks) · metrics
                  (KM, IPCW Brier, D-calibration — numpy-only so CI runs them) ·
                  baselines (Cox · RSF · DeepSurv, each optional)
-keel/models/clv/   value — CLV, value at risk, exact shortfall-by-cause
-keel/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark · clv ·
+retainiq/models/clv/   value — CLV, value at risk, exact shortfall-by-cause
+retainiq/experiments/  kill_test · leakage_penalty · dunning · survival_benchmark · clv ·
                    abstention (P4 gate) · sensitivity (D-055/056) ·
                    ai_channels (D-064) · figures
-keel/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
+retainiq/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
 tests/           440 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
@@ -197,7 +197,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   at sal 1.0, 55% harmed). At MATCHED salience the AI call DOES win (5.31 vs 3.97) — the
   case fails on a parameter nobody measures. **Cheap actuators make selection matter MORE**
   (oracle share 70%→14%). AI email (sal 0.35) is the best channel in the table — the
-  finding is intrusiveness, not AI. `docs/AUTOMATION.md`: Keel decides who/whether/how
+  finding is intrusiveness, not AI. `docs/AUTOMATION.md`: RetainIQ decides who/whether/how
   much, LLM only writes wording; policy gate is code not a prompt; TCPA is $500-1,500 PER
   CALL. **Phase 6 holdout BEFORE any sender.** 440 tests.
 - **CP-16** — **The Autopsy can finally be delivered (D-062).** No command took a client
@@ -206,7 +206,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   bound to customer_id; `Email` beat the real id column; required cols absent). Alias
   resolution is now table-aware. **`preflight` is the important piece** — Stripe exports
   CENTS, so `Plan Amount=2900` is $29.00 and a report would quote churn cost at **100x**.
-  It BLOCKS, never converts (converting silently = the D-057 error again). `keel/cli.py`,
+  It BLOCKS, never converts (converting silently = the D-057 error again). `retainiq/cli.py`,
   argparse only. Deleted an unreachable duplicate-key check — `Dataset.validate` already
   catches it. `docs/SALES-RUNBOOK.md` lists claims that are FORBIDDEN, each tied to the
   experiment forbidding it. **Gate still open: nobody has paid.** 408 tests.
@@ -216,11 +216,11 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   disabled**: the inverse of a dashboard shouting "SAVE NOW" over a 0.543 model (D-060).
   Looking at the render (not the tests) caught a **47%-confidence 1,972 discount** ranked
   4th — sub-60% rows now flag inline. Verified both themes in-browser (D-038). 388 tests.
-- **CP-14** — **Reason codes (D-059) + RetainIQ compared (D-060).** Attribution is EXACT
+- **CP-14** — **Reason codes (D-059) + RetainIQ-PBL compared (D-060).** Attribution is EXACT
   not SHAP: `tau` is linear so contribution = `gamma_j*xs_ij`, no dependency. Explains the
   *decision* (`-Δp*V - c`, and why this rung), says "nothing specific to this customer
   drives it" when sigma_gamma collapses, and carries D-058's 58% on every line. Ran
-  RetainIQ's own pipeline: published ROC-AUC **1.000** is pre-fix, actual **0.543**.
+  RetainIQ-PBL's own pipeline: published ROC-AUC **1.000** is pre-fix, actual **0.543**.
 - **CP-13** — **Phase 5 optimizer built; gate UNMET (D-058).** Per-rung effects from a
   multi-arm pilot (~35/arm at n=500), pooled across rungs via D-041 machinery. First
   estimated policy here to make money (655/1,039/2,252): **28% of oracle vs 13%** for the

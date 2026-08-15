@@ -11,7 +11,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from keel.core.schema import (
+from retainiq.core.schema import (
     INVOICES,
     TABLES,
     Dataset,
@@ -19,8 +19,8 @@ from keel.core.schema import (
     empty,
     validate,
 )
-from keel.ingest.subsim_adapter import to_canonical
-from keel.sim import SimConfig, simulate
+from retainiq.ingest.subsim_adapter import to_canonical
+from retainiq.sim import SimConfig, simulate
 
 CFG = SimConfig(n_customers=300, n_months=12, seed=7)
 

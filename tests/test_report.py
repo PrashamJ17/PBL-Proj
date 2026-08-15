@@ -12,11 +12,11 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from keel.core.schema import EVENTS, TICKETS, Dataset, empty
-from keel.ingest.subsim_adapter import to_canonical
-from keel.report.autopsy import Autopsy, analyse
-from keel.report.render import generate, render
-from keel.sim import SimConfig, simulate
+from retainiq.core.schema import EVENTS, TICKETS, Dataset, empty
+from retainiq.ingest.subsim_adapter import to_canonical
+from retainiq.report.autopsy import Autopsy, analyse
+from retainiq.report.render import generate, render
+from retainiq.sim import SimConfig, simulate
 
 CFG = SimConfig(n_customers=600, n_months=18, seed=7)
 
@@ -128,7 +128,7 @@ def test_missing_decline_codes_produce_a_visible_caveat(dataset):
 
 
 def test_missing_invoices_produce_a_visible_caveat(dataset):
-    from keel.core.schema import INVOICES
+    from retainiq.core.schema import INVOICES
 
     a = analyse(Dataset(
         customers=dataset.customers,
@@ -241,7 +241,7 @@ def test_business_with_no_churn_at_all(tmp_path):
 
 
 def test_empty_subscriptions_is_refused():
-    from keel.core.schema import CUSTOMERS, INVOICES, SUBSCRIPTIONS
+    from retainiq.core.schema import CUSTOMERS, INVOICES, SUBSCRIPTIONS
 
     with pytest.raises(ValueError, match="nothing to analyse"):
         analyse(Dataset(

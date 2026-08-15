@@ -14,8 +14,8 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from keel.sim import SimConfig, simulate
-from keel.sim.calibration import TARGETS, measure, sweep_seeds
+from retainiq.sim import SimConfig, simulate
+from retainiq.sim.calibration import TARGETS, measure, sweep_seeds
 
 CFG = SimConfig(n_customers=1500, n_months=24, seed=7)
 

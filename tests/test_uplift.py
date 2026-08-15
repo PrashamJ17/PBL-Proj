@@ -17,13 +17,13 @@ import pandas as pd
 import pytest
 from scipy import stats
 
-from keel.models.uplift import (
+from retainiq.models.uplift import (
     AbstentionPolicy,
     CATEPosterior,
     HierarchicalCATE,
     pool_across_tenants,
 )
-from keel.models.uplift.abstention import top_k_by_point_estimate
+from retainiq.models.uplift.abstention import top_k_by_point_estimate
 
 
 def _data(n=600, het=0.9, seed=0, p=4):

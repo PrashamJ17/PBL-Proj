@@ -57,7 +57,7 @@ those on purpose.
 
 ## Changing the simulator
 
-Any change to `keel/sim/` requires:
+Any change to `retainiq/sim/` requires:
 
 1. `make calibrate` still passes — both gates.
 2. Calibration is stable across seeds (`sweep_seeds`), not just the default one.

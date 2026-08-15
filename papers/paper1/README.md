@@ -90,16 +90,16 @@ bug in the paper.
 |---|---|
 | Table 1 (kill test) | `make killtest` |
 | §4 calibration aggregates | `make calibrate` |
-| §4 leakage penalty (0.603 / 0.613 / 0.954) | `python -m keel.experiments.leakage_penalty` |
-| Table 2 (`corr(τ, π)`, 5 settings) | `python -m keel.benchmarks.spectrum` |
-| Table 3 (small-*n* win rates) | `python -m keel.benchmarks.small_n` |
-| §5 Hillstrom / Criteo / Lenta headline figures | `python -m keel.benchmarks.run` |
+| §4 leakage penalty (0.603 / 0.613 / 0.954) | `python -m retainiq.experiments.leakage_penalty` |
+| Table 2 (`corr(τ, π)`, 5 settings) | `python -m retainiq.benchmarks.spectrum` |
+| Table 3 (small-*n* win rates) | `python -m retainiq.benchmarks.small_n` |
+| §5 Hillstrom / Criteo / Lenta headline figures | `python -m retainiq.benchmarks.run` |
 | Table 4 (Telco survival head-to-head) | `make survival` |
 | §7 CLV, 21% decile overlap, 72.5/27.5 split | `make clv` |
-| Table 5 (abstention gate, post-fix) | `python -m keel.experiments.abstention` |
+| Table 5 (abstention gate, post-fix) | `python -m retainiq.experiments.abstention` |
 | §8.1 sensitivity — why the gate was unpassable | `make sensitivity` |
 | Table 6 + §8.3 offer ladder | `make ladder` |
-| §8 Laplace-vs-NUTS validation | `python -m keel.models.uplift.mcmc_check` (needs `numpyro`) |
+| §8 Laplace-vs-NUTS validation | `python -m retainiq.models.uplift.mcmc_check` (needs `numpyro`) |
 | Figures 1–5 | `make figures` |
 
 The benchmark commands need the public datasets in `data/` (Hillstrom and Telco

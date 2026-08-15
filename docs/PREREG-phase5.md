@@ -121,7 +121,7 @@ precisely which findings survive:
 - **Expected to need restating** (estimated policies): every win rate against do-nothing and
   against ranking, in D-054 and both axes of D-055; the regret matrix; and the per-rung
   `alpha` table underpinning D-056.
-- **Unaffected**: Phases 0-3 entirely. The bug is in `keel/models/uplift/abstention.py`,
+- **Unaffected**: Phases 0-3 entirely. The bug is in `retainiq/models/uplift/abstention.py`,
   which nothing before Phase 4 imports.
 
 Paper section 8 and section 8.1 will be rewritten from the corrected numbers. The refuted

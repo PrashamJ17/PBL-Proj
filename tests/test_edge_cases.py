@@ -13,10 +13,10 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from keel.experiments.kill_test import budget_curve, run, train_churn_model
-from keel.sim import SimConfig, simulate
-from keel.sim.counterfactual import LADDER, potential_outcomes
-from keel.sim.hazard import expit
+from retainiq.experiments.kill_test import budget_curve, run, train_churn_model
+from retainiq.sim import SimConfig, simulate
+from retainiq.sim.counterfactual import LADDER, potential_outcomes
+from retainiq.sim.hazard import expit
 
 BASE = SimConfig(n_customers=400, n_months=12, seed=7)
 

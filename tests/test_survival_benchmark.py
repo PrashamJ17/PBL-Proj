@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from keel.experiments.survival_benchmark import (
+from retainiq.experiments.survival_benchmark import (
     Score,
     _landmark_slice,
     horizon_grid,
@@ -31,7 +31,7 @@ from keel.experiments.survival_benchmark import (
     run_static,
     score_model,
 )
-from keel.models.survival.discrete import PERIOD, SurvivalData
+from retainiq.models.survival.discrete import PERIOD, SurvivalData
 
 
 def _toy(n: int = 400, seed: int = 0) -> SurvivalData:
@@ -96,8 +96,8 @@ def _subsim_landmark_fixture(seed: int = 3):
     Constructing the panel by hand would test a shape the harness never sees; this
     goes through the same `subsim_person_period` path the benchmark uses.
     """
-    from keel.benchmarks.survival_data import subsim_person_period, subsim_survival
-    from keel.sim import SimConfig, simulate
+    from retainiq.benchmarks.survival_data import subsim_person_period, subsim_survival
+    from retainiq.sim import SimConfig, simulate
 
     result = simulate(SimConfig(n_customers=500, n_months=18, seed=seed))
     return subsim_person_period(result, cause=1), subsim_survival(result)
@@ -192,7 +192,7 @@ def test_an_informative_model_beats_the_marginal_one():
     model = our_models(train)["discrete_logistic"]
     ours = score_model("ours", model, train, test)
 
-    from keel.models.survival.baselines import KaplanMeierBaseline
+    from retainiq.models.survival.baselines import KaplanMeierBaseline
 
     km = score_model("km", KaplanMeierBaseline(), train, test)
     assert ours.ibs < km.ibs, f"ours {ours.ibs:.4f} did not beat KM {km.ibs:.4f}"

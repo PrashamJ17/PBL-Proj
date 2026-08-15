@@ -19,8 +19,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from keel.benchmarks.datasets import DATA_DIR
-from keel.benchmarks.survival_data import (
+from retainiq.benchmarks.datasets import DATA_DIR
+from retainiq.benchmarks.survival_data import (
     EXCLUDED_FROM_TELCO,
     SUBSIM_FEATURES,
     load_telco,
@@ -28,13 +28,13 @@ from keel.benchmarks.survival_data import (
     subsim_person_period,
     subsim_survival,
 )
-from keel.models.survival.baselines import (
+from retainiq.models.survival.baselines import (
     CoxBaseline,
     DeepSurvBaseline,
     KaplanMeierBaseline,
     RSFBaseline,
 )
-from keel.models.survival.discrete import (
+from retainiq.models.survival.discrete import (
     EVENT,
     PERIOD,
     UNIT,
@@ -44,7 +44,7 @@ from keel.models.survival.discrete import (
     period_basis,
     restricted_cubic_spline,
 )
-from keel.models.survival.metrics import (
+from retainiq.models.survival.metrics import (
     brier_score,
     calibration_at_horizon,
     censoring_survival,
@@ -53,7 +53,7 @@ from keel.models.survival.metrics import (
     integrated_brier_score,
     kaplan_meier,
 )
-from keel.sim import SimConfig, simulate
+from retainiq.sim import SimConfig, simulate
 
 TELCO_PATH = DATA_DIR / "telco_churn.csv"
 #: Presence is not completeness -- the same lesson as D-029. A download in progress

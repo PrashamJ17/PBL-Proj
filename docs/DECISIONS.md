@@ -273,7 +273,7 @@ look ahead that it will not have in production. The backtest looks excellent and
 deployment collapses — and because the error makes results *better*, nobody
 investigates it.
 
-`keel.core.features` filters on `available_at`, never on `occurred_at`.
+`retainiq.core.features` filters on `available_at`, never on `occurred_at`.
 
 **Consequence:** `available_at` is required, not optional. Where a source genuinely has
 no lag the adapter sets it equal to `occurred_at` *explicitly*. Making it implicit
@@ -288,7 +288,7 @@ invariant is what every point-in-time guarantee rests on.
 **Alternative rejected:** a documented convention that feature authors filter correctly.
 
 **Reason:** guarantees that depend on remembering to do the right thing are not
-guarantees. Every feature in `keel.core.features` reads its source rows through exactly
+guarantees. Every feature in `retainiq.core.features` reads its source rows through exactly
 one function, `_visible`, which applies the temporal filter. There is no other path to
 the data, so a feature that bypasses the filter cannot be written.
 
@@ -422,7 +422,7 @@ not asserting that it always is.
 
 **Reason:** the outcome was genuinely uncertain, and the temptation to reinterpret a
 disappointing result afterwards is strongest exactly when it disappoints. So
-`keel/benchmarks/run.py` carries a docstring section, committed before the first run,
+`retainiq/benchmarks/run.py` carries a docstring section, committed before the first run,
 stating that Hillstrom is email marketing rather than churn retention, that its harm
 mechanism is weaker, and that **worse-than-random was likely to fail there** — and that
 such a failure would be a result about scope rather than a refutation.
@@ -1199,7 +1199,7 @@ The second one is what caught the first bug in minutes.
 
 The gate reads "beats Cox/RSF/DeepSurv on public data; calibrated". Recorded here in
 the D-021 spirit: the prediction was written into
-`keel/experiments/survival_benchmark.py` before the first run, and this is the scoring
+`retainiq/experiments/survival_benchmark.py` before the first run, and this is the scoring
 of it, including the parts that did not land.
 
 **Telco (7,032 customers, the subscription dataset — mean over 10 resplits):**
@@ -1314,7 +1314,7 @@ is narrower than what it approximates. If the posterior is over-confident, the
 abstention rule built on it acts when it should not, and the phase's own claim is
 inflated.
 
-**Measured.** Same model fitted with NUTS (`keel/models/uplift/mcmc_check.py`), same
+**Measured.** Same model fitted with NUTS (`retainiq/models/uplift/mcmc_check.py`), same
 discipline the survival metrics use against lifelines and scikit-survival (D-048):
 
 | n | posterior sd ratio (Laplace / NUTS) | mean correlation |
@@ -1406,7 +1406,7 @@ little margin over the offer cost by construction (D-011).
 `mean tau = -0.010` may simply leave too little margin over the offer cost. That is a
 checkable claim and it was checked, as a **sensitivity** — no default was changed,
 `SimConfig` and `REFERENCE_OFFER` are untouched, and the D-054 numbers stand.
-`keel/experiments/sensitivity.py`; a test pins that the default path is unchanged.
+`retainiq/experiments/sensitivity.py`; a test pins that the default path is unchanged.
 
 **First, the arithmetic.** Treating pays iff `-tau_i * CLV_i > cost_i`, so the break-even
 effect is `cost_i / CLV_i`. Under the reference offer that is **0.040** against a mean
@@ -1536,7 +1536,7 @@ and worth stating: self-consistency tests cannot catch a units error, because a 
 is consistent with itself. `test_probability_effect_matches_the_definition` now checks a
 value computed by hand.
 
-**The fix** (`keel/policy/economics.py`). Convert before touching money:
+**The fix** (`retainiq/policy/economics.py`). Convert before touching money:
 
 ```
 delta_p = expit(eta0 + tau) - expit(eta0)      benefit = -delta_p * V - c
@@ -1626,8 +1626,8 @@ without asking us") is not met on those grounds either, independently of the num
 
 ## D-059 — Reason codes explain the decision, and admit when there is no reason
 
-**Provenance.** Ported from RetainIQ (a sibling project of the author's) after a
-head-to-head comparison. RetainIQ's version is SHAP over an XGBoost churn classifier,
+**Provenance.** Ported from RetainIQ-PBL (a sibling project of the author's) after a
+head-to-head comparison. RetainIQ-PBL's version is SHAP over an XGBoost churn classifier,
 producing "87% risk because days-since-purchase = 400". Two things were changed rather
 than copied.
 
@@ -1688,7 +1688,7 @@ the output is now legible to an owner without an analyst present.
 
 ---
 
-## D-060 — RetainIQ compared: an independent replication of our leakage result
+## D-060 — RetainIQ-PBL compared: an independent replication of our leakage result
 
 **What it is.** A sibling project by the same author — an e-commerce retention dashboard
 on the Olist Brazilian marketplace dataset: RFM + K-Means segmentation, XGBoost churn
@@ -1696,7 +1696,7 @@ classifier, XGBoost CLV regressor, SHAP explanations, FastAPI + Next.js, deploye
 codebase was cloned and **its pipeline was run**, rather than reading its report, because
 the report's numbers are the claim under examination.
 
-**The finding, and it is ours as much as theirs.** RetainIQ's report headlines
+**The finding, and it is ours as much as theirs.** RetainIQ-PBL's report headlines
 **Accuracy 0.9987, F1 0.9992, ROC-AUC 1.0000**, describing the model as having "learned
 the patterns flawlessly", with a footnote that "Recency acts as a near-perfect
 deterministic feature". That footnote is the whole story: the label was "no purchase in
@@ -1715,7 +1715,7 @@ correctly — features from before a cutoff, target after, recency measured to t
 
 A constant "everyone churns" beats the trained model on both accuracy and F1.
 
-**Why this matters to Keel.** It is an independent replication of P1 (0.603 correct vs
+**Why this matters to RetainIQ.** It is an independent replication of P1 (0.603 correct vs
 0.954 leaked) at larger magnitude — 0.543 vs 1.000 — on real data, by a different
 pipeline, in a different vertical. Two projects, same trap, and in both cases the leaked
 number was the one that looked like success. This is the strongest external evidence we
@@ -1725,7 +1725,7 @@ earns its cost, and it belongs in the paper's motivation: the failure is not hyp
 **A second lesson, which is about framing rather than leakage.** At a 99.4% base rate the
 problem is degenerate — Olist is a *marketplace* with mostly one-time buyers, so churn is
 latent and a binary 90-day label is the wrong construct entirely (Fader & Hardie). This
-is exactly why Keel started with contractual subscriptions and deferred non-contractual
+is exactly why RetainIQ started with contractual subscriptions and deferred non-contractual
 to Phase 7 behind a BTYD router. The comparison confirms that sequencing was right.
 
 **What we took.** The reason-code layer (D-059), rebuilt rather than copied: theirs
@@ -1733,7 +1733,7 @@ explains a prediction with approximate SHAP over a classifier, ours explains a d
 with exact closed-form attribution over a linear CATE.
 
 **What they have that we do not, and it is not nothing.** A deployed frontend, a live
-API, Docker orchestration, RFM segmentation, and a CRM activation layer. Keel has 373
+API, Docker orchestration, RFM segmentation, and a CRM activation layer. RetainIQ has 373
 tests, CI and 60 decision entries, and **nothing a buyer can look at**. Their gate
 ("someone can use it") is met and ours is not; ours ("it demonstrably makes money") is
 the harder one and is still open. Recorded because the comparison cuts both ways.
@@ -1750,7 +1750,7 @@ go-to-market by *trust required*, and a file someone opens asks for less than a 
 Rejected: Streamlit and Next.js. Both add a runtime, a build step and a hosting bill to a
 project whose gate is still "does this make money", and invariant 7 keeps the core on
 numpy/pandas/scipy. The plan said from the start that Streamlit would not survive a real
-launch, so building on it now would be building something to throw away. RetainIQ's
+launch, so building on it now would be building something to throw away. RetainIQ-PBL's
 deployed Next.js stack (D-060) is the counter-example worth respecting -- it is genuinely
 more impressive to look at -- but it is also the part of that project that is cheapest to
 rebuild later, and the part we would have to rebuild anyway.
@@ -1818,7 +1818,7 @@ quietly. `interval` is the case that matters: assuming monthly on an annual book
 overstates MRR twelvefold, so its recorded note is deliberately alarming and the CLI
 exposes `--interval` to set it explicitly.
 
-**`keel/ingest/preflight.py` exists because of how this engagement actually fails.** Not a
+**`retainiq/ingest/preflight.py` exists because of how this engagement actually fails.** Not a
 crash -- a crash is recoverable and honest. It is a confident report with the client's own
 revenue wrong in it, found by the client. The check that motivates the module:
 
@@ -1893,7 +1893,7 @@ says otherwise.
 
 ## D-064 — A nearly-free actuator does not change the answer; it sharpens it
 
-**Question.** Should Keel drive automated outreach — LLM-written email, AI voice calls —
+**Question.** Should RetainIQ drive automated outreach — LLM-written email, AI voice calls —
 so that retention runs without a human? The commercial argument is cost per contact: a
 human check-in call costs ~6 units of staff time, an AI call ~0.5, so make twelve times
 as many.
@@ -1939,8 +1939,8 @@ inversion is the whole argument against "just send it to everyone, it costs noth
 strongest channel in the table. The finding is about channel, not about who writes the
 copy.
 
-**Architectural consequence, and it is a hard line.** If Keel drives an actuator, the
-actuator must never decide *who*, *whether*, or *how much*. Keel decides those; the model
+**Architectural consequence, and it is a hard line.** If RetainIQ drives an actuator, the
+actuator must never decide *who*, *whether*, or *how much*. RetainIQ decides those; the model
 writes wording inside a template and a cap. Letting a generative model choose recipients
 discards every result this project established, and letting it choose discount depth
 re-opens the personalised-pricing exposure that D-039 and plan §13.2 rule out.

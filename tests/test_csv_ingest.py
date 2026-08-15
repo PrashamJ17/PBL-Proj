@@ -10,8 +10,8 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from keel.core.schema import CUSTOMERS, INVOICES, SUBSCRIPTIONS
-from keel.ingest.csv_ingest import IngestError, load, load_table, normalise_columns
+from retainiq.core.schema import CUSTOMERS, INVOICES, SUBSCRIPTIONS
+from retainiq.ingest.csv_ingest import IngestError, load, load_table, normalise_columns
 
 
 def _customers_frame(**overrides):
@@ -189,7 +189,7 @@ def test_load_from_actual_csv_files(tmp_path):
 
 
 def test_orphan_rows_are_caught_end_to_end():
-    from keel.core.schema import SchemaError
+    from retainiq.core.schema import SchemaError
 
     inv = _invoices_frame()
     inv.loc[0, "customer_id"] = "ghost"
@@ -200,7 +200,7 @@ def test_orphan_rows_are_caught_end_to_end():
 def test_loaded_data_works_with_the_feature_store():
     """The point of ingest is that everything downstream stops caring where data
     came from."""
-    from keel.core.features import STANDARD_FEATURES, FeatureStore
+    from retainiq.core.features import STANDARD_FEATURES, FeatureStore
 
     ds = load(_customers_frame(), _subs_frame(), _invoices_frame())
     out = FeatureStore(ds).build(pd.Timestamp("2024-03-01"), ["c1", "c2"], STANDARD_FEATURES)

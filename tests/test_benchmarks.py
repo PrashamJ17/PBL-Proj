@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from keel.benchmarks.datasets import (
+from retainiq.benchmarks.datasets import (
     CRITEO_BYTES,
     CRITEO_REFERENCE,
     DATA_DIR,
@@ -23,7 +23,7 @@ from keel.benchmarks.datasets import (
     load_hillstrom,
     load_lenta,
 )
-from keel.benchmarks.evaluate import (
+from retainiq.benchmarks.evaluate import (
     abstention_sweep,
     evaluate_policy,
     qini_coefficient,
@@ -32,8 +32,8 @@ from keel.benchmarks.evaluate import (
     top_k_mask,
     uplift_of_set,
 )
-from keel.benchmarks.models import ALL_TARGETERS, ClassTransform, SLearner, TLearner
-from keel.benchmarks.run import split
+from retainiq.benchmarks.models import ALL_TARGETERS, ClassTransform, SLearner, TLearner
+from retainiq.benchmarks.run import split
 
 
 def _complete(name: str, expect_bytes: int | None = None) -> bool:
@@ -183,7 +183,7 @@ def test_uplift_models_rank_a_harmed_segment_last(cls):
 def test_uplift_models_beat_outcome_models_when_harm_exists():
     """The core claim, on synthetic data where the mechanism is present by
     construction. Hillstrom cannot test this because it has no harmed segment."""
-    from keel.benchmarks.models import OutcomePropensity
+    from retainiq.benchmarks.models import OutcomePropensity
 
     rct = make_rct(n=12000, effect=0.25, harm_fraction=0.35, seed=2)
     k_frac = 0.3
@@ -231,7 +231,7 @@ def test_hillstrom_has_no_sleeping_dogs():
     Every decile of predicted uplift has POSITIVE true uplift. This is why
     Hillstrom cannot test the worse-than-random claim: the precondition -- a
     negative-uplift segment -- does not exist in this dataset."""
-    from keel.benchmarks.run import split
+    from retainiq.benchmarks.run import split
 
     rct = load_hillstrom()
     train, test = split(rct, seed=0)
@@ -326,7 +326,7 @@ def test_criteo_uplift_is_coupled_to_propensity():
     scoping."""
     rct = load_criteo(sample_rows=400_000, seed=0)
     train, test = split(rct, seed=0)
-    from keel.benchmarks.models import OutcomePropensity
+    from retainiq.benchmarks.models import OutcomePropensity
 
     tau = TLearner(seed=0).fit(train.X, train.treatment, train.outcome).score(test.X)
     prop = OutcomePropensity(seed=0).fit(train.X, train.treatment, train.outcome).score(test.X)

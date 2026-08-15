@@ -15,9 +15,9 @@ import pandas as pd
 import pytest
 from scipy.special import expit
 
-from keel.models.uplift import HierarchicalCATE
-from keel.policy.ladder import ABSTAIN, LadderOptimiser, Recommendation
-from keel.report.reasons import FEATURE_PHRASES, Reason, explain, render
+from retainiq.models.uplift import HierarchicalCATE
+from retainiq.policy.ladder import ABSTAIN, LadderOptimiser, Recommendation
+from retainiq.report.reasons import FEATURE_PHRASES, Reason, explain, render
 
 
 def _fit(n=900, het=1.2, seed=0):

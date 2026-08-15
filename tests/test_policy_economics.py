@@ -14,13 +14,13 @@ import pandas as pd
 import pytest
 from scipy.special import expit, logit
 
-from keel.models.uplift import AbstentionPolicy, HierarchicalCATE
-from keel.policy.economics import (
+from retainiq.models.uplift import AbstentionPolicy, HierarchicalCATE
+from retainiq.policy.economics import (
     MoneyPosterior,
     benefit_posterior,
     probability_effect,
 )
-from keel.policy.ladder import ABSTAIN, LadderOptimiser
+from retainiq.policy.ladder import ABSTAIN, LadderOptimiser
 
 
 def _data(n=800, het=0.9, seed=0, p=4):

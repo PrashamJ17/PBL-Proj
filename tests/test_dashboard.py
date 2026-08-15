@@ -16,8 +16,8 @@ import re
 
 import pytest
 
-from keel.report.dashboard import render_dashboard
-from keel.report.reasons import Reason
+from retainiq.report.dashboard import render_dashboard
+from retainiq.report.reasons import Reason
 
 OFFERS = ["feature_nudge", "checkin_call", "discount_40_6mo"]
 

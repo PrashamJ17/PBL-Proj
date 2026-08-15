@@ -1,4 +1,4 @@
-# Keel
+# RetainIQ
 
 [![CI](https://github.com/PrashamJ17/PBL-Proj/actions/workflows/ci.yml/badge.svg)](https://github.com/PrashamJ17/PBL-Proj/actions/workflows/ci.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
@@ -11,7 +11,7 @@
 
 A business with 800 customers cannot reliably estimate individual treatment effects.
 Existing uplift methods either overfit catastrophically at that scale or collapse to
-blanket targeting. Keel is a Bayesian, margin-aware retention decision engine that is
+blanket targeting. RetainIQ is a Bayesian, margin-aware retention decision engine that is
 explicitly uncertainty-aware at small *n* — and that **abstains** when the evidence is
 too thin.
 
@@ -63,8 +63,8 @@ make check       # lint + 302 tests + calibration gates
 ```
 
 ```python
-from keel.sim import simulate, SimConfig
-from keel.experiments.kill_test import run
+from retainiq.sim import simulate, SimConfig
+from retainiq.experiments.kill_test import run
 
 sim = simulate(SimConfig(n_customers=6000, n_months=24, seed=7))
 results, per_customer, auc = run(sim, decision_month=6, budget_fraction=0.20)
@@ -76,7 +76,7 @@ for r in results:
 Reproduce the figure:
 
 ```bash
-python -m keel.experiments.figures
+python -m retainiq.experiments.figures
 ```
 
 Run the calibration gates and tests:
@@ -90,7 +90,7 @@ python -m pytest tests/ -q
 ## Repository layout
 
 ```
-keel/
+retainiq/
 ├── sim/            SubSim — the simulator. Latents (attention ~ engagement via a
 │                   copula), one hazard definition, exact ground-truth τ with paired
 │                   potential outcomes, dunning, and a solver for the calibration.

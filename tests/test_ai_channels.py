@@ -9,14 +9,14 @@ from __future__ import annotations
 
 import pytest
 
-from keel.experiments.ai_channels import (
+from retainiq.experiments.ai_channels import (
     AI_CALL_COST,
     AI_CALL_SAVEABILITY,
     break_even_salience,
     sweep,
 )
-from keel.sim import SimConfig, simulate
-from keel.sim.counterfactual import Offer, potential_outcomes
+from retainiq.sim import SimConfig, simulate
+from retainiq.sim.counterfactual import Offer, potential_outcomes
 
 
 @pytest.fixture(scope="module")

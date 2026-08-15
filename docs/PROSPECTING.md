@@ -55,7 +55,7 @@ and hygiene consumables**, **meal kits**.
 **Verify the subscription is real before anything else.** Most Indian D2C "subscribe and
 save" is a repeat-purchase discount with no binding subscription and no cancel event. That
 is *non-contractual* churn — a different mathematical problem, Phase 7 here, and precisely
-the RetainIQ/Olist failure (99.4% base rate, ROC-AUC 0.543). One question settles it:
+the RetainIQ-PBL/Olist failure (99.4% base rate, ROC-AUC 0.543). One question settles it:
 
 > *Do customers hold a subscription they can cancel, or do they just reorder when they want?*
 

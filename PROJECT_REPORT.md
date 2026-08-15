@@ -1,4 +1,4 @@
-# Keel — Retention Decisioning Under Small-Sample Causal Uncertainty
+# RetainIQ — Retention Decisioning Under Small-Sample Causal Uncertainty
 
 **Comprehensive Project Report and Technical Defence**
 
@@ -28,7 +28,7 @@
 8. [Architecture and codebase](#8-architecture-and-codebase)
 9. [Testing and engineering discipline](#9-testing-and-engineering-discipline)
 10. [What did not work](#10-what-did-not-work)
-11. [Comparison with a sibling project (RetainIQ)](#11-comparison-with-a-sibling-project-retainiq)
+11. [Comparison with a sibling project (RetainIQ-PBL)](#11-comparison-with-a-sibling-project-retainiq)
 12. [Limitations](#12-limitations)
 13. [Future work](#13-future-work)
 14. [Anticipated examination questions](#14-anticipated-examination-questions)
@@ -38,7 +38,7 @@
 
 ## 1. What is the project?
 
-**Keel** is a retention *decisioning* system for small subscription businesses. It does
+**RetainIQ** is a retention *decisioning* system for small subscription businesses. It does
 not primarily answer "who will churn." It answers three harder questions:
 
 1. **Who should we treat**, given that treating some customers actively destroys value?
@@ -344,7 +344,7 @@ public dataset of 7,032 real subscription customers:
 
 | Model | Integrated Brier (lower is better) |
 |---|---|
-| **Keel (discrete-time hazard)** | **0.0824** |
+| **RetainIQ (discrete-time hazard)** | **0.0824** |
 | DeepSurv | 0.0825 |
 | Cox PH | 0.0914 |
 | Random Survival Forest | 0.0964 |
@@ -533,7 +533,7 @@ transfer is the mechanism in §7.3.
 ## 8. Architecture and codebase
 
 ```
-keel/
+retainiq/
 ├── core/        schema (occurred_at + available_at) · features (single data path)
 │                leakage (availability audit, time-travel, canary injection)
 ├── ingest/      stripe · csv_ingest (alias resolution, recorded defaults)
@@ -650,16 +650,18 @@ hedged better (58.9% versus 85.7% maximum regret). Withdrawn and recorded.
 
 ---
 
-## 11. Comparison with a sibling project (RetainIQ)
+## 11. Comparison with a sibling project (RetainIQ-PBL)
 
-RetainIQ is a prior project by the same author: an e-commerce retention dashboard on the
+RetainIQ-PBL (repository `PrashamJ17/RetainIQ-PBL`, referred to throughout by its full
+repository name to distinguish it from this project) is a prior project by the same
+author: an e-commerce retention dashboard on the
 Olist Brazilian dataset, using RFM segmentation, K-Means, an XGBoost churn classifier and
 SHAP explanations, deployed with FastAPI and Next.js. It was analysed as an external
 comparison, and **its code was executed rather than its report read**.
 
 ### 11.1 An independent replication of this project's leakage finding
 
-RetainIQ's report states Accuracy 0.9987, F1 0.9992 and **ROC-AUC 1.0000**, describing the
+RetainIQ-PBL's report states Accuracy 0.9987, F1 0.9992 and **ROC-AUC 1.0000**, describing the
 model as having "learned the patterns flawlessly," with a footnote that recency acts as a
 near-perfect deterministic feature. That footnote is the whole story: the label was "no
 purchase in 90 days" and recency is days since last purchase, so `recency >= 90` **is** the
@@ -687,12 +689,12 @@ At a 99.4% churn base rate the task is degenerate. Olist is a *marketplace* — 
 one-time buyers, non-contractual, where churn is latent and unobservable. A binary 90-day
 label is the wrong construct (Fader & Hardie); it requires BTYD models such as Pareto/NBD.
 
-This is precisely why Keel began with **contractual** subscriptions and deferred
+This is precisely why RetainIQ began with **contractual** subscriptions and deferred
 non-contractual to a later phase behind a model router.
 
-### 11.3 An honest accounting of what RetainIQ does better
+### 11.3 An honest accounting of what RetainIQ-PBL does better
 
-| RetainIQ has | Keel has |
+| RetainIQ-PBL has | RetainIQ has |
 |---|---|
 | A deployed frontend and live API | No user interface in production |
 | SHAP per-customer explanations | Exact closed-form attribution (no dependency) |
@@ -703,8 +705,8 @@ non-contractual to a later phase behind a model router.
 | Binary classifier (ignores censoring) | Survival model with competing risks |
 | 2 documentation files | 63 decision entries, 7,221 documentation lines |
 
-**Both directions are recorded.** RetainIQ's gate — "somebody can use it" — is met, and
-Keel's is not.
+**Both directions are recorded.** RetainIQ-PBL's gate — "somebody can use it" — is met, and
+RetainIQ's is not.
 
 ---
 

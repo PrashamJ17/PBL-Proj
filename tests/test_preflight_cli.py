@@ -15,10 +15,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from keel.cli import main
-from keel.core.schema import CUSTOMERS, SUBSCRIPTIONS
-from keel.ingest.csv_ingest import load, normalise_columns
-from keel.ingest.preflight import preflight, render_preflight
+from retainiq.cli import main
+from retainiq.core.schema import CUSTOMERS, SUBSCRIPTIONS
+from retainiq.ingest.csv_ingest import load, normalise_columns
+from retainiq.ingest.preflight import preflight, render_preflight
 
 
 def _stripe(n=400, seed=0, cents=True, churn=0.35, months=700):
@@ -157,7 +157,7 @@ def test_duplicate_subscription_ids_are_rejected_by_the_loader():
     """Caught by `Dataset.validate` during load, before preflight ever sees the frame.
     Pinned here so the guard is not quietly relaxed, and so preflight is not credited
     with a check it does not perform."""
-    from keel.core.schema import SchemaError
+    from retainiq.core.schema import SchemaError
 
     cust, subs = _stripe(cents=False)
     subs = pd.concat([subs, subs.iloc[:3]], ignore_index=True)

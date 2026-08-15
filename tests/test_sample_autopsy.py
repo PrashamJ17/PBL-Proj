@@ -11,7 +11,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from keel.experiments.sample_autopsy import (
+from retainiq.experiments.sample_autopsy import (
     N_MONTHS,
     SAMPLE_NOTES,
     SEED,
@@ -19,10 +19,10 @@ from keel.experiments.sample_autopsy import (
     _rescale_money,
     build,
 )
-from keel.ingest.subsim_adapter import to_canonical
-from keel.report.autopsy import analyse
-from keel.report.render import render
-from keel.sim import SimConfig, simulate
+from retainiq.ingest.subsim_adapter import to_canonical
+from retainiq.report.autopsy import analyse
+from retainiq.report.render import render
+from retainiq.sim import SimConfig, simulate
 
 
 @pytest.fixture(scope="module")
@@ -137,7 +137,7 @@ def test_the_caveats_describe_actual_limitations():
 
     # The billing-only caveat, asserted by construction: stripping usage and support
     # data must change nothing on the page.
-    from keel.core.schema import EVENTS, TICKETS, empty
+    from retainiq.core.schema import EVENTS, TICKETS, empty
 
     with_usage = analyse(data)
     stripped = to_canonical(sim, seed=3)
@@ -162,7 +162,7 @@ def test_the_sample_is_emailable(html):
 
 
 def _sim_data(n=400, seed=SEED):
-    from keel.experiments.sample_autopsy import _rescale_money
+    from retainiq.experiments.sample_autopsy import _rescale_money
 
     sim = simulate(SimConfig(n_customers=n, n_months=N_MONTHS, seed=seed))
     return _rescale_money(to_canonical(sim, seed=seed), TARGET_MEDIAN_MRR)
@@ -171,7 +171,7 @@ def _sim_data(n=400, seed=SEED):
 def test_worklists_contain_no_prediction():
     """Every column must be a fact from the client's own export. A column implying we
     know who will leave would claim exactly what D-054 and D-058 say we cannot deliver."""
-    from keel.report.worklist import departures, unrecovered_failures
+    from retainiq.report.worklist import departures, unrecovered_failures
 
     banned = ("risk", "probability", "score", "predict", "likely", "propensity", "churn_prob")
     for frame in (unrecovered_failures(_sim_data()), departures(_sim_data())):
@@ -183,7 +183,7 @@ def test_failures_list_is_named_for_what_it_holds():
     """The first draft called this "recoverable"; on the sample every row was a customer
     who had already left, so the total recoverable from active customers was zero and
     the name was a promise the data did not keep."""
-    from keel.report.worklist import unrecovered_failures
+    from retainiq.report.worklist import unrecovered_failures
 
     f = unrecovered_failures(_sim_data())
     assert "still_subscribed" in f.columns
@@ -194,7 +194,7 @@ def test_failures_list_is_named_for_what_it_holds():
 
 
 def test_suggested_action_differs_for_lost_and_retained_customers():
-    from keel.report.worklist import _action
+    from retainiq.report.worklist import _action
 
     assert "collect" in _action("expired_card", True).lower()
     assert "win back" in _action("expired_card", False).lower()
@@ -203,7 +203,7 @@ def test_suggested_action_differs_for_lost_and_retained_customers():
 
 def test_money_is_rounded_for_a_spreadsheet():
     """Raw floats like 25048.241928 read as amateurish in a client-facing sheet."""
-    from keel.report.worklist import departures, unrecovered_failures
+    from retainiq.report.worklist import departures, unrecovered_failures
 
     amt = unrecovered_failures(_sim_data())["amount"]
     assert (amt.round(2) == amt).all()
@@ -214,7 +214,7 @@ def test_money_is_rounded_for_a_spreadsheet():
 def test_departures_flag_failures_that_preceded_them():
     """The join most billing tools never make: cancellations and payment failures are
     counted in separate reports and never against each other."""
-    from keel.report.worklist import departures
+    from retainiq.report.worklist import departures
 
     d = departures(_sim_data())
     assert "preceded_by_failed_payment" in d.columns
@@ -224,8 +224,8 @@ def test_departures_flag_failures_that_preceded_them():
 def test_worklists_survive_an_export_with_no_invoices():
     """Customers and subscriptions are the only required files; a client who sends just
     those must still get a departures list rather than a crash."""
-    from keel.core.schema import INVOICES, empty
-    from keel.report.worklist import departures, unrecovered_failures
+    from retainiq.core.schema import INVOICES, empty
+    from retainiq.report.worklist import departures, unrecovered_failures
 
     data = _sim_data()
     data.invoices = empty(INVOICES)
@@ -236,7 +236,7 @@ def test_worklists_survive_an_export_with_no_invoices():
 
 
 def test_write_worklists_produces_readable_csv(tmp_path):
-    from keel.report.worklist import write_worklists
+    from retainiq.report.worklist import write_worklists
 
     paths = write_worklists(_sim_data(), outdir=tmp_path, prefix="x_")
     assert len(paths) == 2

@@ -46,7 +46,7 @@ Narrow, on purpose. From the plan's §8.3:
 
 - Subscription (contractual) business — **not** a marketplace or one-off e-commerce.
   Non-contractual churn is a different mathematical problem (Fader & Hardie) and is
-  Phase 7. RetainIQ's Olist result (D-060) is the cautionary example: a 90-day churn
+  Phase 7. RetainIQ-PBL's Olist result (D-060) is the cautionary example: a 90-day churn
   label on a marketplace produced a 99.4% base rate and a meaningless model.
 - Billed through Stripe, Paddle, Chargebee or Razorpay — so the export is two clicks.
 - **200–2,000 customers.** Below 200 there is not enough to say; above ~5,000 they
@@ -86,7 +86,7 @@ Never ask for anything with names or emails you do not need; customer ids are en
 ## 5. Running it
 
 ```bash
-python -m keel.cli preflight --customers customers.csv --subscriptions subscriptions.csv
+python -m retainiq.cli preflight --customers customers.csv --subscriptions subscriptions.csv
 ```
 
 **Never skip this and never send a report it blocked.** It exists because the way this
@@ -103,7 +103,7 @@ It will usually raise two things:
 Then:
 
 ```bash
-python -m keel.cli autopsy \
+python -m retainiq.cli autopsy \
   --customers customers.csv --subscriptions subscriptions.csv \
   --invoices invoices.csv --divide-amounts-by 100 --interval month \
   --name "Their Company" --out their_company_autopsy.html

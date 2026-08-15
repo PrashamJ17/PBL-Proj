@@ -33,7 +33,7 @@ jobs:
           pip install -e ".[dev,viz]"
 
       - name: Lint
-        run: ruff check keel tests
+        run: ruff check retainiq tests
 
       - name: Test
         run: pytest tests/ -q
@@ -62,8 +62,8 @@ jobs:
         run: |
           python - <<'PY'
           import sys
-          from keel.sim import simulate, SimConfig
-          from keel.sim.calibration import check, check_quadrants
+          from retainiq.sim import simulate, SimConfig
+          from retainiq.sim.calibration import check, check_quadrants
 
           r = simulate(SimConfig(n_customers=4000, n_months=24, seed=7))
           ok = check(r) & check_quadrants(r)
@@ -94,7 +94,7 @@ jobs:
         run: |
           python - <<'PY'
           import sys
-          from keel.experiments.leakage_penalty import run, report
+          from retainiq.experiments.leakage_penalty import run, report
 
           vintages, comparison = run()
           print(report(vintages, comparison))
@@ -141,8 +141,8 @@ jobs:
           python - <<'PY'
           import sys
           from dataclasses import replace
-          from keel.sim import simulate, SimConfig
-          from keel.experiments.kill_test import run
+          from retainiq.sim import simulate, SimConfig
+          from retainiq.experiments.kill_test import run
 
           base = SimConfig(n_customers=4000, n_months=24, seed=7)
           failures = []

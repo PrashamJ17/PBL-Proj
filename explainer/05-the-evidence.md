@@ -392,7 +392,7 @@ Everything is open and runs in under a minute on a laptop:
 ```bash
 pip install -e .
 python -m pytest tests/ -q            # 58 tests
-python -m keel.experiments.figures    # regenerates the figure above
+python -m retainiq.experiments.figures    # regenerates the figure above
 ```
 
 ---

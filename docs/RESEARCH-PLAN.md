@@ -44,7 +44,7 @@ independent of the potential outcomes, so group averages are comparable.
 chapters 1–3. Or Hernán & Robins, *What If*, chapters 1–3 (free online) — shorter and
 enough.
 
-*In this repo:* `keel/sim/counterfactual.py`. The simulator's entire reason for existing
+*In this repo:* `retainiq/sim/counterfactual.py`. The simulator's entire reason for existing
 is that it can give you **both** potential outcomes, which no real dataset can. Understand
 `potential_outcomes()` and what common random numbers buy you.
 
@@ -81,7 +81,7 @@ Understand: hazard `h(t) = P(churn at t | survived to t)`, the survival function
 you are going to multiply a probability by money.
 
 *Read:* Kleinbaum & Klein, *Survival Analysis: A Self-Learning Text*, chapters 1–3.
-*In this repo:* `keel/models/survival/discrete.py`, and D-046/050 on why extrapolation
+*In this repo:* `retainiq/models/survival/discrete.py`, and D-046/050 on why extrapolation
 past observed support raises rather than guesses.
 
 ### 5. Bayesian shrinkage and partial pooling — 3 days
@@ -98,7 +98,7 @@ validated against NUTS rather than trusted (D-053).
 eight-schools example is exactly this mechanism. McElreath's *Statistical Rethinking*
 chapter 13 is gentler and just as good.
 
-*In this repo:* `keel/models/uplift/bayesian.py`.
+*In this repo:* `retainiq/models/uplift/bayesian.py`.
 
 ### 6. Decision theory, and why a win rate is not a mean — 1 day
 
@@ -121,21 +121,21 @@ Do not start with the code.
 | 2 | `CLAUDE.md` — thesis and the 13 invariants | Each invariant is a mistake someone can make. Learn what breaks without it. |
 | 3 | `docs/DECISIONS.md`, selectively | The *why*. Start with **D-002, D-011, D-013, D-020, D-023, D-026, D-031, D-054, D-055, D-057, D-058, D-060**. |
 | 4 | `papers/paper1/main.tex` | Now the argument will read as familiar rather than new. |
-| 5 | `keel/sim/counterfactual.py` → `models/uplift/bayesian.py` → `policy/economics.py` | The three files that carry the intellectual content. |
+| 5 | `retainiq/sim/counterfactual.py` → `models/uplift/bayesian.py` → `policy/economics.py` | The three files that carry the intellectual content. |
 | 6 | `docs/BUILDLOG.md` | What was built and tested, in order. Skim. |
 
 ## Exercises that prove you understand it
 
 Reading is not evidence. Each of these produces something checkable.
 
-1. **Predict before you run.** Open `keel/sim/config.py`, pick one coefficient, write down
+1. **Predict before you run.** Open `retainiq/sim/config.py`, pick one coefficient, write down
    which direction the churn rate will move and roughly how much, then run
    `make calibrate`. Being wrong is the useful outcome — find out why.
 2. **Re-derive break-even by hand**, then verify against `make sensitivity`.
 3. **Do the log-odds conversion on paper** for `p₀ ∈ {0.5, 0.25, 0.05}` and reproduce the
    `1/(p₀(1−p₀))` inflation factor. This is D-057 from first principles.
 4. **Break something on purpose.** Delete the `available_at` filter in
-   `keel/core/features.py` and watch the leakage suite fail. Now you know what invariant 9
+   `retainiq/core/features.py` and watch the leakage suite fail. Now you know what invariant 9
    is *for*, rather than that it exists.
 5. **Re-run the kill test** (`make killtest`) and explain each number in the output to
    somebody who has not seen it.

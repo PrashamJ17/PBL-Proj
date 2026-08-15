@@ -227,7 +227,7 @@ retention discount is a much larger share of margin than a 20% SaaS discount, so
 offer-ladder argument — try the free rungs first — lands harder. Price the diagnostic
 accordingly: **₹5,000–8,000**, not ₹10,000.
 
-**3. Delivery experience is a churn driver, and it is in their data.** RetainIQ's Olist
+**3. Delivery experience is a churn driver, and it is in their data.** RetainIQ-PBL's Olist
 analysis (D-060) found delivery delay among the strongest features. For a subscription
 box, a late or missed shipment is frequently the proximate cause of a cancellation, and it
 is visible in order data rather than needing a survey.
@@ -237,7 +237,7 @@ is visible in order data rather than needing a survey.
 **Confirm there are real subscriptions, not "subscribe and save".** Many Indian D2C brands
 run repeat-purchase discounts with no binding subscription, which is *non-contractual*
 churn: nobody cancels, they just stop. That is a different mathematical problem (Fader &
-Hardie), it is Phase 7 here, and RetainIQ's Olist result is the cautionary tale — a 90-day
+Hardie), it is Phase 7 here, and RetainIQ-PBL's Olist result is the cautionary tale — a 90-day
 churn label on a marketplace produced a 99.4% base rate and a model with ROC-AUC 0.543.
 
 Ask before you agree to anything: *"do customers hold an active subscription with a

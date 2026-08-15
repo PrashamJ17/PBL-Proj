@@ -18,22 +18,22 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from keel.core.features import (
+from retainiq.core.features import (
     FEATURE_NAMES,
     STANDARD_FEATURES,
     FeatureSpec,
     FeatureStore,
     build_standard,
 )
-from keel.core.leakage import (
+from retainiq.core.leakage import (
     audit_availability,
     audit_time_travel,
     detect_suspicious_features,
     inject_canary,
     model_auc,
 )
-from keel.ingest.subsim_adapter import at_risk_at, month_timestamps, to_canonical
-from keel.sim import SimConfig, simulate
+from retainiq.ingest.subsim_adapter import at_risk_at, month_timestamps, to_canonical
+from retainiq.sim import SimConfig, simulate
 
 CFG = SimConfig(n_customers=600, n_months=18, seed=7)
 MONTHS = [4, 6, 8]
@@ -118,7 +118,7 @@ def test_time_travel_consistency(fixture):
     as_of = ts[1]
     ids = customers_at[as_of]
 
-    from keel.core.schema import Dataset
+    from retainiq.core.schema import Dataset
 
     def truncate(frame, col):
         return frame[frame[col] <= as_of] if not frame.empty else frame
@@ -260,7 +260,7 @@ def test_detector_handles_single_class_outcome(fixture):
 
 
 def _labels(sim, months, horizon: int = 3) -> np.ndarray:
-    from keel.experiments.leakage_penalty import _outcome
+    from retainiq.experiments.leakage_penalty import _outcome
 
     lab = _outcome(sim, months, horizon=horizon)
     return np.concatenate([lab[m] for m in months])

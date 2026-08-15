@@ -32,11 +32,11 @@ sklearn 1.7.2. lightgbm **not** installed — a Phase 3 concern, not a blocker.
 
 ### Step 0.2 — Configuration and latent customer model
 
-`keel/sim/config.py` — every generative parameter, named and documented with its sign
+`retainiq/sim/config.py` — every generative parameter, named and documented with its sign
 convention. Nothing is a magic number inside the simulation loop, because paper 1's
 contribution *is* the calibration of these values.
 
-`keel/sim/latents.py` — eight per-customer latent traits with Beta marginals.
+`retainiq/sim/latents.py` — eight per-customer latent traits with Beta marginals.
 `attention` and `engagement_base` are drawn correlated through a Gaussian copula
 (D-002); this is the mechanism that makes the whole project necessary.
 
@@ -49,11 +49,11 @@ is both correct and the defensible thing to cite in a paper.
 
 ### Step 0.3 — Lifecycle and hazard engine
 
-`keel/sim/hazard.py` — the monthly churn-hazard logit, isolated so that the stochastic
+`retainiq/sim/hazard.py` — the monthly churn-hazard logit, isolated so that the stochastic
 historical simulation and the semi-analytic counterfactual window share one definition.
 If those two ever diverged, every causal result in the project would be silently wrong.
 
-`keel/sim/subsim.py` — month-by-month simulation emitting a person-period panel of
+`retainiq/sim/subsim.py` — month-by-month simulation emitting a person-period panel of
 **observable features only** (sessions, engagement trend, features used, support
 tickets, payment failures, seat activity, price-to-median). Voluntary and involuntary
 churn are separate processes (D-001).
@@ -74,7 +74,7 @@ almost nobody survived — which also destroyed the right-censoring the project 
 
 ### Step 0.4 — Calibration harness
 
-`keel/sim/calibration.py` — explicit targets sourced from published 2026 SMB-SaaS
+`retainiq/sim/calibration.py` — explicit targets sourced from published 2026 SMB-SaaS
 benchmarks, a `check()` that verifies them, `sweep_seeds()` for stability, and
 `calibrate_intercept()` which *solves* for the hazard intercept by bisection rather
 than letting anyone hand-tune it (D-005).
@@ -145,7 +145,7 @@ declining hazard with tenure, engagement predicting churn, and at-risk-only pane
 
 ### Step 0.6 — Counterfactual intervention response
 
-`keel/sim/counterfactual.py` — the reason SubSim exists. Emits **exact** ground-truth
+`retainiq/sim/counterfactual.py` — the reason SubSim exists. Emits **exact** ground-truth
 treatment effects, in two deliberately separate regimes (D-009):
 
 - **Analytic τ**: the forward window evolves state along its *expected* trajectory, so
@@ -197,7 +197,7 @@ from bad targeting, not from a bad offer.
 
 ### Step 0.8 — THE KILL TEST ✅
 
-`keel/experiments/kill_test.py`. Plan §14.3 gate. Three choices make it honest:
+`retainiq/experiments/kill_test.py`. Plan §14.3 gate. Three choices make it honest:
 
 1. The churn model is real — `HistGradientBoostingClassifier` on **observable features
    only**, trained with a **strictly temporal split** (months < T, predict at T).
@@ -240,7 +240,7 @@ from bad targeting, not from a bad offer.
 
 ### Step 0.9 — Figure 1
 
-`keel/experiments/figures.py` → `papers/figures/fig01_kill_test.png`. Two panels,
+`retainiq/experiments/figures.py` → `papers/figures/fig01_kill_test.png`. Two panels,
 because an outcome without a mechanism reads as a simulation artifact:
 
 - **Left (outcome):** expected value vs budget, averaged over 6 seeds with ±1 sd
@@ -299,7 +299,7 @@ to train on information that did not exist at prediction time.
 
 ### Step 1.1 — Canonical schema
 
-`keel/core/schema.py` — six tables: `customers`, `subscriptions`, `invoices`, `events`,
+`retainiq/core/schema.py` — six tables: `customers`, `subscriptions`, `invoices`, `events`,
 `tickets`, `interventions`.
 
 Two decisions shaped everything downstream:
@@ -316,7 +316,7 @@ and who was held back, causal effects cannot be estimated at all.
 
 ### Step 1.2 — Point-in-time feature store
 
-`keel/core/features.py`. 15 standard features across billing, engagement, support, and
+`retainiq/core/features.py`. 15 standard features across billing, engagement, support, and
 contact fatigue.
 
 The guarantee is **structural, not procedural** (D-015): every feature reads source
@@ -328,14 +328,14 @@ we can ask which rows a feature may touch without running it.
 
 ### Step 1.3 — SubSim → canonical adapter
 
-`keel/ingest/subsim_adapter.py`. Expands aggregate counts into individual timestamped
+`retainiq/ingest/subsim_adapter.py`. Expands aggregate counts into individual timestamped
 rows and injects **realistic availability lag** (0.24–6h for events, 0.5–2 days for
 decline codes). Without that lag the point-in-time machinery would be untested —
 filtering on either timestamp would give identical answers.
 
 ### Step 1.4 — Leakage suite
 
-`keel/core/leakage.py`. Three independent checks: availability audit (structural),
+`retainiq/core/leakage.py`. Three independent checks: availability audit (structural),
 time-travel consistency (behavioural), and canary injection (adversarial).
 
 **The suite is required to have teeth** (D-017). It must *fail* on deliberately leaked
@@ -344,7 +344,7 @@ suite that has never caught a leak is evidence of nothing.
 
 ### Step 1.5 — Leakage penalty measured ⭐
 
-`keel/experiments/leakage_penalty.py`. Built the same features three ways:
+`retainiq/experiments/leakage_penalty.py`. Built the same features three ways:
 
 | vintage | apparent AUC | inflation | what it is |
 |---|---:|---:|---|
@@ -364,13 +364,13 @@ overstated the model, and the number a business would have staked a budget on.
 
 ### Step 1.6 — Stripe and CSV adapters
 
-`keel/ingest/stripe.py` — pure functions over fetched JSON, no API key needed, so the
+`retainiq/ingest/stripe.py` — pure functions over fetched JSON, no API key needed, so the
 logic most likely to be quietly wrong (money and time) is actually covered. Handles
 zero-decimal currencies (JPY 2000 is ¥2000, not ¥20), interval normalisation (an annual
 plan must not look 12× more valuable), and the `canceled_at` vs `ended_at` distinction
 — a customer who cancels on the 1st with service until the 31st has *not* churned yet.
 
-`keel/ingest/csv_ingest.py` — the Churn Autopsy delivery path. Forgiving about shape
+`retainiq/ingest/csv_ingest.py` — the Churn Autopsy delivery path. Forgiving about shape
 (alias table for column names), unforgiving about meaning. Assumes a **conservative
 lag** rather than none (D-019), because a CSV cannot tell us when facts became knowable
 and assuming zero would be a lie the feature store cannot detect.
@@ -413,7 +413,7 @@ refutation.
 
 ### Step B.1 — Harness
 
-`keel/benchmarks/` — dataset loaders with row-count verification (a truncated CSV parses
+`retainiq/benchmarks/` — dataset loaders with row-count verification (a truncated CSV parses
 fine and silently changes every result; the first download attempt did in fact truncate
 at 907KB of 3.96MB), five targeting models, and policy evaluation on RCT data.
 
@@ -700,7 +700,7 @@ churn, needs almost no causal machinery, and most small businesses do nothing ab
 
 ### Step 2.1 — The generative model
 
-`keel/sim/dunning.py`. Six decline codes with distinct behaviour under retry:
+`retainiq/sim/dunning.py`. Six decline codes with distinct behaviour under retry:
 `insufficient_funds` (40%, timing-driven, payday-sensitive), `expired_card` (18%,
 unfixable by retry), `do_not_honor`, `generic_decline`, `processing_error` (transient,
 immediate retry works), `lost_or_stolen_card` (unrecoverable).
@@ -713,7 +713,7 @@ policy reproduce SubSim's 0.42, so the two agree by construction.
 
 ### Step 2.2 — Policies
 
-`keel/policy/dunning.py`. Six, from `no_retry` to `aggressive`. The interesting one is
+`retainiq/policy/dunning.py`. Six, from `no_retry` to `aggressive`. The interesting one is
 `code_aware`: it conditions on the decline reason the processor **already gave you** —
 retry `processing_error` immediately, snap `insufficient_funds` to the next payday,
 don't burn attempts on `expired_card`, stop after one on `lost_or_stolen_card`. No
@@ -772,7 +772,7 @@ Recorded as "lower edge of the band", not "in the band" — it is 54.7%, not 62%
 
 ### Step 2.6 — Economics and honesty about the assumption
 
-`keel/experiments/dunning.py` values policies in money, not recovery rate: lifetime
+`retainiq/experiments/dunning.py` values policies in money, not recovery rate: lifetime
 value retained, minus lifetime value destroyed by contact (D-032), minus operational
 cost. Recovering a payment retains a *customer*, not an invoice — and every dunning
 email is also a reminder that they are paying you.
@@ -801,7 +801,7 @@ receive. This is Mode 1 of the three usage modes: a report, not software.
 
 ### Step R.1 — What billing data can and cannot support
 
-`keel/report/autopsy.py` computes from customers + subscriptions + invoices alone:
+`retainiq/report/autopsy.py` computes from customers + subscriptions + invoices alone:
 retention curve (Kaplan-Meier over pooled tenure rather than signup cohorts, since
 small businesses have too few customers per month for cohort curves to be readable),
 revenue vs logo churn, the voluntary/involuntary split, failed-payment economics, and
@@ -843,7 +843,7 @@ honesty properties rather than the arithmetic.
 
 ### Step R.4 — Rendering
 
-`keel/report/render.py` produces one self-contained HTML file: inline CSS, inline SVG
+`retainiq/report/render.py` produces one self-contained HTML file: inline CSS, inline SVG
 charts, no external requests, light and dark. It can be emailed, opened offline,
 printed, or placed behind an unguessable URL without any of that being a deployment.
 
@@ -872,7 +872,7 @@ them could put a number on a customer.
 
 ### Step 3.1 — The model
 
-`keel/models/survival/discrete.py`. Each customer is expanded into one row per period
+`retainiq/models/survival/discrete.py`. Each customer is expanded into one row per period
 at risk, the row is labelled 1 if they failed in that period, and a binary classifier
 is fitted. The fitted probability is the hazard; survival is the running product of its
 complements.
@@ -893,7 +893,7 @@ at the survival level (D-044). `S(t) + sum_k CIF_k(t) = 1` holds exactly, and is
 
 ### Step 3.2 — Metrics, written rather than imported
 
-`keel/models/survival/metrics.py` implements Kaplan-Meier, the censoring distribution,
+`retainiq/models/survival/metrics.py` implements Kaplan-Meier, the censoring distribution,
 Harrell's C, the IPCW Brier score, integrated Brier, D-calibration and a binned
 calibration curve — on numpy and scipy only.
 
@@ -928,7 +928,7 @@ to every model through one code path, never to ours alone (D-045).
 
 ### Step 3.4 — Public data, and the leak everyone ships
 
-`keel/benchmarks/survival_data.py`. Telco (IBM, 7,043 customers — real, public,
+`retainiq/benchmarks/survival_data.py`. Telco (IBM, 7,043 customers — real, public,
 contractual subscription), GBSG2 (686 patients, the benchmark RSF and DeepSurv were
 developed on), and SubSim.
 
@@ -983,7 +983,7 @@ wash with no trend in n, so the *pooling* hypothesis is **not established** (D-0
 
 ### Step 3.6 — CLV
 
-`keel/models/clv/value.py`. `CLV = sum_t margin * S(t) / (1+d)^t`, with three choices
+`retainiq/models/clv/value.py`. `CLV = sum_t margin * S(t) / (1+d)^t`, with three choices
 that are not incidental: contribution margin rather than revenue, monthly-compounded
 discounting, and a **finite horizon capped at the observed support**. `clv()` raises
 rather than extrapolating (D-046) — the `ARPU / churn_rate` formula everyone uses is an
@@ -1099,7 +1099,7 @@ is wrong before reaching for the source.
 
 ### Step 4.1 — The estimator
 
-`keel/models/uplift/bayesian.py`. Bayesian logistic with a treatment interaction, so
+`retainiq/models/uplift/bayesian.py`. Bayesian logistic with a treatment interaction, so
 `tau(x) = tau_0 + x'gamma`. The split matters because identifiability differs wildly:
 the sign of `tau_0` is usually settled by a few hundred subjects, `gamma` almost never
 is.
@@ -1185,7 +1185,7 @@ worth anything if the thing that produced it demonstrably works.
 
 D-054 named an untested explanation for the Phase 4 failure: the calibrated effect may
 simply be too small to pay for the offer. Tested as a **sensitivity** —
-`keel/experiments/sensitivity.py`, `make sensitivity`. `run_once`/`sweep` gained optional
+`retainiq/experiments/sensitivity.py`, `make sensitivity`. `run_once`/`sweep` gained optional
 `config` and `offer` arguments; both default to the calibrated simulator and the reference
 discount, and a test asserts the no-argument path is numerically identical, so every D-054
 number is reproduced unchanged.
@@ -1263,7 +1263,7 @@ and a units error is consistent with itself. The rule's own test compared it aga
 same wrong formula. The estimator's tests used synthetic `tau` on the logit scale. **Nothing
 asked what the number meant in currency.**
 
-Fixed in `keel/policy/economics.py`: convert on the probability scale first, using the
+Fixed in `retainiq/policy/economics.py`: convert on the probability scale first, using the
 baseline `eta0 = a + x'b` from the same fit, sampling `(eta0, tau)` jointly because they are
 correlated and `expit` destroys the closed form. The new rule takes a `MoneyPosterior` and
 nothing else, so the mistake is now unrepresentable.
@@ -1279,7 +1279,7 @@ against ourselves. **The bug was real, the repair necessary, and not sufficient.
 
 ### Phase 5 proper — the offer-ladder optimiser
 
-`keel/policy/ladder.py` fits one effect model per rung from a randomised multi-arm pilot
+`retainiq/policy/ladder.py` fits one effect model per rung from a randomised multi-arm pilot
 (never the simulator's `saveability_multiplier`, which is oracle knowledge), pools across
 rungs using the D-041 cross-tenant machinery, and picks `argmax_k E[B_ik] - lambda*SD[B_ik]`,
 abstaining when nothing clears zero.
@@ -1301,9 +1301,9 @@ is unmet on those grounds too, independently of the numbers.
 
 ---
 
-## Step 5.2 — Reason codes (D-059), ported from RetainIQ and rebuilt
+## Step 5.2 — Reason codes (D-059), ported from RetainIQ-PBL and rebuilt
 
-Closes the "without asking us" half of Phase 5's gate. `keel/report/reasons.py`.
+Closes the "without asking us" half of Phase 5's gate. `retainiq/report/reasons.py`.
 
 **Explains the decision, not the prediction.** The donor implementation is SHAP over an
 XGBoost churn classifier: "87% risk because days-since-purchase = 400". An owner can
@@ -1331,17 +1331,17 @@ better", which are a verdict about the customer and a verdict about the budget;
 `Recommendation.budget_trimmed` now separates them.
 
 **16 new tests, 373 total.** D-060 records the full comparison, including that running
-RetainIQ's own pipeline reproduces our P1 leakage finding independently (ROC-AUC 0.543
+RetainIQ-PBL's own pipeline reproduces our P1 leakage finding independently (ROC-AUC 0.543
 against a published 1.000).
 
 ---
 
 ## Step 5.3 — The retention dashboard (D-061)
 
-`keel/report/dashboard.py`, `make dashboard`. Self-contained HTML: inline CSS, inline SVG,
+`retainiq/report/dashboard.py`, `make dashboard`. Self-contained HTML: inline CSS, inline SVG,
 no server, no new dependency. Reuses the Autopsy's stylesheet, theme toggle and the D-038
 sentinel-colour machinery, so the charts follow light/dark rather than baking a colour at
-render time. `keel/experiments/dashboard_demo.py` runs the whole Phase 5 path end to end --
+render time. `retainiq/experiments/dashboard_demo.py` runs the whole Phase 5 path end to end --
 simulate a tenant, randomised multi-arm pilot, per-rung fits, rung choice, reason codes,
 page -- so the numbers on it are the numbers the gate measured, not a mock-up.
 
@@ -1377,14 +1377,14 @@ failures in a row -- `Created (UTC)` matching nothing, bare `id` binding to the 
 column, `Email` beating the real id column, and required columns a real export simply does
 not contain. All fixed; the alias resolution is now table-aware.
 
-`keel/ingest/preflight.py` is the new piece and the important one. It answers one question
+`retainiq/ingest/preflight.py` is the new piece and the important one. It answers one question
 before anything is computed: *is this file safe, and what have we had to assume?* The check
 that motivates it is currency units -- Stripe exports cents, so a `Plan Amount` of 2900 is
 $29.00, and loading it as MRR makes every figure in the report 100x too large. It blocks
 rather than converting, because silently dividing by 100 would be the same class of error
 as the one it catches (D-057).
 
-`keel/cli.py` (`make preflight`, `make autopsy`) is argparse-only, no new dependency. The
+`retainiq/cli.py` (`make preflight`, `make autopsy`) is argparse-only, no new dependency. The
 report command re-runs the checks and refuses to render on a blocker.
 
 `docs/SALES-RUNBOOK.md` covers the non-code half, including a table of claims that are

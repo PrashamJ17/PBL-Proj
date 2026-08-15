@@ -15,14 +15,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from keel.experiments.abstention import run_once, summarise
-from keel.experiments.sensitivity import (
+from retainiq.experiments.abstention import run_once, summarise
+from retainiq.experiments.sensitivity import (
     TAU_BAND,
     economics,
     regret_matrix,
 )
-from keel.sim import SimConfig
-from keel.sim.counterfactual import LADDER, REFERENCE_OFFER
+from retainiq.sim import SimConfig
+from retainiq.sim.counterfactual import LADDER, REFERENCE_OFFER
 
 # --- the sensitivity must not perturb the baseline --------------------------
 
@@ -131,7 +131,7 @@ def test_regret_is_normalised_and_the_best_policy_scores_zero():
 def test_tied_alphas_are_reported_as_undetermined():
     """At a sample size where no alpha can act, every arm scores exactly zero. Taking
     `max` would name the first one and invent a preference the data does not contain."""
-    from keel.experiments.sensitivity import alpha_by_offer
+    from retainiq.experiments.sensitivity import alpha_by_offer
 
     d = alpha_by_offer(alphas=(0.05, 0.49), sizes=(200,), seeds=1)
     tied = d[~d["determinate"]]

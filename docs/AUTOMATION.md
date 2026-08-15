@@ -1,4 +1,4 @@
-# Driving AI outreach from Keel
+# Driving AI outreach from RetainIQ
 
 **Can this system work with AI agents, workflow tools, personalised email and synthetic
 voice calls? Technically yes, and the engineering is the easy part. The reasons to be
@@ -43,7 +43,7 @@ result.
 
 ## 2. The architecture, and the line that must not move
 
-**Keel is the decision layer. The AI is the execution layer. The AI never decides *who*,
+**RetainIQ is the decision layer. The AI is the execution layer. The AI never decides *who*,
 *whether*, or *how much*.**
 
 ```
@@ -69,11 +69,11 @@ result.
 ```
 
 **What the LLM is allowed to do:** choose wording, tone and length, inside a template, for
-a rung and a discount depth **that Keel has already fixed**. It receives the reason codes
+a rung and a discount depth **that RetainIQ has already fixed**. It receives the reason codes
 (D-059) as facts to phrase, not as inputs to a decision.
 
 **What the LLM must never do:** pick recipients, pick the rung, set or vary a discount, or
-decide to contact someone Keel abstained on. Letting a generative model choose recipients
+decide to contact someone RetainIQ abstained on. Letting a generative model choose recipients
 discards every result this project established. Letting it choose discount depth re-opens
 the personalised-pricing exposure ruled out by D-039 and plan §13.2 — an LLM inferring
 willingness-to-pay and pricing against it is exactly the surveillance-pricing pattern that
@@ -123,7 +123,7 @@ suppression lists to your surface area for no differentiation.
 ### Everything else
 
 - **GDPR Art. 22 / India DPDP.** Automated decisions with significant effects need a
-  human-review path and an explanation. Keel's reason codes (D-059) exist and satisfy the
+  human-review path and an explanation. RetainIQ's reason codes (D-059) exist and satisfy the
   explanation side; the review path must be built.
 - **You are a processor, not a controller.** The client is the data fiduciary. DPA before
   data moves.
@@ -145,9 +145,9 @@ The engineering is easy; these are what actually break.
 | Failure | Consequence | Control |
 |---|---|---|
 | LLM invents a promise ("we'll refund you") | Contractual exposure | Constrained templates; regex/LLM-judge validation before send; log the exact text sent |
-| LLM varies discount depth | Personalised pricing exposure | Depth is fixed by Keel and never in the prompt; validate the rendered text contains only the approved figure |
+| LLM varies discount depth | Personalised pricing exposure | Depth is fixed by RetainIQ and never in the prompt; validate the rendered text contains only the approved figure |
 | Duplicate sends on retry | Same customer contacted repeatedly | Idempotency key per (customer, campaign); at-least-once delivery means exactly-once handling is yours |
-| Contacting someone Keel abstained on | The Phase 0 harm, at scale | Abstentions are an explicit deny-list, not an absence from the send list |
+| Contacting someone RetainIQ abstained on | The Phase 0 harm, at scale | Abstentions are an explicit deny-list, not an absence from the send list |
 | Holdout contaminated | You can never measure whether any of it worked | Holdout membership assigned by deterministic hash upstream of the gate; immutable ledger |
 | Stale decisions | Acting on a customer who already cancelled | TTL on recommendations; re-check subscription status at send time |
 | Frequency stacking | Three "personalised" touches in a week | Global per-customer frequency cap across all campaigns, not per campaign |
@@ -191,7 +191,7 @@ channel it is also how it becomes a regulatory incident.
 
 **Yes, with three qualifications, none of which is negotiable.**
 
-1. **AI as the execution layer, never the decision layer.** Keel picks who, what and
+1. **AI as the execution layer, never the decision layer.** RetainIQ picks who, what and
    whether; the model writes words inside a fixed template.
 2. **Channel choice is an economic decision, not a technical one.** AI email is the best
    channel in the table. Synthetic voice needs salience below 0.80 to pay when used

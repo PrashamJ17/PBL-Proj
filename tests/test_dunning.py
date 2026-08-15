@@ -15,8 +15,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from keel.experiments.dunning import Economics, evaluate, run
-from keel.policy.dunning import (
+from retainiq.experiments.dunning import Economics, evaluate, run
+from retainiq.policy.dunning import (
     AGGRESSIVE,
     ALL_POLICIES,
     CODE_AWARE,
@@ -26,7 +26,7 @@ from keel.policy.dunning import (
     apply_policy,
     next_payday,
 )
-from keel.sim.dunning import (
+from retainiq.sim.dunning import (
     DECLINE_CODES,
     PASSIVE_RECOVERY_BAND,
     DunningConfig,
@@ -199,7 +199,7 @@ def test_passive_policy_matches_subsim():
 
     SubSim's `passive_recovery_rate` is what the Phase 0 calibration gates were tuned
     against; this module is calibrated to reproduce it."""
-    from keel.sim.config import SimConfig
+    from retainiq.sim.config import SimConfig
 
     target = SimConfig().payments.passive_recovery_rate
     assert measure_recovery(PROCESSOR_DEFAULT, CFG, n=20_000) == pytest.approx(target, abs=0.04)
@@ -309,7 +309,7 @@ def test_policy_application_is_deterministic(failures):
 
 
 def test_empty_schedule_is_handled(failures):
-    from keel.policy.dunning import RetryPolicy
+    from retainiq.policy.dunning import RetryPolicy
 
     never = RetryPolicy("never", schedule=())
     out = apply_policy(failures, never, CFG, np.random.default_rng(1))
