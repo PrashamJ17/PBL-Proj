@@ -1,0 +1,6 @@
+# Build intermediates and QA artifacts
+src/node_modules/
+src/package-lock.json
+src/package.json
+src/report-for-word.html
+slide-*.jpg
