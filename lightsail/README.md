@@ -12,7 +12,8 @@ Presentation, speech and technical report.
 |---|---|
 | `Amazon_Lightsail_Presentation.pptx` | The deck — 20 slides, formal, with figures, tables and a native chart. Speaker notes are embedded on every slide. |
 | `Amazon_Lightsail_Presentation.pdf` | The same deck as PDF, for handout or as a projector fallback. |
-| `SPEECH.md` | The full spoken script — 1,528 words, **11 min 22 s** at 134 wpm, with a per-slide timing map, delivery cues and anticipated questions. |
+| `SPEECH.pdf` | The spoken script, print-ready — large type, timing marks, one card per slide that never splits across a page. **Print this one for the lectern.** |
+| `SPEECH.md` | Source of the spoken script — 1,528 words, **11 min 22 s** at 134 wpm, with a per-slide timing map, delivery cues and anticipated questions. |
 | `REPORT.pdf` | The technical report, 23 pages, print-ready A4. |
 | `REPORT.docx` | The same report in Word format, images embedded, for editing or submission. |
 | `REPORT.md` | The report source. |
@@ -47,6 +48,7 @@ node make-assets.js          # regenerate figures and icons into ../assets
 node deck.js                 # build the .pptx
 node make-speech.js          # build ../SPEECH.md from script.js
 python3 make-report-pdf.py   # build ../REPORT.pdf and the Word-conversion HTML
+python3 make-speech-pdf.py   # build ../SPEECH.pdf
 ```
 
 To regenerate `REPORT.docx` after editing `REPORT.md`:
