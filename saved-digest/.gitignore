@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets and local state. The token file holds a long-lived Google refresh
+# token; the database holds your saved content.
+.env
+*.db
+*.db-wal
+*.db-shm
+google_client_secret.json
+google_token.json
+google_token.json.tmp
+
+# Local render output
+digest-sample.html
+digest-sample.txt
