@@ -11,7 +11,9 @@ Registration Number: 2427030155 · B.Tech Computer Science and Engineering, V Se
 Corresponding author: Rishi Gupta (rishi.gupta@jaipur.manipal.edu)
 Student author: prasham.2427030155@muj.manipal.edu
 
-Code, data pipelines and every number in this paper: `https://github.com/PrashamJ17/PBL-Proj`
+Code, data pipelines and every number in this paper: https://github.com/PrashamJ17/PBL-Proj
+
+Archived research software release: https://doi.org/10.5281/zenodo.22009471
 
 ---
 
@@ -493,7 +495,13 @@ We report two of our own errors, one of which survived 337 passing tests because
 
 ## DATA AVAILABILITY
 
-Hillstrom is available from the MineThatData blog [19]. Criteo-UPLIFT v2.1 is available from Criteo AI Lab [20]. Lenta is distributed with the `scikit-uplift` package [21]. Telco Customer Churn is available from IBM Sample Data / Kaggle [22]. GBSG2 is distributed with `scikit-survival` [23]. SubSim, all experiment code, and the commands in Table 12 are in the project repository. **No proprietary or client data were used in this work.**
+The study uses five publicly available datasets. The Hillstrom MineThatData e-mail challenge dataset (64,000 customers, three randomised arms) is distributed through the MineThatData blog [19]. The Criteo-UPLIFT v2.1 dataset (13,979,592 rows) is distributed through Criteo AI Lab [20]. The Lenta dataset (687,029 rows) is distributed with the `scikit-uplift` package [21]. The Telco Customer Churn dataset (7,043 rows) is distributed through IBM Sample Data and Kaggle [22]. The GBSG2 clinical trial dataset (686 subjects) is distributed with `scikit-survival` [23]. These datasets contain, respectively, randomised promotional-email assignments and visit outcomes; randomised advertising exposure with conversion labels; randomised retail-promotion assignments; contractual subscription attributes with churn labels; and right-censored survival times with clinical covariates.
+
+The SubSim simulator, which generates the individual-level ground-truth potential outcomes used throughout, is released as part of this work rather than obtained externally, and its calibration targets are enforced in continuous integration. **No proprietary, client, or personally identifying data were used in this study.** The source code and complete implementation used in this study are publicly available through GitHub and have been archived on Zenodo for reproducibility. The archived research software release is available at DOI: https://doi.org/10.5281/zenodo.22009471.
+
+## CODE AVAILABILITY
+
+The source code and implementation of RetainIQ are publicly available through the project's GitHub repository and have been archived on Zenodo to support reproducibility and long-term accessibility. The repository contains the SubSim agent-based simulator with exact counterfactuals, the point-in-time-correct feature store and leakage audit suite, the discrete-time competing-risks survival model and its baselines [12], [13], [14], the hierarchical Bayesian CATE estimator [26] and its abstention rule, the offer-ladder optimiser, the holdout assignment and incrementality-measurement module, the client-facing diagnostic report generator, and the command-line interface. It also contains the full automated test suite of 463 tests and the four continuous-integration gates described in Section VII-B, together with the complete build and decision logs recording every design choice and every error found during development. Every command reproducing the results in this paper is listed in Table 12. The archived research software release is available through Zenodo at DOI: https://doi.org/10.5281/zenodo.22009471. The source repository is available at https://github.com/PrashamJ17/PBL-Proj.
 
 ## DECLARATIONS
 
