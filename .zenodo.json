@@ -1,0 +1,43 @@
+{
+  "upload_type": "software",
+  "title": "RetainIQ: causal retention decisioning for small subscription businesses",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "access_right": "open",
+  "language": "eng",
+  "creators": [
+    {
+      "name": "Jain, Prasham",
+      "affiliation": "Manipal University Jaipur"
+    },
+    {
+      "name": "Gupta, Rishi",
+      "affiliation": "Manipal University Jaipur"
+    }
+  ],
+  "description": "<p>Research software accompanying the paper <em>When Does Uplift Modelling Pay? A Correlation Criterion and a Measurement Floor for Small-Scale Subscription Retention</em>.</p><p>Churn prediction is a commodity; retention decisioning under small-sample causal uncertainty is not. This release contains every component used to produce the results in the paper:</p><ul><li><strong>SubSim</strong> &mdash; a discrete-time subscription simulator calibrated against published SMB-SaaS benchmarks, emitting exact individual-level potential outcomes under common random numbers, including customers whose churn hazard rises when treated.</li><li><strong>Benchmark harnesses</strong> for four real randomised controlled trials (Hillstrom, Criteo-UPLIFT v2.1, Lenta) and two survival datasets (Telco, GBSG2). The datasets themselves are not redistributed; the loaders fetch them from their canonical sources.</li><li><strong>A point-in-time-correct feature store</strong> in which every fact carries both an occurrence and an availability timestamp, with a leakage audit suite enforced in continuous integration.</li><li><strong>A discrete-time competing-risks survival model</strong> with Cox, Random Survival Forest and DeepSurv baselines, and numpy-only implementations of Kaplan-Meier, IPCW Brier score and D-calibration.</li><li><strong>A hierarchical Bayesian CATE estimator</strong> using a Laplace posterior validated against NUTS, with a money-denominated abstention rule.</li><li><strong>An offer-ladder optimiser</strong> choosing a per-customer intervention rung, with exact linear-model reason codes.</li><li><strong>A holdout assignment and incrementality module</strong>, validated against simulator ground truth, reporting the minimum detectable effect by business size.</li><li><strong>A command-line interface</strong> that runs a preflight safety check on a client CSV export before producing any report.</li></ul><p>463 automated tests and four continuous-integration gates (tests, calibration, leakage, and the founding kill test). The build and decision logs record every design choice and every error found during development, including two units errors reported in the paper as findings.</p><p>Every command reproducing a result in the paper is listed in Table 12 of the paper and in the project Makefile.</p>",
+  "keywords": [
+    "uplift modelling",
+    "heterogeneous treatment effects",
+    "causal inference",
+    "customer retention",
+    "survival analysis",
+    "abstention",
+    "statistical power",
+    "subscription business"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.5281/zenodo.22015220",
+      "relation": "isSupplementTo",
+      "resource_type": "publication-preprint",
+      "scheme": "doi"
+    },
+    {
+      "identifier": "10.5281/zenodo.22025124",
+      "relation": "isSupplementedBy",
+      "resource_type": "dataset",
+      "scheme": "doi"
+    }
+  ]
+}

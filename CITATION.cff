@@ -1,24 +1,47 @@
 cff-version: 1.2.0
 title: "RetainIQ: causal retention decisioning for small subscription businesses"
-message: "If you use this software or the SubSim benchmark, please cite it."
+message: "If you use this software or the SubSim benchmark, please cite the paper below."
 type: software
+version: 1.0.0
+license: Apache-2.0
+repository-code: "https://github.com/PrashamJ17/PBL-Proj"
 authors:
   - given-names: Prasham
-    family-names: J
-repository-code: "https://github.com/PrashamJ17/PBL-Proj"
+    family-names: Jain
+    affiliation: "Manipal University Jaipur"
+  - given-names: Rishi
+    family-names: Gupta
+    affiliation: "Manipal University Jaipur"
 abstract: >-
-  Churn prediction is a solved commodity; retention decisioning under
-  small-sample causal uncertainty is not. This repository contains SubSim, a
-  subscription-churn simulator calibrated to published SMB-SaaS benchmarks that
-  emits exact ground-truth counterfactuals, and an experiment demonstrating that
-  targeting retention offers by churn score destroys value -- performing worse
-  than random targeting -- because the customers a churn model ranks highest are
-  disproportionately those an intervention harms.
+  Churn prediction is a commodity; retention decisioning under small-sample
+  causal uncertainty is not. This repository contains SubSim, a subscription
+  churn simulator calibrated to published SMB-SaaS benchmarks that emits exact
+  individual-level ground-truth counterfactuals; benchmark harnesses for four
+  real randomised controlled trials; a discrete-time competing-risks survival
+  model; a hierarchical Bayesian CATE estimator with a money-denominated
+  abstention rule; an offer-ladder optimiser; and a validated holdout
+  incrementality estimator. The central result is that whether effect-based
+  targeting pays is governed by corr(tau, propensity), the correlation between
+  estimated treatment effect and estimated outcome propensity.
 keywords:
-  - churn prediction
   - uplift modelling
+  - heterogeneous treatment effects
   - causal inference
   - customer retention
-  - treatment effect heterogeneity
+  - survival analysis
+  - abstention
   - subscription business
-license: Apache-2.0
+preferred-citation:
+  type: article
+  title: >-
+    When Does Uplift Modelling Pay? A Correlation Criterion and a Measurement
+    Floor for Small-Scale Subscription Retention
+  authors:
+    - given-names: Prasham
+      family-names: Jain
+      affiliation: "Manipal University Jaipur"
+    - given-names: Rishi
+      family-names: Gupta
+      affiliation: "Manipal University Jaipur"
+  year: 2026
+  doi: 10.5281/zenodo.22015220
