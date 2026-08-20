@@ -81,3 +81,6 @@ zenodo:  ## Build the Zenodo data release (SubSim ground truth + third-party man
 
 paper:  ## Render the research paper to a two-column PDF (D-066)
 	@python papers/build_paper.py
+
+paper-docx:  ## Render the research paper to a submission-ready Word document
+	@python papers/build_paper.py --docx

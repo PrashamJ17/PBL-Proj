@@ -307,7 +307,93 @@ def build(out: Path = OUTPUT, keep_html: bool = False) -> Path:
     return out
 
 
+def _reference_docx(dest: Path) -> Path:
+    """Build a Word reference document: Times New Roman body, Arial headings, ruled tables.
+
+    Pandoc's default reference is Aptos at 12pt with borderless tables, which reads as an
+    office memo rather than a manuscript. Rather than commit a binary nobody can diff, the
+    default is fetched from pandoc and patched here, so every change is visible in code.
+
+    Single column deliberately. The PDF is the typeset artifact; a DOCX exists to be
+    edited and submitted, and journals typeset from the manuscript themselves -- handing
+    them a two-column Word file makes their job harder, not easier.
+    """
+    import zipfile
+
+    base = dest.parent / "_pandoc_default.docx"
+    base.write_bytes(subprocess.run(
+        ["pandoc", "--print-default-data-file", "reference.docx"],
+        capture_output=True, check=True,
+    ).stdout)
+
+    work = dest.parent / "_ref"
+    with zipfile.ZipFile(base) as z:
+        z.extractall(work)
+
+    theme = work / "word/theme/theme1.xml"
+    t = theme.read_text(encoding="utf-8")
+    t = re.sub(r'(<a:majorFont>\s*<a:latin typeface=")[^"]*', r"\1Arial", t, count=1)
+    t = re.sub(r'(<a:minorFont>\s*<a:latin typeface=")[^"]*', r"\1Times New Roman", t,
+               count=1)
+    theme.write_text(t, encoding="utf-8")
+
+    styles = work / "word/styles.xml"
+    s = styles.read_text(encoding="utf-8")
+    # 11pt body (w:sz is in half-points).
+    s = s.replace('<w:sz w:val="24" />\n        <w:szCs w:val="24" />',
+                  '<w:sz w:val="22" />\n        <w:szCs w:val="22" />')
+    # Ruled tables: rules above and below the block, hairlines between rows.
+    s = s.replace(
+        '<w:tblPr>\n      <w:tblInd w:w="0" w:type="dxa" />',
+        '<w:tblPr>\n      <w:tblBorders>'
+        '<w:top w:val="single" w:sz="8" w:color="000000"/>'
+        '<w:bottom w:val="single" w:sz="8" w:color="000000"/>'
+        '<w:insideH w:val="single" w:sz="2" w:color="BFBFBF"/>'
+        '</w:tblBorders>\n      <w:tblInd w:w="0" w:type="dxa" />', 1)
+    styles.write_text(s, encoding="utf-8")
+
+    # A4 with 1-inch margins, which is what most journals ask for.
+    doc = work / "word/document.xml"
+    d = doc.read_text(encoding="utf-8")
+    d = re.sub(r'<w:pgSz[^/]*/>', '<w:pgSz w:w="11906" w:h="16838"/>', d, count=1)
+    d = re.sub(r'<w:pgMar[^/]*/>',
+               '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" '
+               'w:header="720" w:footer="720" w:gutter="0"/>', d, count=1)
+    doc.write_text(d, encoding="utf-8")
+
+    with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
+        for f in sorted(work.rglob("*")):
+            if f.is_file():
+                z.write(f, f.relative_to(work).as_posix())
+
+    base.unlink()
+    shutil.rmtree(work)
+    return dest
+
+
+def build_docx(out: Path | None = None) -> Path:
+    """Render the paper to a Word document."""
+    out = out or (HERE / "RetainIQ_Research_Paper.docx")
+    tmpdir = Path(tempfile.mkdtemp(prefix="retainiq-docx-"))
+    ref = _reference_docx(tmpdir / "reference.docx")
+
+    subprocess.run(
+        # implicit_figures off for the same reason as the PDF: the source writes its own
+        # numbered captions, and pandoc would add a second one from the alt text.
+        ["pandoc", str(SOURCE),
+         "--from", "markdown-implicit_figures+pipe_tables+tex_math_dollars",
+         "--to", "docx", "--reference-doc", str(ref),
+         "--resource-path", str(HERE), "-o", str(out)],
+        check=True, capture_output=True,
+    )
+    shutil.rmtree(tmpdir, ignore_errors=True)
+    return out
+
+
 if __name__ == "__main__":
-    pdf = build(keep_html="--keep-html" in sys.argv)
-    size = pdf.stat().st_size / 1024
-    print(f"wrote {pdf}  ({size:,.0f} KB)")
+    if "--docx" in sys.argv:
+        doc = build_docx()
+        print(f"wrote {doc}  ({doc.stat().st_size / 1024:,.0f} KB)")
+    else:
+        pdf = build(keep_html="--keep-html" in sys.argv)
+        print(f"wrote {pdf}  ({pdf.stat().st_size / 1024:,.0f} KB)")
