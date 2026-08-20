@@ -153,7 +153,7 @@ def build(outdir: Path | str = "zenodo_release") -> Path:
     # Per-rung counterfactuals at one size, for offer-ladder work.
     sim = simulate(SimConfig(n_customers=2_000, n_months=N_MONTHS, seed=RELEASE_SEED))
     ladder = []
-    for k, offer in enumerate(LADDER):
+    for offer in LADDER:
         po = potential_outcomes(sim, decision_month=6, horizon=6, offer=offer)
         po = po[["customer_id", "tau_true", "y0", "y1", "clv", "offer_cost",
                  "value_of_treating"]].copy()
