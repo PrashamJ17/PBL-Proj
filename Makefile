@@ -75,3 +75,6 @@ ai-channels:  ## Does a nearly-free AI actuator change the answer? (D-064)
 
 holdout:  ## Phase 6 — does the holdout estimator recover a known effect? (D-065)
 	@python -m retainiq.experiments.holdout_validation
+
+zenodo:  ## Build the Zenodo data release (SubSim ground truth + third-party manifest)
+	@python -m retainiq.experiments.zenodo_release

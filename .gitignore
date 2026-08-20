@@ -37,3 +37,7 @@ sample_*.csv
 churn_autopsy.html
 *_departures.csv
 *_unrecovered_failed_payments.csv
+
+# Zenodo data release (regenerable via `python -m retainiq.experiments.zenodo_release`)
+zenodo_release/
+RetainIQ_SubSim_datasets.zip
