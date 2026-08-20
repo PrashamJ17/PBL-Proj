@@ -2028,3 +2028,52 @@ arms under 30 flagged as too small rather than reported; duplicate ids refused b
 membership would be ambiguous; salt change reshuffles everyone; membership stable under
 base growth and row reordering; a campaign that harms is reported as harming; and a
 horizon in which nobody churned yields zero lift rather than a division by zero.
+
+---
+
+## D-066 — The paper cited itself as its own software archive
+
+The published paper's Data Availability and Code Availability sections both read "the
+archived research software release is available at DOI: 10.5281/zenodo.22009471". That DOI
+is **the paper**. A reader clicking the link to find the code would find the PDF they were
+already reading. Alongside it, "publicly available through GitHub" was false — the
+repository was private.
+
+Neither claim was invented: at the time of writing there was exactly one Zenodo record and
+it was assumed to be the software one. The error is that an availability statement was
+written from memory rather than by resolving the DOI. Resolving it takes one request, and
+that is now the rule: **every identifier in a paper is checked by fetching it, not by
+recalling what it was meant to be.** The same check caught that Zenodo record 22015220 is
+not a separate record but *v2 of the same paper*, and that concept DOIs existed for all
+three records — which are the DOIs that belong in a citation, since a version DOI goes
+stale the moment a new version is published.
+
+**What made it hard to see.** A self-referential citation is locally coherent. The sentence
+parses, the DOI resolves, the record exists and has the right authors on it. Nothing is
+malformed; the link simply points at the wrong thing. This is structurally the same failure
+as D-057, where a units error passed 337 tests because a units error is self-consistent.
+Both are cases where the artifact is internally consistent and wrong about the world, and
+neither is detectable without stepping outside it.
+
+**Resolved.** Three records now exist and cross-reference each other: the paper
+(concept 10.5281/zenodo.22009470), the software (concept 10.5281/zenodo.22025879, cut from
+a tagged GitHub release with `.zenodo.json` supplying authored metadata rather than letting
+Zenodo infer a GitHub username as the creator), and the SubSim data record
+(concept 10.5281/zenodo.22025123). The paper cites the two concept DOIs and names v1.0.0 as
+the specific version that produced its results.
+
+**The disclosure consequence, recorded because it is irreversible.** Publishing the paper
+publicly on 19 August 2026 is a public disclosure, which is what India and the EPO's
+absolute-novelty requirement bars. The patent option in those jurisdictions closed then —
+before the repository was made public, so making it public cost nothing further. This is the
+direction `docs/RESEARCH-PLAN.md` §3 recommended, but it was reached by action rather than
+by decision, which is worth recording as exactly the sequencing failure that document warned
+about. The US grace period runs to roughly 19 August 2027.
+
+**Rendering.** `papers/build_paper.py` replaces an untracked manual export. Two-column A4
+via pandoc → CSS multicol → headless Chrome, with figures and wide tables spanning both
+columns and every caption bound to the object it names. Looking at the render caught what
+the page count did not: captions had been emitted three times per figure, because pandoc's
+implicit-figures extension was duplicating them from the alt text. The published v2 was a
+23-page single-column Word export in which `corr(τ̂, π̂)` rendered as a broken glyph
+throughout — the quantity the paper is named after.

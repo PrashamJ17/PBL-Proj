@@ -57,9 +57,15 @@ result: published ROC-AUC 1.0 is pre-fix, its own code now gives **0.543**).
 
 **Research/IP plan → `docs/RESEARCH-PLAN.md`** — learning curriculum, the one addition
 that would elevate the paper (derive `corr(τ,π)`, do not only measure it), and the IP
-call. **Repo is PRIVATE and nothing is published: India/EPO need absolute novelty, so the
-file-or-publish decision must be made BEFORE arXiv.** Recommendation is publish, not file
-(Sec 3(k) excludes maths + business method + program *per se*).
+call. Repo is PUBLIC and the paper is published (D-066), so the novelty question is settled:
+publish, not file — which was the recommendation anyway (Sec 3(k) excludes maths +
+business method + program *per se*).
+
+**Published (D-066):** repo is PUBLIC; three cross-linked Zenodo records — paper
+`10.5281/zenodo.22009470` · software `10.5281/zenodo.22025879` · data `10.5281/zenodo.22025123`
+(concept DOIs; cite these, not version DOIs). `make paper` renders the PDF.
+**Patent route in IN/EPO is CLOSED** — publishing the paper was the disclosure. US grace
+period to ~19 Aug 2027.
 
 **Papers (D-042):** merged 1+2 **drafted** → `papers/paper1/` (read its README first; §8
 REPORTS results + why the gate was unpassable). Lead = corr(τ,propensity) + small-*n*
@@ -169,9 +175,10 @@ Message leads with what it **establishes or fixes**, not files touched; numbers 
 body; cite `D-0NN`. Phase completion → `CHANGELOG.md` entry first. Never commit on red —
 if blocked, commit *with the failure described*.
 
-Keep under **~215 lines** (raised 120→…→205→215 as phases and decisions accumulated —
-deliberate, not drift; every raise follows a real trim, this one after compressing the
-status block and CP-11). Cut checkpoints; never invariants.
+Keep under **~245 lines** (raised 120→…→205→215→245 as phases and decisions accumulate —
+deliberate, not drift; every raise follows a real trim, this one after compressing six
+checkpoints into four to make room for the publication record and its DOIs).
+Cut checkpoints; never invariants.
 
 ---
 
@@ -195,47 +202,42 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-17** — **AI outreach priced, not argued (D-064).** The pitch is cost per contact
-  (human call 6, AI call 0.5, so send 12x more); cost per contact is not what harms.
-  Salience is unmeasured so it was SWEPT: **break-even salience = 0.80, BELOW neutral.** A
-  channel merely as intrusive as a standard offer loses money sent to everyone (-4.93/cust
-  at sal 1.0, 55% harmed). At MATCHED salience the AI call DOES win (5.31 vs 3.97) — the
-  case fails on a parameter nobody measures. **Cheap actuators make selection matter MORE**
-  (oracle share 70%→14%). AI email (sal 0.35) is the best channel in the table — the
-  finding is intrusiveness, not AI. `docs/AUTOMATION.md`: RetainIQ decides who/whether/how
-  much, LLM only writes wording; policy gate is code not a prompt; TCPA is $500-1,500 PER
-  CALL. **Phase 6 holdout BEFORE any sender.** 440 tests.
-- **CP-16** — **The Autopsy can finally be delivered (D-062).** No command took a client
-  CSV → report; the "it's a sales task" framing hid an engineering blocker. Tested against
-  a real Stripe export: **4 failures in a row** (`Created (UTC)` matched nothing; bare `id`
-  bound to customer_id; `Email` beat the real id column; required cols absent). Alias
-  resolution is now table-aware. **`preflight` is the important piece** — Stripe exports
-  CENTS, so `Plan Amount=2900` is $29.00 and a report would quote churn cost at **100x**.
-  It BLOCKS, never converts (converting silently = the D-057 error again). `retainiq/cli.py`,
-  argparse only. Deleted an unreachable duplicate-key check — `Dataset.validate` already
-  catches it. `docs/SALES-RUNBOOK.md` lists claims that are FORBIDDEN, each tied to the
-  experiment forbidding it. **Gate still open: nobody has paid.** 408 tests.
-- **CP-15** — **Dashboard shipped; Phase 5 done (D-061).** Self-contained HTML, no
-  server, no new dep — Streamlit/Next.js rejected (invariant 7; a runtime for a project
-  whose gate is still "does it earn"). **Reliability banner is FIRST and cannot be
-  disabled**: the inverse of a dashboard shouting "SAVE NOW" over a 0.543 model (D-060).
-  Looking at the render (not the tests) caught a **47%-confidence 1,972 discount** ranked
-  4th — sub-60% rows now flag inline. Verified both themes in-browser (D-038). 388 tests.
-- **CP-14** — **Reason codes (D-059) + RetainIQ-PBL compared (D-060).** Attribution is EXACT
-  not SHAP: `tau` is linear so contribution = `gamma_j*xs_ij`, no dependency. Explains the
-  *decision* (`-Δp*V - c`, and why this rung), says "nothing specific to this customer
-  drives it" when sigma_gamma collapses, and carries D-058's 58% on every line. Ran
-  RetainIQ-PBL's own pipeline: published ROC-AUC **1.000** is pre-fix, actual **0.543**.
-- **CP-13** — **Phase 5 optimizer built; gate UNMET (D-058).** Per-rung effects from a
-  multi-arm pilot (~35/arm at n=500), pooled across rungs via D-041 machinery. First
-  estimated policy here to make money (655/1,039/2,252): **28% of oracle vs 13%** for the
-  achievable rival — but beats it on only **58% [.42,.72]**, chance. **Sellable finding:
-  pilot-pick matches the true best rung 13% of the time** (random=17%) and loses money at
-  n=1000, while a hindsight uniform rung captures **73%** vs the optimizer's 28%.
-  **Choosing the offer beats choosing the customer.** Risk aversion HURT. 357 tests.
+- **CP-18** — **Published, and the paper was citing itself (D-066).** Its Data/Code
+  Availability sections gave `zenodo.22009471` as the "archived research software release";
+  that DOI is **the paper**. Also false: "publicly available through GitHub" (it was
+  private). Self-referential citations are locally coherent — the sentence parses, the DOI
+  resolves, the record is real — which is D-057's shape again: internally consistent, wrong
+  about the world. **Rule: resolve every identifier, never recall it.** Doing so also found
+  22015220 is v2 of the paper, not a separate record, and that concept DOIs exist for all
+  three. Repo made public → Zenodo↔GitHub release → real software DOI; `.zenodo.json` so the
+  record credits both authors, not a GitHub username. `make paper` replaces an untracked
+  manual export (pandoc → CSS multicol → headless Chrome); looking at the render caught
+  captions emitted 3x per figure. Published v2 was a 23-page Word export where
+  **`corr(τ̂, π̂)` — the quantity the paper is named after — rendered as a broken glyph**.
+  README rewritten; three of its headline numbers were stale (−22,123→**−22,823**,
+  harmed 19→18, sleeping dogs 48%/2%→**59.1%/5.3%**). 463 tests.
+- **CP-17** — **AI outreach priced, not argued (D-064).** Cost per contact is not what
+  harms; salience is, and nobody measures it — so it was SWEPT. **Break-even salience =
+  0.80, BELOW neutral**: a channel merely as intrusive as a standard offer loses money sent
+  to everyone (−4.93/cust, 55% harmed). At MATCHED salience the AI call DOES win (5.31 vs
+  3.97). **Cheap actuators make selection matter MORE** (oracle share 70%→14%). AI email
+  (sal 0.35) is the best channel — the finding is intrusiveness, not AI. `docs/AUTOMATION.md`:
+  policy gate is code not a prompt; TCPA is $500-1,500 PER CALL. Holdout BEFORE any sender.
+- **CP-16** — **The Autopsy can finally be delivered (D-062).** "It's a sales task" hid an
+  engineering blocker: no command took a client CSV → report. Tested against a real Stripe
+  export, **4 failures in a row**; alias resolution is now table-aware. **`preflight` is the
+  important piece** — Stripe exports CENTS, so `Plan Amount=2900` is $29.00 and a report
+  would quote churn cost at **100x**. It BLOCKS, never converts (converting silently = the
+  D-057 error again). `docs/SALES-RUNBOOK.md` lists FORBIDDEN claims, each tied to the
+  experiment forbidding it. **Gate still open: nobody has paid.**
+- **CP-15/14/13** — **Phase 5 built, then shipped (D-058/059/061).** Optimizer makes money
+  (28% of oracle vs 13%) but beats the achievable rival on only **58% [.42,.72]** — chance;
+  a hindsight uniform rung captures **73%**, so **choosing the offer beats choosing the
+  customer**. Reason codes are EXACT (tau is linear), not SHAP. Dashboard is self-contained
+  HTML, reliability banner first and undisableable. RetainIQ-PBL's published ROC-AUC 1.000
+  is pre-fix; its own code gives **0.543** (D-060).
 - **CP-11** — **The gate was unpassable, and we tested the wrong rung** (D-055/056).
-  Break-even |τ|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**. Raising the effect
-  flips it, but the two win rates move in OPPOSITE directions — never both above chance —
-  while sleeping dogs collapse 27%→3%. **Detectability and profitability are
-  anti-correlated across the ladder.** A minimax-regret reading was pre-registered and
-  **REFUTED** out-of-sample; best alpha moves 0.49→0.05, so **constant alpha is wrong**.
+  Break-even |tau|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**. The two win rates
+  move in OPPOSITE directions — never both above chance — while sleeping dogs collapse
+  27%→3%. **Detectability and profitability are anti-correlated across the ladder.** A
+  minimax-regret reading was pre-registered and **REFUTED** out-of-sample.
