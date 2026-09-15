@@ -33,7 +33,7 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-466 tests. CI green.
+467 tests. CI green.
 **Phase 5 COMPLETE**; gate met on its own terms, evidence did NOT improve (58% [.42,.72]).
 **Phase 2's delivery path is BUILT (D-062)** — `make preflight` then `make autopsy` on real
 CSVs — but its gate is a sales task and **nobody has paid anything**. Next action is
@@ -130,7 +130,7 @@ retainiq/experiments/  kill_test · leakage_penalty · dunning · survival_bench
                    ai_channels (D-064) · holdout_validation (D-065) · figures
 retainiq/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           466 — fairness, realism, edge cases, leakage gate
+tests/           467 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -138,7 +138,7 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 466 tests + calibration gates — run before every commit
+make check      # lint + 467 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
@@ -202,6 +202,10 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-20** — **Silent demo video, recorded live (`make demo-video`).** Terminal steps run in a
+  PTY with real timing and replay through pyte; report/dashboard are real Chrome screencasts.
+  **Recording live caught the demo export not producing the numbers the slides quote** (RNG
+  order: amounts vs dates) — fixed and pinned by a test → 467. Long runs always labelled `N×`.
 - **CP-19** — **Presentation + video storyboard (D-067).** `presentation/` builds the 8-slide
   .pptx and storyboard .docx from real outputs only. Slide 5 metrics from the kill-test model:
   AUC 0.700, recall 44.5%, precision 7.4%, F1 0.127; **accuracy 79.6% < 96.7% for always

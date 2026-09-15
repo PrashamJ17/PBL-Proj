@@ -19,6 +19,22 @@ def test_demo_export_produces_a_report_once_units_are_corrected(tmp_path):
     assert code == 0 and out.exists()
 
 
+def test_demo_export_matches_the_figures_the_demo_materials_quote(tmp_path):
+    """The slides, storyboard and video cite these numbers from this export. If the
+    generator's random stream changes, they silently stop being true -- which happened
+    once, when the cancellation dates were drawn before the amounts."""
+    import pandas as pd
+    from test_preflight_cli import _stripe
+
+    _, s = write_demo_export(tmp_path)
+    subs = pd.read_csv(s)
+    assert subs["Plan Amount"].iloc[0] == 18922
+    # 15,311.5 exactly; preflight prints it rounded, as "15,312", and 153.12 once divided.
+    assert subs["Plan Amount"].median() == 15311.5
+    _, fixture = _stripe(n=400, seed=0, cents=True)
+    assert subs["Plan Amount"].tolist() == fixture["Plan Amount"].tolist()
+
+
 def test_demo_export_is_byte_identical_across_runs(tmp_path):
     a = write_demo_export(tmp_path / "a")
     b = write_demo_export(tmp_path / "b")

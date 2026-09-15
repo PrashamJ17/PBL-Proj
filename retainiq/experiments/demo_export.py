@@ -43,6 +43,10 @@ def demo_frames(
         "Created (UTC)": created,
     })
     churned = rng.random(n) < CHURN_SHARE
+    # Drawn before the cancellation dates, so the random stream -- and therefore every
+    # figure the storyboard and slides quote from this export -- is fixed by the seed alone
+    # and matches the preflight tests' Stripe fixture row for row.
+    amounts = rng.integers(900, 29_900, n)
     subscriptions = pd.DataFrame({
         "id": [f"sub_{i:05d}" for i in range(n)],
         "Customer ID": customers["id"],
@@ -53,7 +57,7 @@ def demo_frames(
             for c, k in zip(created, churned, strict=True)
         ],
         # Minor units, as Stripe exports them: 2900 means 29.00.
-        "Plan Amount": rng.integers(900, 29_900, n),
+        "Plan Amount": amounts,
         "Plan Currency": "usd",
     })
     return customers, subscriptions

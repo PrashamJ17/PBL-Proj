@@ -165,9 +165,9 @@ const SCENES = [
     frames: ["s09.png"], frameNote: "Real output of make check (pre-recorded, sped up).",
     onScreen: "Terminal; optional 3 s of the repository's GitHub Actions page.",
     action: ["$ make check  (record in advance; play at 8x with a “sped up” label)"],
-    vo: "Everything shown is reproducible. make check runs the linter, all 466 tests and the simulator's calibration gates. On GitHub, every push re-runs the test suite on Python 3.11, 3.12 and 3.13, plus the calibration gates, a leakage gate and the kill test. The code, the data and the paper are archived on Zenodo.",
-    lower: "466 tests · 4 CI gates · github.com/PrashamJ17/PBL-Proj",
-    cues: "Label “sped up 8x”. Highlight “466 passed” and both “RESULT: ALL TARGETS MET”.",
+    vo: "Everything shown is reproducible. make check runs the linter, all 467 tests and the simulator's calibration gates. On GitHub, every push re-runs the test suite on Python 3.11, 3.12 and 3.13, plus the calibration gates, a leakage gate and the kill test. The code, the data and the paper are archived on Zenodo.",
+    lower: "467 tests · 4 CI gates · github.com/PrashamJ17/PBL-Proj",
+    cues: "Label “sped up 8x”. Highlight “467 passed” and both “RESULT: ALL TARGETS MET”.",
     transition: "Cross-dissolve (0.8 s) to the closing slide." },
   { n: 10, start: "7:25", end: "7:55", dur: "30 s", title: "Close: the full workflow and its honest limits",
     frames: ["s10.png"], frameNote: "Presentation slide 8.",
@@ -218,7 +218,7 @@ async function main() {
     "cd PBL-Proj",
     "python3 -m venv .venv && source .venv/bin/activate",
     "make install",
-    "make check        # expect: 466 passed, and RESULT: ALL TARGETS MET twice",
+    "make check        # expect: 467 passed, and RESULT: ALL TARGETS MET twice",
   ]));
   children.push(H2("2.2 Generate every output once before recording"));
   children.push(table([4200, 5400, W - 9600], [
@@ -228,7 +228,7 @@ async function main() {
     [P(run("make sample", { font: "Courier New", size: 19 })), "sample_churn_autopsy.html and two sample worklists", "Scene 5"],
     [P(run("make dashboard", { font: "Courier New", size: 19 })), "retention_dashboard.html", "Scenes 6–7"],
     [P(run("make holdout", { font: "Courier New", size: 19 })), "estimator validation and minimum detectable effect tables", "Scene 8"],
-    [P(run("make check", { font: "Courier New", size: 19 })), "lint, 466 tests, calibration gates", "Scene 9 (pre-recorded)"],
+    [P(run("make check", { font: "Courier New", size: 19 })), "lint, 467 tests, calibration gates", "Scene 9 (pre-recorded)"],
   ]));
   children.push(H2("2.3 Screen and audio"));
   [

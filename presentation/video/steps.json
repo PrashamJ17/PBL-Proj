@@ -1,0 +1,88 @@
+{
+  "title": {
+    "heading": "RetainIQ",
+    "subheading": "Working demonstration, from test suite to retention decisions",
+    "people": "Prasham Jain · Reg. No. 2427030155 · Mentor: Dr. Rishi Gupta",
+    "place": "Department of Computer Science and Engineering, Manipal University Jaipur",
+    "note": "No narration. Terminal sessions are recorded live from the project repository; long runs are shown sped up where marked."
+  },
+  "steps": [
+    {
+      "id": "check", "kind": "terminal",
+      "title": "Verify the project",
+      "subtitle": "Lint, 467 automated tests and the simulator's calibration gates",
+      "commands": [
+        {"cmd": "make check", "caption": "One command re-checks the whole project: linter, test suite, and calibration against published churn benchmarks."}
+      ]
+    },
+    {
+      "id": "killtest", "kind": "terminal",
+      "title": "The founding experiment",
+      "subtitle": "A good churn model, used to target offers, loses money",
+      "commands": [
+        {"cmd": "make killtest", "caption": "AUC 0.700, yet an offer to its top 20% loses 22,823, worse than random (-17,035). Oracle rows use true effects: an upper bound."}
+      ]
+    },
+    {
+      "id": "export", "kind": "terminal",
+      "title": "Raw input: a billing export",
+      "subtitle": "Stripe-shaped CSV files with amounts in cents, as Stripe exports them",
+      "commands": [
+        {"cmd": "make demo-data", "caption": "Writes a Stripe-shaped export: random rows, fixed seed."},
+        {"cmd": "head -6 demo/subscriptions.csv", "caption": "Plan Amount is in cents: 18922 means 189.22."}
+      ]
+    },
+    {
+      "id": "preflight", "kind": "terminal",
+      "title": "Preflight refuses an unsafe file",
+      "subtitle": "Reading cents as currency would overstate every revenue figure 100x",
+      "commands": [
+        {"cmd": "python -m retainiq.cli preflight --customers demo/customers.csv --subscriptions demo/subscriptions.csv", "caption": "BLOCKED: whole-number amounts look like cents. It asks the business; it does not guess."},
+        {"cmd": "echo $?", "shell": "echo $rc", "caption": "Exit code 1, so an automated pipeline stops here."},
+        {"cmd": "python -m retainiq.cli autopsy --customers demo/customers.csv --subscriptions demo/subscriptions.csv --out demo/blocked.html", "caption": "Asking for the report anyway: it stops."},
+        {"cmd": "ls demo/blocked.html", "caption": "No report file was written."}
+      ]
+    },
+    {
+      "id": "autopsy", "kind": "terminal",
+      "title": "Units confirmed: report and worklists",
+      "subtitle": "The same export, with amounts divided by 100",
+      "commands": [
+        {"cmd": "python -m retainiq.cli autopsy --customers demo/customers.csv --subscriptions demo/subscriptions.csv --divide-amounts-by 100 --interval month --name \"Acme Analytics (demo data)\" --out demo/demo_autopsy.html --worklists", "caption": "READY: a median of 153.12 a month is plausible. The report and two worklists are written."},
+        {"cmd": "head -4 demo/departures.csv", "caption": "Worklists are descriptive follow-up lists: no risk scores, no predictions."}
+      ]
+    },
+    {
+      "id": "report", "kind": "browser",
+      "title": "Reading a Churn Autopsy report",
+      "subtitle": "Sample report on a simulated business of 900 customers",
+      "commands": [
+        {"cmd": "make sample", "caption": "Builds the sample report from the simulator."}
+      ]
+    },
+    {
+      "id": "dashboard", "kind": "browser",
+      "title": "Retention decisions",
+      "subtitle": "Simulated business of 1,500 customers with a randomised offer pilot",
+      "commands": [
+        {"cmd": "make dashboard", "caption": "Runs the pilot, fits an effect model per offer, and chooses an offer, or none, for each customer."}
+      ]
+    },
+    {
+      "id": "holdout", "kind": "terminal",
+      "title": "Did it work? Measuring honestly",
+      "subtitle": "A randomised holdout, validated against the simulator's known effect",
+      "commands": [
+        {"cmd": "make holdout", "caption": "Unbiased, with 88-98% interval coverage, yet detecting this effect needs about 119,500 customers."}
+      ]
+    }
+  ],
+  "end": {
+    "heading": "RetainIQ",
+    "lines": [
+      "Code: github.com/PrashamJ17/PBL-Proj",
+      "Paper DOI 10.5281/zenodo.22009470 · Software DOI 10.5281/zenodo.22025879 · Data DOI 10.5281/zenodo.22025123"
+    ],
+    "note": "Terminal sessions recorded live in a pseudo-terminal and rendered to video; browser sections recorded in Chrome. The dashboard, sample report and demo export use simulated or random data."
+  }
+}

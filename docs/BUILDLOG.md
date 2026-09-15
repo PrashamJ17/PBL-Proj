@@ -1468,3 +1468,30 @@ the .pptx and of the exported PDF, not only the image.
 **Found, not fixed.** The Churn Autopsy formats every amount in rupees even for a USD export,
 and with no invoices file it reports 0% involuntary churn while advising the business to fix
 involuntary churn first. Both are raised as separate tasks (D-067).
+
+---
+
+## Silent demo video, recorded live (`make demo-video`)
+
+**Built.** `presentation/video/` records the project working from start to end and renders a
+silent 1080p video with on-screen step labels. `record_terminal.py` runs each step's commands
+inside a pseudo-terminal sized 112×30 and stores every read with its timestamp, so pytest's
+progress dots, colours and output arrive exactly as the programs wrote them.
+`record_browser.mjs` drives Chrome through puppeteer-core and screencasts real interaction
+with the pages `make sample` and `make dashboard` write: scrolling, clicking rows (the page's
+own handler expands them) and changing the offer filter. `render_video.py` replays the
+terminal bytes through a terminal emulator (pyte); the only additions are the typing of
+commands and time compression for runs over six seconds, always shown on screen with its
+factor and the live duration (`make check`: 148 s shown at 7×).
+
+**Found by recording live.** `make demo-data` did not produce the numbers the slides and the
+storyboard quote. The storyboard captures had come from the preflight tests' Stripe fixture,
+which draws plan amounts before cancellation dates; `demo_export.py` drew them after, so the
+same seed gave a median of 14,606 and a first row of 2970 instead of 15,312 and 18922. Fixed
+by drawing amounts first; a new test pins the quoted figures to the fixture (median 15,311.5,
+printed by preflight as 15,312; first row 18922). **467 tests.** Storyboard frames regenerated
+from the corrected export.
+
+**Tuned by watching it.** With no narration, output stayed on screen for about three seconds
+and most sampled frames caught a command mid-typing; holds now scale with the length of the
+output. A highlighted report tile sat under the caption bar and is now scrolled clear first.

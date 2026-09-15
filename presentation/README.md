@@ -31,7 +31,7 @@ Run from the repository root.
 python presentation/prepare_assets.py            # add --skip-check to skip make check
 
 # 2. build the deck
-cd presentation && npm install && TESTS=466 node build_deck.js && cd ..
+cd presentation && npm install && TESTS=467 node build_deck.js && cd ..
 
 # 3. scenes 1 and 10 of the storyboard are slides 2 and 8: render the deck to PDF
 #    (PowerPoint → File → Export → PDF, saved as presentation/build/RetainIQ_Presentation.pdf)
@@ -42,6 +42,22 @@ cd presentation && node storyboard.js
 ```
 
 `TESTS` should equal the count `pytest --collect-only -q` reports; the deck states it.
+
+## Demo video
+
+`make demo-video` records the project working from start to end and writes
+`presentation/build/video/RetainIQ_Demo.mp4` (1920×1080, 30 fps, H.264, silent, on-screen step
+labels). It needs `npm install` in `presentation/`, Google Chrome, ffmpeg and `pip install pyte`.
+
+- `video/steps.json` — the eight steps, their commands and on-screen captions
+- `video/record_terminal.py` — runs each step's commands live in a pseudo-terminal, timestamping
+  every read
+- `video/record_browser.mjs` — screencasts real Chrome interaction with the report and dashboard
+- `video/render_video.py` — replays the terminal bytes through a terminal emulator and assembles
+  the video; long runs are compressed and always labelled with the factor
+
+The silent video is a different cut from the narrated storyboard: it follows the same flow
+without a voice-over.
 
 ## What the deck does and does not claim
 

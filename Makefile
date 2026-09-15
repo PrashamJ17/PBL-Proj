@@ -87,3 +87,8 @@ paper-docx:  ## Render the research paper to a submission-ready Word document
 
 demo-data:  ## Write a Stripe-shaped export (amounts in cents) for the demo video
 	@python -m retainiq.experiments.demo_export
+
+demo-video:  ## Record and render the silent demo video (needs Chrome, ffmpeg, npm install in presentation/)
+	@python presentation/video/record_terminal.py
+	@node presentation/video/record_browser.mjs
+	@python presentation/video/render_video.py
