@@ -49,3 +49,6 @@ demo/
 presentation/build/
 presentation/node_modules/
 presentation/package-lock.json
+
+# Microsoft Office lock files
+~$*
