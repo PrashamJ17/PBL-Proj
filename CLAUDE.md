@@ -33,7 +33,7 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-463 tests. CI green.
+466 tests. CI green.
 **Phase 5 COMPLETE**; gate met on its own terms, evidence did NOT improve (58% [.42,.72]).
 **Phase 2's delivery path is BUILT (D-062)** — `make preflight` then `make autopsy` on real
 CSVs — but its gate is a sales task and **nobody has paid anything**. Next action is
@@ -130,7 +130,7 @@ retainiq/experiments/  kill_test · leakage_penalty · dunning · survival_bench
                    ai_channels (D-064) · holdout_validation (D-065) · figures
 retainiq/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           463 — fairness, realism, edge cases, leakage gate
+tests/           466 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -138,7 +138,7 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 463 tests + calibration gates — run before every commit
+make check      # lint + 466 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
@@ -202,20 +202,16 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-18** — **Published, and the paper was citing itself (D-066).** Its Data/Code
-  Availability sections gave `zenodo.22009471` as the "archived research software release";
-  that DOI is **the paper**. Also false: "publicly available through GitHub" (it was
-  private). Self-referential citations are locally coherent — the sentence parses, the DOI
-  resolves, the record is real — which is D-057's shape again: internally consistent, wrong
-  about the world. **Rule: resolve every identifier, never recall it.** Doing so also found
-  22015220 is v2 of the paper, not a separate record, and that concept DOIs exist for all
-  three. Repo made public → Zenodo↔GitHub release → real software DOI; `.zenodo.json` so the
-  record credits both authors, not a GitHub username. `make paper` replaces an untracked
-  manual export (pandoc → CSS multicol → headless Chrome); looking at the render caught
-  captions emitted 3x per figure. Published v2 was a 23-page Word export where
-  **`corr(τ̂, π̂)` — the quantity the paper is named after — rendered as a broken glyph**.
-  README rewritten; three of its headline numbers were stale (−22,123→**−22,823**,
-  harmed 19→18, sleeping dogs 48%/2%→**59.1%/5.3%**). 463 tests.
+- **CP-19** — **Presentation + video storyboard (D-067).** `presentation/` builds the 8-slide
+  .pptx and storyboard .docx from real outputs only. Slide 5 metrics from the kill-test model:
+  AUC 0.700, recall 44.5%, precision 7.4%, F1 0.127; **accuracy 79.6% < 96.7% for always
+  'stays'**, so accuracy is never a headline. Readiness stated PER COMPONENT. `make demo-data`
+  (Stripe-shaped, cents; +3 tests → 466). Rendering the demo report found **2 unfixed defects**:
+  ₹ shown for a USD export; involuntary advice with no invoice data. Raised as tasks.
+- **CP-18** — **Published; the paper cited itself as its software archive (D-066).** DOI
+  `22009471` was the paper. Self-referential citations are locally coherent — D-057's shape.
+  **Rule: resolve every identifier, never recall it.** Repo public → Zenodo↔GitHub release;
+  `make paper` / `make paper-docx` replace manual exports. README numbers re-verified.
 - **CP-17** — **AI outreach priced, not argued (D-064).** Cost per contact is not what
   harms; salience is, and nobody measures it — so it was SWEPT. **Break-even salience =
   0.80, BELOW neutral**: a channel merely as intrusive as a standard offer loses money sent

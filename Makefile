@@ -84,3 +84,6 @@ paper:  ## Render the research paper to a two-column PDF (D-066)
 
 paper-docx:  ## Render the research paper to a submission-ready Word document
 	@python papers/build_paper.py --docx
+
+demo-data:  ## Write a Stripe-shaped export (amounts in cents) for the demo video
+	@python -m retainiq.experiments.demo_export

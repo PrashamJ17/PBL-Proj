@@ -120,7 +120,7 @@ supports, and three of these are the most useful things the project learned.
   failures rather than quietly dropped.
 
 Every design decision, including the adverse ones, is in
-[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-065). It is append-only.
+[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-067). It is append-only.
 
 ---
 
@@ -130,7 +130,7 @@ Every design decision, including the adverse ones, is in
 git clone https://github.com/PrashamJ17/PBL-Proj.git
 cd PBL-Proj
 make install     # or: pip install -e ".[dev,viz]"
-make check       # lint + 463 tests + calibration gates
+make check       # lint + 466 tests + calibration gates
 ```
 
 ```python
@@ -229,7 +229,7 @@ retainiq/
 ├── experiments/  Every experiment in the paper, one module each.
 └── cli.py        preflight and autopsy — argparse only, no runtime dependency.
 
-tests/            463 tests — fairness, realism, edge cases, leakage gates
+tests/            466 tests — fairness, realism, edge cases, leakage gates
 docs/
 ├── BUILDLOG.md   what was built, what was tested, what happened
 └── DECISIONS.md  why each choice was made (D-001 … D-065), append-only

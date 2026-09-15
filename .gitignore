@@ -41,3 +41,11 @@ churn_autopsy.html
 # Zenodo data release (regenerable via `python -m retainiq.experiments.zenodo_release`)
 zenodo_release/
 RetainIQ_SubSim_datasets.zip
+
+# Demo export written by `make demo-data` (regenerable)
+demo/
+
+# Presentation build intermediates (regenerable: python presentation/prepare_assets.py)
+presentation/build/
+presentation/node_modules/
+presentation/package-lock.json

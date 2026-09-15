@@ -2077,3 +2077,48 @@ the page count did not: captions had been emitted three times per figure, becaus
 implicit-figures extension was duplicating them from the alt text. The published v2 was a
 23-page single-column Word export in which `corr(τ̂, π̂)` rendered as a broken glyph
 throughout — the quantity the paper is named after.
+
+---
+
+## D-067 — The presentation claims readiness per component, and accuracy is not a headline metric
+
+The brief for the project presentation asked for accuracy, precision, recall, F1 and a
+confusion matrix, and for emphasis on the model being "production-ready". Both requests are
+reasonable defaults for a churn classifier. Both would misstate this project if followed
+literally, so the deck follows them with numbers that are real and framing that is exact.
+
+**The classification metrics are computed, not quoted.** `presentation/metrics.py` rebuilds
+the kill-test churn model (same seed, 11 observable features, trained on the 28,283
+person-month rows before month 6) and scores the 3,589 customers at month 6 at the threshold
+the policy actually uses, the top 20% by predicted risk: AUC 0.700, average precision 0.118
+against a 3.3% base rate, TP 53, FP 665, FN 66, TN 2,805, recall 44.5%, precision 7.4%,
+F1 0.127.
+
+**Accuracy is shown beside the baseline that exposes it.** Accuracy at that threshold is
+79.6%. Predicting that nobody churns scores 96.7%. With a 3% event rate, accuracy rewards
+doing nothing, so reporting 79.6% alone would invite exactly the wrong reading. The slide
+puts the two numbers side by side and leads with AUC.
+
+**The deck's argument is that these good-looking metrics do not decide anything.** The same
+model's top 20% loses 22,823 when given an offer, which is worse than random. Presenting the
+confusion matrix without the policy value next to it would present the commodity the project
+exists to argue against.
+
+**"Production-ready" is stated per component.** Ready: the delivery path from a billing
+export through preflight to the Churn Autopsy, the dashboard, and the engineering around
+them (466 tests, four CI gates, archived releases). Validated on simulation and public RCTs
+only: the survival model, the Bayesian CATE with abstention, the offer ladder. Not yet shown:
+ROI on a real client, a policy that beats doing nothing (D-054), an optimiser that beats one
+well-chosen offer (D-058). A single "production-ready" label would be true of the first group
+and false of the other two.
+
+**What looking at the output found.** Building the demo-video storyboard meant rendering the
+Churn Autopsy for a Stripe-shaped USD export (`make demo-data`, D-062's delivery path). Two
+defects in the report surfaced that no test covers: every amount is formatted in rupees
+regardless of the export's currency, and with no invoices file the report shows "0% churn
+that is involuntary" and still advises "fix the involuntary share first" — a zero that means
+"not measured", presented as a finding. Both are the D-057 shape again: internally
+consistent, wrong about the world. They are recorded here and raised as separate tasks rather
+than fixed inside a presentation checkpoint; the video uses the sample report, which is
+denominated in rupees by design and includes invoices, so it does not demonstrate either
+defect as if it were correct behaviour.

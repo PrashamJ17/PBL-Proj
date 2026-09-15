@@ -1,0 +1,17 @@
+{
+  "name": "retainiq-presentation",
+  "private": true,
+  "description": "Builds the RetainIQ project presentation (.pptx) and demo-video storyboard (.docx)",
+  "scripts": {
+    "deck": "node build_deck.js",
+    "storyboard": "node storyboard.js"
+  },
+  "dependencies": {
+    "docx": "9.7.1",
+    "pptxgenjs": "4.0.1",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-icons": "5.7.0",
+    "sharp": "0.35.4"
+  }
+}

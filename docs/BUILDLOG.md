@@ -1435,3 +1435,36 @@ duplicate ids are refused, membership is stable under base growth and row reorde
 harmful campaign is reported as harmful, and a horizon with no churn gives zero lift rather
 than a division by zero. A pandas `FutureWarning` on empty-frame concatenation was fixed
 rather than left for a future CI break.
+
+---
+
+## Presentation, demo-video storyboard, and a demo export (D-067)
+
+**Built.** `presentation/` generates an 8-slide deck (`RetainIQ_Presentation.pptx`, pptxgenjs)
+and a 17-page production script and storyboard for a 7 min 55 s demo video
+(`RetainIQ_Demo_Video_Script_and_Storyboard.docx`, docx-js). `prepare_assets.py` regenerates
+every input: classification charts from `metrics.py`, screenshots of the dashboard and sample
+report taken with headless Chrome, and captured output of `make killtest`, `make holdout`,
+`make check` and the CLI. `frames.py` draws terminal frames from those captures, so no frame
+can show a number the command did not print.
+
+`retainiq/experiments/demo_export.py` (`make demo-data`) writes a Stripe-shaped export with
+amounts in cents, so the video can walk the real delivery path from a billing file. It is
+random data and says so.
+
+**Tested.** 3 new tests, **466 total**: the raw demo export is BLOCKED by preflight with exit
+code 1; the same export produces a report once `--divide-amounts-by 100` is given; the export
+is byte-identical across runs. The deck passes the pptx schema and relationship validator.
+Every slide and every storyboard page was rendered through PowerPoint and Word and inspected.
+
+**What rendering caught.** A wrapped pipeline title overlapping its description; numbered and
+bulleted lists that kept only their first marker; a two-line heading colliding with its body;
+storyboard thumbnails too small to read; a refusal frame that had cropped out the `STOPPED`
+and `VERDICT` lines. Also one QA-process trap: after regenerating the deck, PowerPoint
+re-exported the copy it still had open, so the "fixed" slides rendered unchanged. The export
+now closes every open presentation first, and the fix was confirmed by checking the text of
+the .pptx and of the exported PDF, not only the image.
+
+**Found, not fixed.** The Churn Autopsy formats every amount in rupees even for a USD export,
+and with no invoices file it reports 0% involuntary churn while advising the business to fix
+involuntary churn first. Both are raised as separate tasks (D-067).
