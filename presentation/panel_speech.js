@@ -129,7 +129,7 @@ const SLIDES = [
       "**abstains** — it recommends doing nothing, which is a valid answer. " +
       "On the right is the discipline that makes the numbers trustworthy: strictly temporal splits, " +
       "splitting by customer and never by row, and a leakage audit. That audit matters: with leaky " +
-      "features our churn model scores **0.954 AUC**; done honestly, **0.603**. Most of that gap is the " +
+      "features our churn model scores **0.954 AUC**; done honestly, about **0.60**. Most of that gap is the " +
       "future leaking into the past. " +
       "At the bottom is the project's own history, including the red marker — a **units error** where a " +
       "log-odds value was multiplied by money. It survived **337 passing tests**, because every test was " +
@@ -281,7 +281,7 @@ const QA = [
     ["What is the abstention rule, precisely?",
       "Convert the log-odds effect to a probability change, multiply by customer value, subtract offer cost, and treat only if the posterior probability that this is positive exceeds 1 − α, with α = 0.30. Otherwise recommend nothing."],
     ["How do you prevent data leakage?",
-      "Every fact carries an occurrence time and an availability time, and features read only what was available at the decision point. There is an automated leakage suite in CI, including canary injection. Without it, the same model scores AUC 0.954 instead of 0.603."],
+      "Every fact carries an occurrence time and an availability time, and features read only what was available at the decision point. There is an automated leakage suite in CI, including canary injection. Without it, the same model scores AUC 0.954 instead of about 0.60. One command proves it live: `python -m retainiq.experiments.leakage_penalty` prints 0.606 filtered correctly, 0.615 ignoring availability lag, and 0.954 with no filter."],
     ["How do you split the data?",
       "Strictly temporally: train on months before the decision month, predict at it. Person-month rows are split by customer, never by row, so the same customer cannot appear on both sides. Public datasets with no calendar time are split by subject, and the paper says so."],
     ["How does the simulator generate counterfactuals?",
@@ -379,7 +379,7 @@ const QA = [
     ["Confidence interval", "A range that would contain the true value in 95% of repeated experiments. Ours for the optimiser is 42 to 72%, which includes 50%, so chance is not excluded."],
     ["Statistical power and MDE", "Power is the chance of detecting an effect that is really there; the minimum detectable effect is the smallest effect a given sample size can detect at 80% power."],
     ["Holdout / control group", "A randomly chosen set of customers deliberately left untreated, so the difference in outcomes measures the campaign rather than the customers."],
-    ["Overfitting and leakage", "Overfitting is learning noise in the training data; leakage is training on information that would not have been available at prediction time. Leakage inflated our AUC from 0.603 to 0.954."],
+    ["Overfitting and leakage", "Overfitting is learning noise in the training data; leakage is training on information that would not have been available at prediction time. Leakage inflated our AUC from about 0.60 to 0.954."],
   ]],
 ];
 
@@ -420,7 +420,7 @@ SLIDES.forEach((s) => {
   children.push(cue("If asked here", s.ask));
 });
 children.push(note("**7-minute cut:** keep slides 1, 2, 5, 6, 8 in full; compress 3 and 4 to two sentences each (“the pipeline refuses unsafe data and never lets the model see the future; three models, and a decision rule priced in rupees that can abstain”); on slide 7 say only the preflight refusal and the test count."));
-children.push(note("**15-minute expansion:** after slide 4, add the leakage figure (0.954 against 0.603) and what caused it; after slide 6, add the offer-ladder result and why choosing the offer beats choosing the customer; on slide 7, run the demo live."));
+children.push(note("**15-minute expansion:** after slide 4, add the leakage figure (0.954 against about 0.60) and what caused it; after slide 6, add the offer-ladder result and why choosing the offer beats choosing the customer; on slide 7, run the demo live."));
 
 children.push(P([new PageBreak()]));
 children.push(H1("3. Success metrics, stated precisely"));
@@ -428,7 +428,7 @@ children.push(P("If you are asked “what are your results?”, this table is th
 children.push(table([2500, 3500, 2000, W - 8000], [
   ["Layer", "Metric", "Result", "Verdict"],
   ["Simulator realism", "7 calibration targets vs published benchmarks", "all within range", "Met, CI-enforced"],
-  ["Leakage control", "Honest AUC vs leaked AUC", "0.603 vs 0.954", "Met"],
+  ["Leakage control", "Honest AUC vs leaked AUC", "≈0.60 vs 0.954", "Met"],
   ["Churn prediction", "AUC / average precision (base rate 3.3%)", "0.700 / 0.118", "Met"],
   ["Survival model", "Integrated Brier, Telco, 10 resplits", "0.0824", "Met: beats Cox and RSF 10/10; ties DeepSurv"],
   ["Negative control", "GBSG2, fixed covariates", "loses, as predicted", "Met as a control"],
@@ -475,7 +475,7 @@ children.push(table([3200, W - 3200], [
   ["Survival", "Telco IBS: ours 0.0824 · DeepSurv 0.0825 · Cox 0.0914 · RSF 0.0964 · Kaplan–Meier 0.1823. C-index 0.865. GBSG2: ours 0.1867, loses as predicted."],
   ["Reliability and gates", "75% of draws beat random at n = 500 · abstention beats ranking on 93% · optimiser 58%, CI 42–72% · break-even effect 0.040 vs delivered 0.010 · an oracle treats 5.8%."],
   ["Measurement", "Bias ≈ 0, coverage 88–98% · MDE at 10,000 customers 0.0374 vs delivered 0.0108 · ≈119,500 customers needed · campaigns looked significant on 0–10% of runs."],
-  ["Leakage", "0.603 honest against 0.954 leaked. Value-at-risk and churn-risk top deciles overlap by only 21%."],
+  ["Leakage", "≈0.60 honest against 0.954 leaked (the paper reports 0.603 for its configuration). Value-at-risk and churn-risk top deciles overlap by only 21%."],
   ["Engineering", "467 tests, 22 files · 4 CI gates · Python 3.11–3.13 · 67 logged decisions · Apache 2.0."],
   ["Outputs", "Paper: ~7,500 words, 12 tables, 5 figures, 27 references. DOIs: paper 10.5281/zenodo.22009470 · software 10.5281/zenodo.22025879 · data 10.5281/zenodo.22025123."],
   ["Demo figures", "Dashboard: 1,500 customers, 472 assessed, 142 to contact, 330 left alone, 131 downgrades, 10 discounts, 1 pause. Sample report: 900 customers, ₹2.6 lakh a year lost, 31% involuntary."],
