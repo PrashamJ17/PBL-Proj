@@ -66,7 +66,7 @@ const SLIDES = [
       "my project under the guidance of **Dr. Rishi Gupta**. RetainIQ is a decision system for " +
       "subscription businesses. It answers one question: when a customer looks likely to leave, " +
       "should the business spend money on them, and if so, on what? The three numbers on the right " +
-      "are the whole argument in miniature, and I will come back to them. In the next ten minutes I " +
+      "are the whole argument in miniature, and I will come back to them. In the next few minutes I " +
       "will show you what the system does, what the evidence says, and where it stops.",
     point: "Rest your hand on the three tiles for a second, then move on. Do not explain them yet.",
     ask: "If asked “is this deployed?” — answer now, briefly: “The delivery path is; the decision engine is validated offline only. Slide 8 states that precisely.”",
