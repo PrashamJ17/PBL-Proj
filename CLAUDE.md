@@ -203,12 +203,12 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-21** — **Four papers read in full; the novelty claim is narrowed (D-068).** Ascarza 2018
-  App. A3.4 already simulates corr(RISK, LIFT) −1…+1 (her studies ≈ ±0.2); her Study 2 has
-  risk targeting RAISING churn (+4.4pp). Profit-scored targeting + validated cutoff = Lemmens
-  & Gupta 2020, **not yet a baseline here**. Left: pilot size (her open question), low-churn
-  floor, uplift losing at finite n. **Our five points are NOT like-for-like** (real: estimates,
-  pooled-arm risk, one seed; SubSim: TRUE effect, ORACLE vs score) — six checks owed first.
+- **CP-21** — **Four papers read in full; novelty narrowed (D-068).** Ascarza 2018 App. A3.4
+  already simulates corr(RISK, LIFT) (her studies ≈ ±0.2); her Study 2 has risk targeting RAISING
+  churn (+4.4pp). Profit-scored targeting + validated cutoff = Lemmens & Gupta 2020, **not yet a
+  baseline**. Left: pilot size, low-churn floor, uplift losing at finite n. **Our five points are
+  NOT like-for-like** (real: estimates, pooled risk, one seed; SubSim: TRUE effect, ORACLE vs
+  score); six checks owed. README, plan, `spectrum.py` corrected; paper, fig03, PROJECT_REPORT NOT.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. Kill-test model AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% <
   96.7% for always 'stays'** — never a headline. Readiness PER COMPONENT. Recording live caught

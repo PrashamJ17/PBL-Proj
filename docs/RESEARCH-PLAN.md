@@ -1,14 +1,16 @@
 # Research plan: learning it, publishing it, protecting it
 
-Written 10 August 2026. Three separate questions that get confused with each other:
+Written 10 August 2026. **§2 revised 5 October 2026** after the prior work was read in
+full (D-068); §1 gained one reading-list row and one question, and §3 item 5 was
+corrected. Three separate questions that get confused with each other:
 
 1. **How do I understand this well enough to defend it?** (§1)
 2. **How do I turn it into a paper with real value?** (§2)
 3. **Should I patent it?** (§3)
 
 The honest short answers: §1 is four to six weeks of real work and is the prerequisite for
-everything else. §2 has one specific gap that separates "publishable" from "worth
-citing". §3 is almost certainly **no**, for reasons that are worth understanding rather
+everything else. §2 has a short list of checks and one hard addition that separate
+"publishable" from "worth citing". §3 is almost certainly **no**, for reasons that are worth understanding rather
 than taking on faith — but the decision is time-sensitive and reversible only in one
 direction, so read §3 before publishing anything.
 
@@ -119,10 +121,11 @@ Do not start with the code.
 |---|---|---|
 | 1 | `explainer/00`–`09` | Written for a reader with no background. Gets you the shape in an evening. |
 | 2 | `CLAUDE.md` — thesis and the 13 invariants | Each invariant is a mistake someone can make. Learn what breaks without it. |
-| 3 | `docs/DECISIONS.md`, selectively | The *why*. Start with **D-002, D-011, D-013, D-020, D-023, D-026, D-031, D-054, D-055, D-057, D-058, D-060**. |
+| 3 | `docs/DECISIONS.md`, selectively | The *why*. Start with **D-002, D-011, D-013, D-020, D-023, D-026, D-031, D-054, D-055, D-057, D-058, D-060, D-068**. |
 | 4 | `papers/paper1/main.tex` | Now the argument will read as familiar rather than new. |
 | 5 | `retainiq/sim/counterfactual.py` → `models/uplift/bayesian.py` → `policy/economics.py` | The three files that carry the intellectual content. |
 | 6 | `docs/BUILDLOG.md` | What was built and tested, in order. Skim. |
+| 7 | The four papers in D-068, in full, appendices included | A claim is only as good as your knowledge of what was already shown. D-068 exists because this step was skipped; the correlation this project led with is in an appendix of the paper it cited. |
 
 ## Exercises that prove you understand it
 
@@ -143,7 +146,7 @@ Reading is not evidence. Each of these produces something checkable.
    central claim is wrong or unimportant. If you cannot write it, you do not yet
    understand the claim well enough to defend it.
 
-## The five questions to answer without notes
+## The six questions to answer without notes
 
 The bar for talking to anyone about this:
 
@@ -152,8 +155,10 @@ The bar for talking to anyone about this:
 3. Why does the report refuse to predict who will churn?
 4. What is the cents check, and why does it block instead of dividing by 100?
 5. What did you get wrong, and how did you find out? (D-057)
+6. What had Ascarza (2018) already shown, and what exactly do you add? (D-068)
 
-Question 5 is the one that earns credibility. A student who says *"I found a units bug in
+Question 6 is the one a specialist asks first, and "we measured it on small samples; she
+set it in a simulation" is a complete answer. Question 5 is the one that earns credibility. A student who says *"I found a units bug in
 my own decision rule that every test missed, here is how"* is more believable than one who
 says everything works.
 
@@ -164,51 +169,85 @@ the paper or a sales call before this is done is how you get exposed.
 
 # §2 — The paper
 
+*This section first led with `corr(τ, π)` as a "governing quantity". That quantity is
+Ascarza's (2018, Web Appendix A3.4), so the ranking below changed on 5 October 2026.*
+
 ## What is genuinely valuable here
 
-Three things, in order:
+Four things, in order:
 
-1. **`corr(τ, π)` as a governing quantity**, with a mechanism, ordering five settings —
-   and, crucially, **an out-of-sample prediction that landed** (Lenta, D-031). Predicting
-   before seeing data is rare in applied ML papers and reviewers notice.
-2. **Reliability rather than expectation at small *n***: win rate over draws, not mean
-   improvement, holding the evaluation set fixed while shrinking only training.
-3. **Honest negatives with mechanism.** The Phase 4 gate failed; §8.1 shows it was
-   unachievable as written; §8.2 reports a units bug in the authors' own rule. Papers that
-   report why their method did not work are rarer and more useful than papers that do not.
+1. **How small a pilot can be.** Ascarza (2018) names pilot size as an open question, and
+   none of the four papers in D-068 fits a model on fewer than about 700 customers.
+   D-023 holds the evaluation set fixed, shrinks only the training set, and reports the
+   win rate over draws instead of the mean: 75% at *n* = 500. A business gets one draw,
+   so the win rate is the number it needs.
+2. **The measurement floor at small-business scale.** Break-even effect 0.040 against a
+   delivered 0.010 (D-055), and a holdout that cannot detect the delivered effect even at
+   10,000 customers (D-065). The published studies work at 25–62% churn, or with tens of
+   thousands of customers.
+3. **The correlation measured on real experiments.** Not the idea; the measurement. It
+   includes two settings where the uplift model gains nothing or loses, and **an
+   out-of-sample prediction that landed** (Lenta, D-031). Predicting before seeing data is
+   rare in applied ML papers and reviewers notice.
+4. **Honest negatives with mechanism.** The abstention rule beats ranking and does not
+   beat doing nothing (D-054); the target was unachievable as set (D-055); a units bug sat
+   in our own decision rule for a whole phase (D-057). Papers that report why their method
+   did not work are rarer and more useful than papers that do not.
 
 ## What is weak, stated plainly
 
-- **Four settings is thin for a "governing quantity" claim.** Three real RCTs plus one
-  simulator, and the negative-correlation regime — the interesting one — is carried
-  entirely by the simulator. A reviewer will say this, and they will be right.
-- **The correlation is measured, not derived.** There is no theory saying *why* this
-  quantity governs, only evidence that it does.
+- **The strongest claim rests on one dataset that is not retention data.** The 75% figure
+  is Hillstrom, an email promotion.
+- **The correlation table cannot yet carry weight.** The five points are not measured
+  alike: the real ones are estimate against estimate, with a risk model fitted on both
+  arms, one seed and no interval; the simulator one uses true effects and an oracle
+  (D-068). The negative-correlation regime — the interesting one — is carried entirely by
+  a simulator configured to have it. A reviewer will say this, and they will be right.
+- **The nearest rival is not a baseline.** Lemmens & Gupta (2020) choose the campaign
+  size on held-out data. Until their rule runs on the same pilots, abstention has not
+  been compared with the method a referee will name first.
+- **The small-sample result is measured, not derived.** There is no theory saying *when*
+  an outcome model overtakes an uplift model, only evidence that it does.
 - **The abstention contribution is a partial negative.** Defensible, but it is not the
   headline the abstract would like.
 
-## The single highest-value addition
+## The highest-value additions, in order
 
-**Derive the condition, do not only measure it.**
+**1. Run the checks in D-068 before anything else.** Rank correlation beside Pearson, on
+the probability and the log-odds scale. Risk fitted on control customers only. Many
+splits per dataset, with an interval. The simulator point recomputed like for like. They
+come first because the correlation result may not survive them, and what the paper can
+say depends on whether it does. A result that shrinks under its own checks is still
+reportable. One that was never checked is not.
 
-Take the simplest model where both quantities are tractable — a logistic outcome with
-Gaussian covariates, or even a two-point discrete covariate — and derive when
-targeting on `τ̂` beats targeting on `π̂` under a budget constraint. Even a result of the
-form *"effect-targeting dominates iff `corr(τ, π) < f(budget, noise)`"* in a toy model
-would transform the paper: the empirical work stops being a curiosity and becomes
-confirmation of something derived.
+**2. Add the baseline.** Give Lemmens & Gupta's cutoff rule and the abstention rule the
+same pilot, score both on fresh customers, and cross estimator with stopping rule so that
+a difference can be attributed to one of them.
+
+**3. Derive the finite-sample condition, do not only measure it.**
+
+The population statement is settled and is not the interesting one: with the true effect
+known, ranking by it cannot lose, which is Ascarza's result. The open question is about
+*estimates*. Take the simplest model where both rankings are tractable — her own appendix
+model, a threshold on `X − Z·offer + noise` with `(X, Z)` bivariate normal, is the
+natural start — and derive when targeting on `τ̂` fitted from *n* customers beats
+targeting on `π̂` under a budget constraint. Even a result of the form *"the outcome
+model wins when `corr(τ, π) > f(n, budget, noise)`"* in a toy model would transform the
+paper: the small-sample evidence stops being a curiosity and becomes confirmation of
+something derived.
 
 This is a genuinely hard piece of work, it is the right hard piece, and it is what
 separates a paper people cite from one they skim. It is also the part that must be yours —
 a derivation you cannot reproduce at a whiteboard is worse than no derivation.
 
-Second and third priorities: **more settings** (each additional real RCT with a measurable
-`corr` strengthens the ordering), and **a new pre-registered prediction** on a dataset not
-yet obtained, following the Lenta pattern exactly.
+After those: **more settings**, above all a real *retention* experiment, since none of
+the public ones is; and **a new pre-registered prediction** on a dataset not yet
+obtained, following the Lenta pattern exactly.
 
 ## Venue
 
-- **arXiv first** — but read §3 before posting. This is the irreversible step.
+- **A preprint first.** Done: the paper is public on Zenodo (D-066). That was the
+  irreversible step §3 warns about.
 - Then, in order of fit: **European Journal of Operational Research**, **Decision Support
   Systems**, or **Journal of Marketing Analytics**.
 - **Not** *Journal of Marketing Research*. Ascarza (2018) is there, marketing journals
@@ -220,16 +259,19 @@ yet obtained, following the Lenta pattern exactly.
 
 ## Order of work
 
-1. Finish §1. Do not write about what you cannot explain.
-2. Attempt the derivation (§2's highest-value item). Time-box it — four weeks. If it does
-   not come, say so in Limitations and submit anyway; an honest "we could not derive this"
-   is a legitimate contribution to the next person.
-3. Re-read the paper end to end against `docs/DECISIONS.md` and check every number is
+1. Finish §1, the four papers included. Do not write about what you cannot explain.
+2. Run the checks in D-068 and add the baseline. Record what moved and what did not.
+3. Restate the claims around what survived. Write the related-work section from your own
+   notes on the papers, not from this repository's summaries of them.
+4. Attempt the derivation. Time-box it — four weeks. If it does not come, say so in
+   Limitations; an honest "we could not derive this" is a legitimate contribution to the
+   next person.
+5. Re-read the paper end to end against `docs/DECISIONS.md` and check every number is
    current. §8 numbers post-date the D-057 correction; anything restored from an older
    revision is wrong.
-4. Have someone hostile read it. Your mentor, ideally. Ask specifically: *what is the
+6. Have someone hostile read it. Your mentor, ideally. Ask specifically: *what is the
    weakest claim here?*
-5. Decide on §3. Then arXiv. Then the journal.
+7. §3 is already settled by publication (D-066). Then the venue.
 
 ## What must not happen to this paper
 
@@ -286,10 +328,13 @@ cross-tenant priors — a data network effect, not an algorithm. A competitor ca
 replicate that from a published method. Meanwhile a patent would require you to *disclose*
 the method in full, which is precisely the opposite of protecting it.
 
-**5. Most of the value is in results, and results are not patentable at all.** "Churn-score
-targeting loses money" and "`corr(τ, π)` governs when uplift pays" are discoveries. No
-jurisdiction patents those. They are protected by being *first and cited*, which is what
-publication does.
+**5. Most of the value is in results, and results are not patentable at all.** "Uplift
+modelling is unreliable on a pilot of 500 customers" and "a small business cannot detect
+its own campaign's effect" are discoveries. No jurisdiction patents those. They are
+protected by being *first and cited*, which is what publication does. Two results this
+item used to name — that churn-score targeting loses money, and that the risk–lift
+correlation explains when uplift pays — are not first (D-068). That is a further reason a
+patent over them would fail: they are prior art.
 
 ## What to do instead
 
@@ -337,12 +382,14 @@ protection then, with a lawyer and a budget.
 
 | Weeks | What | Gate |
 |---|---|---|
-| 1–4 | §1: prerequisites, reading order, exercises | Answer the five questions without notes |
+| 1–4 | §1: prerequisites, reading order, the four papers, exercises | Answer the six questions without notes |
 | 3–5 | Write the counter-argument; re-read the paper against DECISIONS | You can state the weakest claim in your own paper |
-| 5–9 | Attempt the derivation (§2). Time-boxed | Either a toy-model result, or an honest Limitations paragraph |
-| 9 | Decide the IP question (§3) | A decision, recorded, with reasons |
-| 10 | arXiv, then licence the repo, then make it public | Preprint up |
-| 10+ | Journal submission; workshop in parallel | Referee feedback |
+| 4–6 | The checks in D-068 and the Lemmens & Gupta baseline (§2) | Each check has a number, and a sentence on what moved |
+| 6–10 | Attempt the derivation (§2). Time-boxed | Either a toy-model result, or an honest Limitations paragraph |
+| done | The IP question (§3) and the preprint | Settled by publication (D-066) |
+| after | Revised paper to a journal; workshop in parallel | Referee feedback |
+
+Weeks count from the start of the revision, not from the date this plan was first written.
 
 **Run outreach in parallel throughout.** It is not sequenced after the research — a single
 paying client changes both the paper (a real ROI number) and the business, and it is the

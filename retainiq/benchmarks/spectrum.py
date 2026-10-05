@@ -1,33 +1,52 @@
-"""When is uplift modelling worth it? The governing quantity.
+"""When is uplift modelling worth it? The risk-lift correlation, measured.
 
 Two real datasets gave apparently contradictory answers. On Hillstrom, uplift models
 clearly beat outcome models. On Criteo, they clearly lost -- at every training size.
-Neither is a fluke, and the reconciliation is the most useful result in this project.
+Neither is a fluke. What separates them is **corr(treatment effect, outcome propensity)**.
 
-The governing quantity is **corr(treatment effect, outcome propensity)**.
+The quantity is not introduced here. Ascarza (2018, Web Appendix A3.4) sets the
+correlation between churn risk and response to an offer in a simulation, from -1 to +1,
+and places her two field studies at about +0.2 and -0.2. This module *measures* it from
+fitted models on public randomised experiments and tabulates it against how much an
+uplift model gains over an outcome model (D-026, scoped by D-068).
 
 An outcome model ranks customers by how likely they are to respond. An uplift model
 ranks them by how much treatment *changes* their response. When those two orderings
 coincide, the outcome model wins -- not because it is measuring the right thing, but
 because it solves an easier estimation problem. Estimating one probability is far more
 stable than estimating a difference between two, and at small n that variance advantage
-dominates.
+dominates. This is a statement about estimates from a finite sample: with the true
+effect in hand, ranking by it cannot lose.
 
-    corr high  (Criteo, +0.61)     outcome model wins; uplift costs variance and
-                                   buys nothing
-    corr ~0    (Hillstrom, +0.07)  orderings diverge; uplift wins modestly
-    corr < 0   (churn, -0.19)      orderings actively conflict; the outcome model
-                                   selects customers it will harm, and does worse
-                                   than random
+Values from the 15 Aug 2026 run (run the module for current ones):
 
-This reframes the project's claim. It is not "uplift modelling is better" -- that is
-false in the advertising setting and we can show it. It is that **retention has an
-adversarial structure that advertising does not**, and the correlation is what
-distinguishes them.
+    corr high  (Hillstrom mens +0.69, Criteo +0.58)   uplift loses or gains nothing
+    corr low   (Hillstrom womens +0.19, Lenta +0.17)  uplift wins modestly
+    corr < 0   (SubSim churn, -0.19)                  orderings conflict; the churn
+                                                      score selects customers the
+                                                      offer harms
 
-It also sharpens the argument for abstention: a practitioner cannot tell in advance
-which regime they are in, and choosing wrongly is expensive in both directions. A method
-that quantifies its own uncertainty and declines to act is the honest response to that.
+The ordering among the four positive points is within noise, and the five points are
+NOT measured the same way (D-068). Do not read the plot as one curve.
+
+  * Real points: Pearson correlation between a T-learner's estimate and an outcome
+    model fitted on BOTH arms pooled (Ascarza's RISK is fitted on control customers
+    only). One seed, one split, no interval. The advantage compares the best
+    *estimated* uplift model with the best outcome model. None of these datasets is a
+    retention experiment.
+  * SubSim point: correlation between the TRUE benefit and an estimated churn score;
+    the advantage compares the ORACLE with the churn score. Part of its large gap is
+    oracle-against-estimate, not the sign of the correlation.
+  * SubSim's negative correlation follows from how the simulator is configured. It is
+    an assumption, not evidence that retention has one.
+
+Owed before this is claimed again (D-068): rank correlation beside Pearson, on the
+probability and the log-odds scale; risk fitted on control only; many splits with an
+interval; a like-for-like SubSim point.
+
+The argument for abstention does not depend on who introduced the quantity: a
+practitioner cannot tell in advance which regime they are in, and choosing wrongly is
+expensive in both directions.
 """
 
 from __future__ import annotations
@@ -86,6 +105,10 @@ def measure(rct, budget_fraction: float = 0.30, seed: int = 0) -> tuple[float, f
 
     The ranking-quality comparison still uses the best of each family, since there
     the scale is irrelevant and only the ordering matters.
+
+    Known gaps (D-068): the correlation is Pearson, from one seed and one split, and
+    `OutcomePropensity` is fitted on both arms pooled, where Ascarza's RISK is fitted
+    on control customers only.
     """
     train, test = split(rct, seed=seed)
 
@@ -116,6 +139,11 @@ def subsim_point() -> Point:
     Uses ground-truth tau rather than an estimate, because SubSim knows it. Sign
     convention: tau < 0 means the offer reduces churn, so *benefit* is -tau, and
     that is what gets correlated against churn risk.
+
+    NOT like-for-like with `measure` (D-068): the correlation here is true benefit
+    against an estimated score, and the advantage is the ORACLE against the churn
+    score, where `measure` compares two estimated models. Treat this point as an upper
+    bound on what an estimated uplift model would gain.
     """
     from retainiq.experiments.kill_test import run as kill_run
     from retainiq.experiments.kill_test import train_churn_model
@@ -248,7 +276,9 @@ def report(points: list[Point]) -> str:
     lines.append(
         "High correlation => outcome model ranks the same customers, via an easier\n"
         "estimation problem, so uplift modelling costs variance and buys nothing.\n"
-        "Negative correlation => the outcome model actively selects customers it harms."
+        "Negative correlation => the outcome model actively selects customers it harms.\n"
+        "SubSim row: true effects, oracle vs churn score. It is an upper bound, not\n"
+        "like-for-like with the rows above (D-068)."
     )
     return "\n".join(lines)
 

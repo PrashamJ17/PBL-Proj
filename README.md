@@ -14,18 +14,22 @@ Retention](https://doi.org/10.5281/zenodo.22009470)**.
 
 Uplift modelling — targeting customers by estimated treatment effect rather than by
 predicted churn risk — is widely recommended and inconsistently useful. This repository
-contains the evidence for *when* it pays, *by how much*, and *at what scale it stops being
+contains evidence on *when* it pays, *by how much*, and *at what scale it stops being
 measurable at all*.
 
 ---
 
 ## The three results
 
-**1. Whether uplift beats risk targeting is governed by one measurable quantity.**
+**1. Where the risk–lift correlation is high, an uplift model does not beat a plain outcome model.**
 
-`corr(τ̂, π̂)` — the correlation across customers between estimated treatment effect and
-estimated outcome propensity. As it falls, the advantage of effect-based targeting rises
-monotonically. Measured on four real randomised trials and one calibrated simulator:
+The quantity is not ours. Ascarza (2018, Web Appendix A3.4) sets the correlation between a
+customer's churn risk and their response to an offer in a simulation, shows how the two
+rankings and the effect by risk decile change with it, and places her two field studies at
+about +0.2 and −0.2. What this repository does is **measure** it from fitted models:
+`corr(τ̂, π̂)`, the correlation across customers between estimated treatment effect and
+estimated outcome propensity, on four settings from three public randomised experiments
+and on one calibrated simulator.
 
 | Setting | corr(τ̂, π̂) | Advantage of uplift |
 |---|---:|---:|
@@ -35,13 +39,30 @@ monotonically. Measured on four real randomised trials and one calibrated simula
 | Lenta | +0.17 | +20.3% |
 | SubSim — subscription churn | −0.19 | **+106.9%** |
 
-When the two orderings coincide, the outcome model wins — it solves an easier estimand.
-Retention is the adversarial case, and the mechanism is absent from advertising: the
-customers a churn model ranks highest include dormant payers for whom *being contacted is
-itself the reminder to cancel*. Lenta was an out-of-sample prediction, registered before
-the data was obtained, and it landed (D-031).
+Read the table with three cautions (D-068):
+
+- **The four real rows are not retention data.** They are an email promotion, an
+  advertising campaign and a retail promotion. Where the correlation is high the uplift
+  model gains nothing (Criteo) or loses (Hillstrom men), because the outcome model ranks
+  nearly the same customers from an easier estimate. The ordering among these four rows
+  is within noise.
+- **The SubSim row is not measured the same way.** It uses the simulator's *true* effects
+  and compares the *oracle* with a churn score. The real rows compare an estimated uplift
+  model with an estimated outcome model, on one seed and one split. Part of the gap
+  between the last row and the rest is that difference.
+- **SubSim's negative correlation is an assumption.** The simulator is configured so that
+  the customers a churn model ranks highest include dormant payers for whom *being
+  contacted is itself the reminder to cancel*. Field evidence that a retention contact
+  can raise churn exists (Ascarza, Iyengar & Schleicher 2016; Ascarza 2018, Study 2).
+  This repository adds none.
+
+Lenta was an out-of-sample prediction, registered before the data was obtained, and it
+landed, though the test is underpowered (D-031).
 
 ![When uplift pays](papers/figures/fig03_when_uplift_pays.png)
+
+*The figure's title and footnote predate D-068. The SubSim point is the oracle on true
+effects, so the gap it shows is an upper bound, not a like-for-like measurement.*
 
 **2. At the scale of the businesses this most concerns, neither method is reliable.**
 
@@ -92,8 +113,35 @@ beneficial (mean τ = −0.0101, enforced by a calibration gate), so every unit 
 is attributable to targeting rather than to a bad offer.
 
 > **Scope.** Worse-than-random did **not** replicate on the real RCTs, and the claim is
-> scoped accordingly (D-020). It holds where `corr(τ, π)` is negative. That condition is
-> the contribution; "churn scores are bad" on its own is Ascarza (2018).
+> scoped accordingly (D-020). It holds in the simulator, where the risk–lift correlation is
+> negative by construction. Neither that condition nor the harm is new here; both are in
+> Ascarza (2018). See *Relation to prior work*, next.
+
+---
+
+## Relation to prior work
+
+Four papers cover most of the ground this project stands on. `docs/DECISIONS.md` D-068
+records what each establishes and which earlier claims of ours it withdraws.
+
+| Paper | Establishes |
+|---|---|
+| Ascarza (2018), *Journal of Marketing Research* 55(1):80–98 | Targeting by effect beats targeting by risk in two field experiments; in one, risk targeting raises churn. Web Appendix A3.4 simulates the risk–lift correlation. Leaves the size of the pilot open. |
+| Ascarza, Iyengar & Schleicher (2016), *Journal of Marketing Research* 53(1):46–60 | A retention campaign raised churn from 6.4% to 10.0% in a randomised experiment on 64,147 customers. |
+| Lemmens & Gupta (2020), *Marketing Science* 39(5):956–973 | Targeting on expected profit lift, with the campaign size chosen on held-out data. |
+| Devriendt, Berrevoets & Verbeke (2021), *Information Sciences* 548:497–515 | Uplift against churn models on a 200,903-customer bank dataset, scored in profit. |
+
+**Not ours:** that churn scores point at the wrong customers, that risk targeting can do
+harm, the risk–lift correlation as the explanation, and scoring a policy in money.
+
+**What this repository adds:** how the methods behave on a pilot of a few hundred
+customers (result 2); the gap between the effect a small business can deliver and the
+effect it can detect (result 3); the correlation measured on public experiments,
+including settings where uplift loses (result 1); and an uncertainty threshold that was
+implemented and did not beat doing nothing (D-054; see *What did not work*).
+
+**Not yet done:** Lemmens & Gupta's cutoff rule is not a baseline in any experiment here,
+and the correlation table has the measurement gaps listed under result 1.
 
 ---
 
@@ -120,7 +168,7 @@ supports, and three of these are the most useful things the project learned.
   failures rather than quietly dropped.
 
 Every design decision, including the adverse ones, is in
-[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-067). It is append-only.
+[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-068). It is append-only.
 
 ---
 

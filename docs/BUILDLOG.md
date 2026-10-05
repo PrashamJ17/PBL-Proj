@@ -1495,3 +1495,26 @@ from the corrected export.
 **Tuned by watching it.** With no narration, output stayed on screen for about three seconds
 and most sampled frames caught a command mid-typing; holds now scale with the length of the
 output. A highlighted report tile sat under the caption bar and is now scrolled clear first.
+
+## Public texts brought into line with D-068
+
+**Changed.** `README.md`: result 1 now attributes the risk–lift correlation to Ascarza (2018,
+Web Appendix A3.4), states three cautions under the table (the real rows are not retention
+data; the SubSim row is oracle on true effects; its negative correlation is configured), drops
+"rises monotonically", and counts the real data as four settings from three experiments. A
+*Relation to prior work* section lists the four papers, what is not ours, what is added and
+what is not yet done. `retainiq/benchmarks/spectrum.py`: module and function docstrings say
+how each point is measured and what is owed; stale example values (+0.61, +0.07) replaced by
+the 15 Aug 2026 run; the printed report gains two lines marking the SubSim row as an upper
+bound. `docs/RESEARCH-PLAN.md`: §2 re-ranked (pilot size first, correlation third), the checks
+and the Lemmens & Gupta baseline placed ahead of the derivation, the derivation re-scoped to
+the finite-sample question, a sixth question added to §1, §3 item 5 corrected.
+
+**Not changed.** `fig03_when_uplift_pays.png` and the strings that draw it (its title and
+footnote still state the earlier reading; the README now captions it), `papers/RESEARCH_PAPER.md`,
+`papers/paper1/README.md`, `PROJECT_REPORT.md` and the published record. No numbers were
+re-run: the table values are those recorded on 15 August 2026.
+
+**Tested.** `spectrum.report` printed with the new footer; lint clean; `make check` green
+(467 tests, both calibration gates). No test reads the changed strings.
+
