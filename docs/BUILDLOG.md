@@ -1667,3 +1667,22 @@ and still returns the legacy figures.
 table; §10.2's earlier win rate changed from 75% to the 74% the command prints.
 `papers/paper1/README.md` still says 75% and is not changed.
 
+## `make sensitivity` prints the corrected rule first, and regret by axis (D-070)
+
+**Changed.** `retainiq/experiments/sensitivity.py`: `effect_size_sensitivity`,
+`offer_sensitivity`, `regret_matrix` and `alpha_by_offer` take the rule; `policies_for(rule)`
+replaces the fixed `POLICIES` list; `_sweep` remembers sweeps within a run; `report`, `block`
+and `render` print the corrected rule first and the legacy rule second; regret is printed by
+axis. The module's four numbered findings are restated against both rules.
+
+**Checked against the previous output.** The full output was saved before the change
+(2 min 14 s). After it (2 min 16 s), all 22 figure rows of that output appear unchanged in
+the legacy block.
+
+**Checked against the decision log.** Seven recorded figures reproduce; five do not, or
+change meaning under the corrected rule. They are listed in D-070. The two that matter: the
+best cheap rung is the check-in call at 20%, not the nudge at 10%; and under the corrected
+rule the gate is not passed anywhere inside the calibration band.
+
+**Tested.** Three existing tests extended; 487 tests, lint and both calibration gates pass.
+

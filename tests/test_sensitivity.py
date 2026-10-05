@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from retainiq.experiments import sensitivity
 from retainiq.experiments.abstention import (
     CORRECTED,
     LEGACY,
@@ -22,10 +23,12 @@ from retainiq.experiments.abstention import (
     report,
     run_once,
     summarise,
+    sweep,
 )
 from retainiq.experiments.sensitivity import (
     TAU_BAND,
     economics,
+    policies_for,
     regret_matrix,
 )
 from retainiq.sim import SimConfig
@@ -47,6 +50,12 @@ def test_default_path_is_unchanged_by_parameterisation():
     for name in bare:
         assert bare[name].realised_value == pytest.approx(explicit[name].realised_value)
         assert bare[name].n_treated == explicit[name].n_treated
+
+    # The sensitivity remembers its sweeps so that the second decision rule's tables cost
+    # nothing (D-070). A cache that changed a figure would be a recalibration by accident.
+    remembered = sensitivity._sweep((400,), 1)
+    pd.testing.assert_frame_equal(remembered, sweep(sizes=(400,), seeds=1))
+    assert sensitivity._sweep((400,), 1) is remembered
 
 
 def test_sweeping_a_config_does_not_mutate_the_default():
@@ -163,14 +172,32 @@ def test_ties_and_wins_are_counted_separately():
     only_baseline = frame[frame.policy == "treat_all"]
     assert "no draws recorded" in report(summarise(only_baseline, CORRECTED), CORRECTED)
 
+    # The sensitivity prints in the same order, and each half names only its own rule's
+    # policies. It printed the legacy rule alone until D-070, which left the outcomes of
+    # three pre-registered predictions reproducible by no command.
+    out = sensitivity.render(scales=(-2.0,), sizes=(300,), seeds=2, alphas=(0.30,))
+    assert out.index("PHASE 4 SENSITIVITY") < out.index("BEFORE THE D-057 CORRECTION")
+    result, superseded = out.split("BEFORE THE D-057 CORRECTION")
+    assert CORRECTED.ours in result and CORRECTED.comparator in result
+    assert CORRECTED.ours not in superseded and CORRECTED.comparator not in superseded
+    assert LEGACY.comparator in superseded and LEGACY.comparator not in result
+    assert "the ones above are the result" in superseded
+    for half in (result, superseded):
+        assert "maximum regret by axis" in half
+
 
 def test_regret_is_normalised_and_the_best_policy_scores_zero():
-    rm = regret_matrix([("default", {})], sizes=(300,), seeds=2)
-    cols = [c for c in rm.columns if c.startswith("regret_")]
-    vals = rm[cols].to_numpy()
-    assert np.nanmin(vals) == pytest.approx(0.0), "the best policy has zero regret"
-    assert np.nanmax(vals) == pytest.approx(1.0), "the worst policy has regret 1"
-    assert ((vals >= -1e-9) & (vals <= 1 + 1e-9)).all()
+    """Under either rule, and never with the two rules' policies in one comparison."""
+    for rule, other in ((CORRECTED, LEGACY), (LEGACY, CORRECTED)):
+        rm = regret_matrix([("default", {})], rule, sizes=(300,), seeds=2)
+        cols = [c for c in rm.columns if c.startswith("regret_")]
+        assert cols == [f"regret_{p}" for p in policies_for(rule)]
+        assert f"regret_{other.ours}" not in cols
+        assert f"regret_{other.comparator}" not in cols
+        vals = rm[cols].to_numpy()
+        assert np.nanmin(vals) == pytest.approx(0.0), "the best policy has zero regret"
+        assert np.nanmax(vals) == pytest.approx(1.0), "the worst policy has regret 1"
+        assert ((vals >= -1e-9) & (vals <= 1 + 1e-9)).all()
 
 
 def test_tied_alphas_are_reported_as_undetermined():
@@ -178,7 +205,8 @@ def test_tied_alphas_are_reported_as_undetermined():
     `max` would name the first one and invent a preference the data does not contain."""
     from retainiq.experiments.sensitivity import alpha_by_offer
 
-    d = alpha_by_offer(alphas=(0.05, 0.49), sizes=(200,), seeds=1)
-    tied = d[~d["determinate"]]
-    assert d["determinate"].isin([True, False]).all()
-    assert tied["best_alpha"].isna().all(), "a tie must not be reported as a winner"
+    for rule in (CORRECTED, LEGACY):
+        d = alpha_by_offer(rule, alphas=(0.05, 0.49), sizes=(200,), seeds=1)
+        tied = d[~d["determinate"]]
+        assert d["determinate"].isin([True, False]).all()
+        assert tied["best_alpha"].isna().all(), "a tie must not be reported as a winner"

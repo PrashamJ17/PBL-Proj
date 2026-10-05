@@ -2329,3 +2329,74 @@ are **not reproducible by any command today**. That needs the same treatment as 
 today. Check it by running the command, never by reading another document. Now invariant
 14.
 
+---
+
+## D-070 — `make sensitivity` prints both rules, and what the corrected tables do to D-055, D-056 and D-057
+
+**What was missing**, and owed by D-069. The sensitivity analysis ran only the rule from
+before the D-057 correction. Two things followed. The outcomes of D-057's pre-registered
+predictions 1b, 1d and 2a, which are about the corrected rule on each rung of the ladder,
+could be reproduced by no command. And D-056's own headline, random at 58.9% maximum
+regret against abstention at 85.7%, was not printed either: the command printed the
+maximum over *both* axes, 85.7% against 87.0%, on which abstention looks best. That is the
+opposite of the finding the entry records.
+
+**The change.** Every function that involves an estimated policy takes the rule as an
+argument with no default (as in D-069). `make sensitivity` prints the corrected rule
+first and the legacy rule second, under a heading that says it is the rule D-055 and D-056
+were run on. Sweeps are remembered within a run, and each draw already records both rules,
+so the second set of tables costs nothing: 2 min 16 s against 2 min 14 s before. Regret is
+now printed by axis as well as overall, because the minimax-regret reading was formed on
+one axis and tested on the other. **All 22 figure rows of the previous output are printed
+unchanged in the legacy block.**
+
+**Reproduced as recorded.**
+
+| Recorded | Printed |
+|---|---|
+| D-057 1b: `discount_20_3mo` treats 24 → 13 | 24 → 13 |
+| D-057 1b: `discount_40_6mo` treats 28 → 1 | 28 → 1 |
+| D-057 1b: `feature_nudge` treats 25 → 26 | 25 → 26 |
+| D-057 2a: distinct best-alpha values, 2 → 3 | 0.49, 0.05 → 0.49, 0.30, 0.05 |
+| D-057 1c: the gate still fails on the reference discount | 5% of 40 draws here; 6 of 100 in `make abstention` |
+| D-056: on the ladder, random 58.9% against abstention 85.7% | 58.9% against 85.7% (legacy, by axis) |
+| D-055: the two win rates move in opposite directions | legacy 75% → 20% against 8% → 85%; corrected 90% → 48% against 5% → 68% |
+
+**Not as recorded.** Past entries are not edited; these stand as corrections to them.
+
+1. **D-057, prediction 1d.** It says the best cheap rung is `feature_nudge` at 10%, with
+   interval [0.03, 0.24]. `feature_nudge` is 10% (4 of 40, and the exact interval is
+   [0.03, 0.24]). But `checkin_call` beats doing nothing on **20%** of draws (8 of 40,
+   exact interval [0.09, 0.36]), so the best cheap rung is the check-in call. The verdict
+   is unchanged: the prediction needed more than 50%, and neither interval reaches it.
+2. **D-057, "`discount_40_6mo` at alpha = 0.05: −5,384 → 0".** −5,384 is the legacy figure
+   at alpha = **0.30**. Like for like it is −963 → 0 at 0.05, and −5,384 → −126 at 0.30.
+3. **D-055, finding 1: "the gate does flip" at `saveability_scale = −5`, 57%.** That is the
+   legacy rule. Under the corrected rule it is 40% at −5, and the gate is not passed
+   anywhere inside the calibration band; it first exceeds half at −8 (68%), which is
+   outside. D-055's conclusion, that the gate could not have been passed, is stronger for
+   it. But it is a qualitative statement that changes, and D-057 said none did.
+4. **D-056's hypothesis was partly an artefact of the units error.** Under the legacy
+   rule, abstention has the lowest maximum regret on the effect-size axis (34.9%, against
+   49.0% for ranking), which is what suggested reading it as a hedge. Under the corrected
+   rule ranking is lowest there (67.7%) and abstention is at 76.5%, so the corrected tables
+   would not have suggested the reading at all. On the ladder it fails under both rules
+   (random 58.9% against abstention 85.7% legacy, 86.1% corrected). The refutation
+   stands. What changes is that there was less to refute than it seemed.
+5. D-057's "up from 75%" prints as 74 of 100 (already in D-069).
+
+**What holds under both rules.** The gate fails on the reference discount. Beating ranking
+and beating doing nothing trade off across the effect-size axis and are never both above
+chance. The best alpha moves with the rung, from 0.49 on the nudge to 0.05 on the
+discounts. No cheap rung passes.
+
+**Tests.** None added, for the reason D-069 gives; three existing tests were extended.
+They now check both rules for the regret and alpha tables, that the two rules' policies are
+never mixed in one comparison, that a remembered sweep is identical to a fresh one, and
+that the printed output leads with the corrected rule. The debt D-069 recorded is larger:
+these want splitting into separate tests when the count next changes.
+
+**Documents.** The project report's §10.3 already quoted the corrected figures (90% → 48%,
+5% → 68%). Its §10.4 quotes the legacy 85.7% and now gives the corrected figure beside it.
+`papers/paper1/main.tex` quotes 58.9% against 85.7% and is not changed.
+

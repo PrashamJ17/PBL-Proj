@@ -205,10 +205,10 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-22** — **`make abstention` printed the PRE-D-057 rule under the Phase 4 heading (D-069)**
-  while every document quoted the corrected 93%. The figures were right; the command was not.
-  Now prints corrected first, legacy second; `summarise` takes the rule with NO default.
-  `make sensitivity` is still legacy ON PURPOSE: D-057's predictions 1b/1d/2a are reproducible by NO command. Owed.
+- **CP-22** — **`make abstention` and `make sensitivity` printed only the PRE-D-057 rule (D-069/070)**
+  while every document quoted the corrected one. Both now print corrected first, legacy second;
+  the rule is an argument with NO default. Quoted figures held, except: best cheap rung is
+  checkin_call 20% (not nudge 10%); the gate does NOT flip in-band once corrected (40% at −5); D-056's hedge reading was partly a bug artefact.
 - **CP-21** — **Four papers read in full; novelty narrowed (D-068).** Ascarza 2018 App. A3.4
   simulates corr(RISK, LIFT) (her studies ≈ ±0.2); her Study 2 has risk targeting RAISING churn.
   Profit-scored targeting = Lemmens & Gupta 2020, **not yet a baseline**. Left: pilot size,

@@ -38,7 +38,8 @@ with the others.
 (§5.9, new), the paper, software and data were archived publicly, and the test suite grew
 from 433 to 487.
 
-**What was and was not re-run.** §5.1, §5.2, §5.3 and the abstention table in §5.8 were
+**What was and was not re-run.** §5.1, §5.2, §5.3, the abstention table in §5.8, and the
+figures in §10.3 and §10.4 were
 re-run on 5 October 2026 and agree with what is printed, with one exception: the win rate
 before the D-057 correction, quoted in §10.2, prints as 74% and the submitted version said
 75%. §5.4 to §5.7, the offer-ladder
@@ -752,7 +753,8 @@ Underneath it is arithmetic: break-even requires |tau| > 0.040 while the offer d
 The sensitivity suggested the method was valuable as a *hedge* — never best, never
 catastrophic. Because that reading was formed after seeing a failure, it was pre-registered
 and tested on data that played no part in forming it. **It failed:** random assignment
-hedged better (58.9% versus 85.7% maximum regret). Withdrawn and recorded.
+hedged better (58.9% versus 85.7% maximum regret; 86.1% under the corrected rule of
+§10.2). Withdrawn and recorded.
 
 ### 10.5 A claim of novelty that the literature had already made (D-068)
 

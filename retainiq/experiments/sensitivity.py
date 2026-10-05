@@ -1,8 +1,8 @@
 """Why the Phase 4 gate failed: a sensitivity, not a recalibration.
 
-Phase 4 (D-054) found that abstention beats ranking on 65-80% of draws but never beats
-doing nothing. This module asks *why*, and the answer turns out to be arithmetic rather
-than decision theory.
+Phase 4 (D-054) found that abstention beats ranking on 65-80% of draws (93% once the rule
+was corrected, D-057) but never beats doing nothing. This module asks *why*, and the
+answer turns out to be arithmetic rather than decision theory.
 
 Treating customer *i* pays iff ``-tau_i * CLV_i > cost_i``, so the break-even effect
 size is ``cost_i / CLV_i``. Under the calibrated simulator and the reference offer that
@@ -32,32 +32,47 @@ Phase 0 and is unchanged. The comparator was chosen badly, and this axis says so
 **Nothing here changes a default.** `SimConfig` and `REFERENCE_OFFER` are untouched; the
 Phase 4 headline stands as reported. This module measures how far the conclusion travels.
 
-What it found (D-055, D-056):
+**Every table is printed under two decision rules** (D-057, D-069, D-070). `CORRECTED`
+decides on money and is printed first. `LEGACY` multiplied a log-odds effect by money; it
+is the rule D-055 and D-056 were run on, so it is printed second, under a heading that
+says so, and its figures are unchanged. Each draw records both rules, so one sweep serves
+both tables. The numbered findings below were written from the `LEGACY` tables; D-070
+records which of them the `CORRECTED` tables bear out.
 
-1. The gate *does* flip -- ``saveability_scale = -5`` beats do-nothing on 57% of draws --
-   but only at the very edge of the calibration band, and by then the sleeping-dog share
-   has fallen from 27% to 7% and blanket treatment wins 68% of draws on its own.
+What it found (D-055, D-056), and what the corrected rule does to each (D-070):
+
+1. Under `LEGACY` the gate *does* flip -- ``saveability_scale = -5`` beats do-nothing on
+   57% of draws -- but only at the very edge of the calibration band, and by then the
+   sleeping-dog share has fallen from 27% to 7% and blanket treatment wins 68% of draws on
+   its own. Under `CORRECTED` it does not flip inside the band at all: 40% at -5, and
+   above half only at -8, which is outside it.
 2. **The two win rates move in opposite directions.** Beating ranking and beating
    inaction are not jointly achievable anywhere in the swept range: at no setting is
    either rate significantly above chance while the other also is. The gate as written
-   asked for two things that trade off, so it could not have been passed.
+   asked for two things that trade off, so it could not have been passed. True under
+   both rules (`CORRECTED`: 90% falling to 48%, against 5% rising to 68%).
 3. A minimax-regret reading of (2) was proposed and then **failed** its out-of-sample
-   test on the ladder (D-056). It is recorded as refuted, not quietly dropped.
+   test on the ladder (D-056). It is recorded as refuted, not quietly dropped. It was
+   formed on the effect-size axis and tested on the ladder, which is why regret is
+   printed by axis. Under `CORRECTED` it fails on the ladder too, and would not have been
+   suggested in the first place: ranking has the lower maximum regret on the effect-size
+   axis.
 4. That failure localised a real defect: **a fixed alpha ignores payoff asymmetry.**
    `alpha_by_offer` shows the best threshold moving from 0.49 on a 0.10 nudge to 0.05 on
-   a 33-unit discount. This is the Phase 5 correction, and it is *not* applied here --
-   diagnosing a flaw and fixing it in the same commit is how a sensitivity turns into
-   the tuning it was supposed to guard against.
+   a 33-unit discount, under both rules. This is the Phase 5 correction, and it is *not*
+   applied here -- diagnosing a flaw and fixing it in the same commit is how a
+   sensitivity turns into the tuning it was supposed to guard against.
 """
 
 from __future__ import annotations
 
 from dataclasses import replace
+from functools import cache
 
 import numpy as np
 import pandas as pd
 
-from retainiq.experiments.abstention import LEGACY, summarise, sweep
+from retainiq.experiments.abstention import CORRECTED, LEGACY, Rule, summarise, sweep
 from retainiq.sim import SimConfig, simulate
 from retainiq.sim.counterfactual import LADDER, REFERENCE_OFFER, Offer, potential_outcomes
 
@@ -68,6 +83,19 @@ TAU_BAND = (-0.05, 0.0)
 #: Effect sizes to sweep. The first is the default; the last two deliberately exit the
 #: band so the reader can see what buying the gate would actually cost.
 SCALES = (-2.0, -3.0, -4.0, -5.0, -6.0, -8.0)
+
+
+@cache
+def _sweep(sizes, seeds, alpha=0.30, budget=0.30, config=None, offer=REFERENCE_OFFER):
+    """`sweep`, remembered for the length of the run.
+
+    A sweep is a deterministic function of these arguments and every draw records both
+    decision rules, so the second rule's tables cost nothing. The regret matrix and the
+    alpha table also revisit settings the two axes have already run. Callers read the
+    frame and must not modify it.
+    """
+    return sweep(sizes=sizes, seeds=seeds, alpha=alpha, budget=budget,
+                 config=config, offer=offer)
 
 
 def economics(
@@ -102,13 +130,14 @@ def economics(
     }
 
 
-def _gate(sizes, seeds, config=None, offer=REFERENCE_OFFER, alpha=0.30, budget=0.30):
-    """Run the Phase 4 gate under one setting and reduce it to the two headline rates."""
-    # LEGACY on purpose. D-055 and D-056 were run on the rule as it then stood, and
-    # D-057 keeps that rule so they stay reproducible. This module does not print the
-    # corrected rule's sensitivity; see D-069.
-    s = summarise(sweep(sizes=sizes, seeds=seeds, alpha=alpha, budget=budget,
-                        config=config, offer=offer), LEGACY)
+def _gate(sizes, seeds, rule: Rule, config=None, offer=REFERENCE_OFFER, alpha=0.30,
+          budget=0.30):
+    """Run the Phase 4 gate under one setting and reduce it to the two headline rates.
+
+    `rule` has no default, for the reason given in `abstention.summarise` (D-069).
+    """
+    s = summarise(_sweep(tuple(sizes), seeds, alpha=alpha, budget=budget,
+                         config=config, offer=offer), rule)
     cols = ["beats_topk", "beats_nothing", "ties_nothing", "treat_all_wins",
             "abstain_mean", "treated"]
     if s.empty:
@@ -128,6 +157,7 @@ def _gate(sizes, seeds, config=None, offer=REFERENCE_OFFER, alpha=0.30, budget=0
 
 
 def effect_size_sensitivity(
+    rule: Rule,
     scales: tuple[float, ...] = SCALES,
     sizes: tuple[int, ...] = (500, 1000),
     seeds: int = 20,
@@ -144,11 +174,12 @@ def effect_size_sensitivity(
         cfg = replace(cfg, intervention=replace(cfg.intervention, saveability_scale=s))
         econ = economics(config=cfg)
         rows.append({"saveability_scale": s, "is_default": s == -2.0,
-                     **econ, **_gate(sizes, seeds, config=cfg)})
+                     **econ, **_gate(sizes, seeds, rule, config=cfg)})
     return pd.DataFrame(rows)
 
 
 def offer_sensitivity(
+    rule: Rule,
     sizes: tuple[int, ...] = (500, 1000),
     seeds: int = 20,
 ) -> pd.DataFrame:
@@ -162,15 +193,21 @@ def offer_sensitivity(
         econ = economics(offer=off)
         rows.append({"offer": off.name, "rung": off.rung,
                      "is_phase4_default": off.name == REFERENCE_OFFER.name,
-                     **econ, **_gate(sizes, seeds, offer=off)})
+                     **econ, **_gate(sizes, seeds, rule, offer=off)})
     return pd.DataFrame(rows)
 
 
-#: Every policy `run_once` scores, in the order they are reported.
-POLICIES = ["do_nothing", "treat_all", "random_30pct", "top_k_expected_value", "abstention"]
+def policies_for(rule: Rule) -> list[str]:
+    """The policies compared under one rule, in the order they are reported.
+
+    The three baselines do not depend on the rule; the ranking and abstention policies
+    do. The two rules' policies are never mixed in one comparison.
+    """
+    return ["do_nothing", "treat_all", "random_30pct", rule.comparator, rule.ours]
 
 
-def regret_matrix(settings: list[tuple[str, dict]], sizes=(500, 1000), seeds=20) -> pd.DataFrame:
+def regret_matrix(settings: list[tuple[str, dict]], rule: Rule, sizes=(500, 1000),
+                  seeds=20) -> pd.DataFrame:
     """Mean realised value of every policy under every setting, plus regret.
 
     Regret is normalised within a setting -- ``(best - this) / (best - worst)`` -- because
@@ -182,21 +219,23 @@ def regret_matrix(settings: list[tuple[str, dict]], sizes=(500, 1000), seeds=20)
     regret across the effect-size axis, which suggested it was a minimax-regret hedge; the
     offer ladder, which was not used to form that idea, refused to reproduce it.
     """
+    names = policies_for(rule)
     rows = []
     for name, kw in settings:
-        frame = sweep(sizes=sizes, seeds=seeds, **kw)
+        frame = _sweep(tuple(sizes), seeds, **kw)
         per = frame.groupby("policy")["value"].mean()
-        rows.append({"setting": name, **{p: float(per.get(p, np.nan)) for p in POLICIES}})
+        rows.append({"setting": name, **{p: float(per.get(p, np.nan)) for p in names}})
     out = pd.DataFrame(rows)
-    vals = out[POLICIES]
+    vals = out[names]
     best, worst = vals.max(axis=1), vals.min(axis=1)
     spread = (best - worst).clip(lower=1e-9)
-    for p in POLICIES:
+    for p in names:
         out[f"regret_{p}"] = (best - out[p]) / spread
     return out
 
 
-def alpha_by_offer(alphas=(0.05, 0.30, 0.49), sizes=(500, 1000), seeds=20) -> pd.DataFrame:
+def alpha_by_offer(rule: Rule, alphas=(0.05, 0.30, 0.49), sizes=(500, 1000),
+                   seeds=20) -> pd.DataFrame:
     """Which confidence threshold is best on each rung of the ladder?
 
     The Phase 4 rule fixes alpha at 0.30 for every decision. If the best alpha *moves*
@@ -211,8 +250,8 @@ def alpha_by_offer(alphas=(0.05, 0.30, 0.49), sizes=(500, 1000), seeds=20) -> pd
         row = {"offer": off.name, "rung": off.rung, "cost": float(off.contact_cost
                + off.discount_pct * np.exp(4.0) * off.discount_months)}
         for a in alphas:
-            f = sweep(sizes=sizes, seeds=seeds, alpha=a, offer=off)
-            row[f"alpha_{a}"] = float(f.loc[f.policy == "abstention", "value"].mean())
+            f = _sweep(tuple(sizes), seeds, alpha=a, offer=off)
+            row[f"alpha_{a}"] = float(f.loc[f.policy == rule.ours, "value"].mean())
             row["treat_all"] = float(f.loc[f.policy == "treat_all", "value"].mean())
         vals = [row[f"alpha_{a}"] for a in alphas]
         # Every alpha ties when the sample is too small for any of them to act: the
@@ -247,10 +286,38 @@ def _fmt(frame: pd.DataFrame, key: str, label: str, extra: str) -> list[str]:
     return lines
 
 
-def report(effect: pd.DataFrame, offers: pd.DataFrame) -> str:
-    """The sensitivity, stated so a referee can see what it does and does not license."""
-    out = [
+HEADINGS = {
+    CORRECTED.name: (
         "PHASE 4 SENSITIVITY -- where does the gate pass, and what does passing cost?",
+        "Decision rule as corrected in D-057: both policies decide on money.",
+    ),
+    LEGACY.name: (
+        "BEFORE THE D-057 CORRECTION -- the same sweeps, under the rule D-055 and D-056 "
+        "were run on",
+        "A log-odds effect was multiplied by money. Kept so that D-055 and D-056 stay\n"
+        "reproducible. Where these tables differ from the ones above, the ones above are "
+        "the result.",
+    ),
+}
+
+LEGEND = [
+    "oracle = share a policy knowing every tau exactly would treat. The CEILING.",
+    "dogs   = share with tau > 0. On axis 1 this is the mechanism being traded",
+    "         away to buy a passing gate -- read it before believing any win.",
+    ">topk  = beats ranking.   >zero = beats do-nothing.   =zero = treats NOBODY",
+    "         and ties, which is the safety property working, not a loss.",
+    "all>0  = blanket treatment already profits. Where this is high the decision",
+    "         layer is solving a problem the business does not have.",
+    "The first six columns are computed from ground truth and do not depend on the rule.",
+]
+
+
+def report(effect: pd.DataFrame, offers: pd.DataFrame, rule: Rule, legend: bool = True) -> str:
+    """The sensitivity, stated so a referee can see what it does and does not license."""
+    title, note = HEADINGS[rule.name]
+    out = [
+        title,
+        note,
         "=" * 108,
         "",
         "AXIS 1: EFFECT SIZE (saveability_scale). Reference offer; cost held fixed.",
@@ -263,38 +330,59 @@ def report(effect: pd.DataFrame, offers: pd.DataFrame) -> str:
         "",
     ]
     out += _fmt(offers, "offer", "offer", "")
-    out += [
-        "",
-        "=" * 112,
-        "oracle = share a policy knowing every tau exactly would treat. The CEILING.",
-        "dogs   = share with tau > 0. On axis 1 this is the mechanism being traded",
-        "         away to buy a passing gate -- read it before believing any win.",
-        ">topk  = beats ranking.   >zero = beats do-nothing.   =zero = treats NOBODY",
-        "         and ties, which is the safety property working, not a loss.",
-        "all>0  = blanket treatment already profits. Where this is high the decision",
-        "         layer is solving a problem the business does not have.",
-    ]
+    if legend:
+        out += ["", "=" * 112, *LEGEND]
     return "\n".join(out)
 
 
-def _regret_settings() -> list[tuple[str, dict]]:
+def block(rule: Rule, scales=SCALES, sizes=(500, 1000), seeds=20,
+          alphas=(0.05, 0.30, 0.49)) -> str:
+    """Everything this module prints, under one decision rule."""
+    out = [report(effect_size_sensitivity(rule, scales, sizes, seeds),
+                  offer_sensitivity(rule, sizes, seeds), rule, legend=rule is CORRECTED)]
+    out.append(f"\n\nREGRET BY POLICY, {rule.name} rule "
+               "(normalised within setting; max is the summary)")
+    out.append("=" * 112)
+    rm = regret_matrix(_regret_settings(scales), rule, sizes, seeds)
+    ranked = sorted(policies_for(rule), key=lambda q: rm[f"regret_{q}"].max())
+    for p in ranked:
+        col = rm[f"regret_{p}"]
+        out.append(f"  {p:>22}   max {col.max():>6.1%}   mean {col.mean():>6.1%}")
+    # The minimax-regret reading was formed on one axis and tested on the other (D-056),
+    # so the maximum over both hides the result. Regret is normalised within a setting,
+    # which makes a maximum over either subset of settings meaningful on its own.
+    on_effect_axis = rm["setting"].str.startswith(EFFECT_PREFIX)
+    out.append("")
+    out.append(f"  {'maximum regret by axis':>22}   {'effect size':>11}   {'offer ladder':>12}")
+    for p in ranked:
+        col = rm[f"regret_{p}"]
+        out.append(f"  {p:>22}   {col[on_effect_axis].max():>11.1%}"
+                   f"   {col[~on_effect_axis].max():>12.1%}")
+    out.append(f"\n\nBEST ALPHA BY RUNG, {rule.name} rule "
+               "-- if this column moves, a constant alpha is wrong")
+    out.append("=" * 112)
+    out.append(alpha_by_offer(rule, alphas, sizes, seeds).to_string(index=False))
+    return "\n".join(out)
+
+
+def render(**kw) -> str:
+    """Both rules from the same sweeps: the result first, the superseded rule second."""
+    return ("\n\n\n" + "#" * 112 + "\n").join(block(rule, **kw) for rule in (CORRECTED, LEGACY))
+
+
+#: Prefix of the effect-size settings' names, which is how the two axes are told apart.
+EFFECT_PREFIX = "sav="
+
+
+def _regret_settings(scales=SCALES) -> list[tuple[str, dict]]:
     """The two axes as `regret_matrix` settings: effect size, then the ladder."""
     out = []
-    for s in SCALES:
+    for s in scales:
         cfg = SimConfig()
         cfg = replace(cfg, intervention=replace(cfg.intervention, saveability_scale=s))
-        out.append((f"sav={s}", {"config": cfg}))
+        out.append((f"{EFFECT_PREFIX}{s}", {"config": cfg}))
     return out + [(o.name, {"offer": o}) for o in LADDER]
 
 
 if __name__ == "__main__":
-    print(report(effect_size_sensitivity(), offer_sensitivity()))
-    print("\n\nREGRET BY POLICY (normalised within setting; max is the summary)")
-    print("=" * 112)
-    rm = regret_matrix(_regret_settings())
-    for p in sorted(POLICIES, key=lambda q: rm[f"regret_{q}"].max()):
-        col = rm[f"regret_{p}"]
-        print(f"  {p:>22}   max {col.max():>6.1%}   mean {col.mean():>6.1%}")
-    print("\n\nBEST ALPHA BY RUNG -- if this column moves, a constant alpha is wrong")
-    print("=" * 112)
-    print(alpha_by_offer().to_string(index=False))
+    print(render())
