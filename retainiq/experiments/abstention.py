@@ -11,11 +11,19 @@ Three things make this an honest test rather than a demonstration.
 beating 718) used oracle effects and is an upper bound on what an estimated rule can
 do, not evidence for one. Here every policy sees only what a business would see.
 
-**The comparator is the strong version.** `top_k_expected_value` ranks by
-`-tau_hat * V - c`, using the *same* estimator's point estimate and the same customer
-values. So the comparison isolates **abstention** -- the decision to spend less than the
-budget -- and not the fact that customers are worth different amounts, which would
-flatter us for a reason that has nothing to do with the contribution.
+**The comparator is the strong version.** It ranks by expected money from the *same*
+estimator and the same customer values, and fills the budget. So the comparison isolates
+**abstention** -- the decision to spend less than the budget -- and not the fact that
+customers are worth different amounts, which would flatter us for a reason that has
+nothing to do with the contribution.
+
+**Two rules are recorded on every draw, and only one of them is the result** (D-057,
+D-069). `CORRECTED` converts the log-odds effect to a change in probability before
+multiplying by money. `LEGACY` is the rule as Phase 4 first ran it, which multiplied the
+log-odds effect by money directly. `LEGACY` is kept so that D-054, D-055 and D-056 stay
+reproducible, and it is printed second, under a heading that says what it is. For a
+while this module printed only `LEGACY`, under the Phase 4 heading, after every document
+had moved to quoting `CORRECTED`.
 
 **Reported as a win rate, not a mean** (D-023). A business gets one draw. A policy with
 a good average and a wide spread is a gamble, and averaging conceals exactly the risk
@@ -49,6 +57,24 @@ FEATURES = [
     "support_tickets_90d", "unresolved_pain", "payment_failures_ltd",
     "seats_active_ratio", "champion_departed", "price_to_median",
 ]
+
+
+@dataclass(frozen=True)
+class Rule:
+    """A decision rule and the comparator it is scored against, as `run_once` names them."""
+
+    name: str
+    ours: str
+    comparator: str
+
+
+#: The rule as it has stood since D-057: both policies decide on a posterior over money.
+#: This is the Phase 4 result.
+CORRECTED = Rule("corrected", ours="abstention_money", comparator="top_k_money")
+
+#: The rule as Phase 4 first ran it (D-054): a log-odds effect multiplied by money as
+#: though it were a probability difference. Kept for reproducibility. Not a result.
+LEGACY = Rule("legacy", ours="abstention", comparator="top_k_expected_value")
 
 
 @dataclass
@@ -192,8 +218,11 @@ def sweep(
     return pd.DataFrame(rows)
 
 
-def summarise(frame: pd.DataFrame) -> pd.DataFrame:
-    """Win rate against the strong comparator, per size.
+def summarise(frame: pd.DataFrame, rule: Rule) -> pd.DataFrame:
+    """Win rate against the strong comparator, per size, under one decision rule.
+
+    `rule` has no default on purpose. Which rule a table shows is the difference between
+    the Phase 4 result and a superseded one, so every caller states it (D-069).
 
     The headline is `beats_topk` -- the proportion of draws on which abstention
     earned more than ranking-and-filling-the-budget did. Means are reported beside
@@ -205,58 +234,98 @@ def summarise(frame: pd.DataFrame) -> pd.DataFrame:
     if only the first is reported. Separating them is what makes the safety property
     (D-054) measurable rather than merely asserted.
     """
+    ours, comparator = rule.ours, rule.comparator
     rows = []
     for n, g in frame.groupby("n_customers"):
         wide = g.pivot(index="seed", columns="policy", values="value")
         treated = g.pivot(index="seed", columns="policy", values="n_treated")
-        if "abstention" not in wide or "top_k_expected_value" not in wide:
+        if ours not in wide or comparator not in wide:
             continue
         rows.append({
             "n_customers": n,
             "seeds": len(wide),
-            "abstain_mean": wide["abstention"].mean(),
-            "topk_mean": wide["top_k_expected_value"].mean(),
+            "abstain_mean": wide[ours].mean(),
+            "topk_mean": wide[comparator].mean(),
             "random_mean": wide.filter(like="random").mean(axis=1).mean(),
-            "beats_topk": (wide["abstention"] > wide["top_k_expected_value"]).mean(),
-            "beats_random": (wide["abstention"] > wide.filter(like="random").mean(axis=1)).mean(),
-            "abstain_positive": (wide["abstention"] > 0).mean(),
-            "abstain_ties": (wide["abstention"] == 0).mean(),
-            "abstain_not_worse": (wide["abstention"] >= 0).mean(),
-            "topk_positive": (wide["top_k_expected_value"] > 0).mean(),
+            "beats_topk": (wide[ours] > wide[comparator]).mean(),
+            "beats_random": (wide[ours] > wide.filter(like="random").mean(axis=1)).mean(),
+            "abstain_positive": (wide[ours] > 0).mean(),
+            "abstain_ties": (wide[ours] == 0).mean(),
+            "abstain_not_worse": (wide[ours] >= 0).mean(),
+            "topk_positive": (wide[comparator] > 0).mean(),
             "treat_all_mean": wide["treat_all"].mean() if "treat_all" in wide else np.nan,
             "treat_all_positive": (
                 (wide["treat_all"] > 0).mean() if "treat_all" in wide else np.nan
             ),
-            "abstain_treated": treated["abstention"].mean(),
-            "topk_treated": treated["top_k_expected_value"].mean(),
+            "abstain_treated": treated[ours].mean(),
+            "topk_treated": treated[comparator].mean(),
         })
     return pd.DataFrame(rows)
 
 
-def report(summary: pd.DataFrame) -> str:
-    lines = [
+HEADINGS = {
+    CORRECTED.name: (
         "PHASE 4 GATE -- abstention vs ranking, realised money, ground truth withheld",
-        "=" * 96,
-        f"{'n':>6}{'seeds':>7}{'abstain':>11}{'top-k':>11}{'random':>11}"
-        f"{'beats topk':>12}{'abstain>0':>11}{'topk>0':>9}{'treated':>16}",
-        "-" * 96,
+        "Decision rule as corrected in D-057: both policies decide on money.",
+    ),
+    LEGACY.name: (
+        "BEFORE THE D-057 CORRECTION -- the same draws, under the rule as Phase 4 first ran it",
+        "A log-odds effect was multiplied by money. Kept so that D-054 to D-056 stay\n"
+        "reproducible. These are not the Phase 4 result and should not be quoted as it.",
+    ),
+}
+
+
+def report(summary: pd.DataFrame, rule: Rule, legend: bool = True) -> str:
+    title, note = HEADINGS[rule.name]
+    width = 102
+    lines = [title, note, "=" * width]
+    if summary.empty:
+        # Never print an empty table under a heading: that reads as "nothing happened".
+        lines.append(f"no draws recorded for {rule.ours!r} against {rule.comparator!r}")
+        return "\n".join(lines)
+    lines += [
+        f"{'n':>6}{'seeds':>7}{'abstain':>10}{'ranking':>10}{'random':>10}"
+        f"{'beats rank':>12}{'beats 0':>9}{'ties 0':>8}{'rank>0':>8}{'treated':>16}",
+        "-" * width,
     ]
     for _, r in summary.iterrows():
         lines.append(
-            f"{int(r.n_customers):>6}{int(r.seeds):>7}{r.abstain_mean:>11,.0f}"
-            f"{r.topk_mean:>11,.0f}{r.random_mean:>11,.0f}"
-            f"{r.beats_topk:>11.0%}{r.abstain_positive:>11.0%}{r.topk_positive:>9.0%}"
-            f"{r.abstain_treated:>7.0f} vs{r.topk_treated:>6.0f}"
+            f"{int(r.n_customers):>6}{int(r.seeds):>7}{r.abstain_mean:>10,.0f}"
+            f"{r.topk_mean:>10,.0f}{r.random_mean:>10,.0f}"
+            f"{r.beats_topk:>12.0%}{r.abstain_positive:>9.0%}{r.abstain_ties:>8.0%}"
+            f"{r.topk_positive:>8.0%}{r.abstain_treated:>7.0f} vs{r.topk_treated:>6.0f}"
         )
-    lines.append("-" * 96)
+    lines.append("-" * width)
+    draws = summary["seeds"].sum()
+    wins = (summary["beats_topk"] * summary["seeds"]).sum()
+    ours = (summary["abstain_mean"] * summary["seeds"]).sum() / draws
+    theirs = (summary["topk_mean"] * summary["seeds"]).sum() / draws
     lines.append(
-        "beats topk = share of draws where abstention earned more than ranking.\n"
-        "abstain>0 / topk>0 = share of draws where the policy beat doing nothing.\n"
-        "treated = customers contacted, abstention vs top-k, at the same budget cap."
+        f"all sizes: beats ranking on {wins:.0f} of {draws:.0f} draws ({wins / draws:.0%});"
+        f" mean realised {ours:,.0f} vs {theirs:,.0f} for ranking"
     )
+    if legend:
+        lines.append(LEGEND)
     return "\n".join(lines)
 
 
+LEGEND = (
+        "beats rank = share of draws where abstention earned more than ranking.\n"
+        "beats 0 / rank>0 = share of draws where the policy beat doing nothing.\n"
+        "ties 0 = share of draws where abstention treated nobody and scored exactly zero;\n"
+        "         read it with beats 0, or a rule that correctly declines looks like a loss.\n"
+        "treated = customers contacted, abstention vs ranking, at the same budget cap."
+)
+
+
+def render(frame: pd.DataFrame) -> str:
+    """Both rules from one sweep: the result first, the superseded rule second."""
+    return "\n\n\n".join(
+        report(summarise(frame, rule), rule, legend=rule is CORRECTED)
+        for rule in (CORRECTED, LEGACY)
+    )
+
+
 if __name__ == "__main__":
-    s = summarise(sweep())
-    print(report(s))
+    print(render(sweep()))

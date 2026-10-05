@@ -39,7 +39,9 @@ with the others.
 from 433 to 487.
 
 **What was and was not re-run.** §5.1, §5.2, §5.3 and the abstention table in §5.8 were
-re-run on 5 October 2026 and agree with what is printed. §5.4 to §5.7, the offer-ladder
+re-run on 5 October 2026 and agree with what is printed, with one exception: the win rate
+before the D-057 correction, quoted in §10.2, prints as 74% and the submitted version said
+75%. §5.4 to §5.7, the offer-ladder
 table in §5.8, §7.3 and §11 were not re-run. Statements about commercial tools were not
 re-checked.
 
@@ -481,9 +483,8 @@ With ground truth withheld from every policy, 20 draws per size:
 and the third column explains why: on roughly three-quarters of draws the rule treats
 nobody and scores exactly zero.
 
-*Recomputed on 5 October 2026 and unchanged. Note that `make abstention` prints the rule as
-it was before the D-057 correction (§10.2); the figures above come from the
-`abstention_money` and `top_k_money` rows of the same sweep.*
+*Re-run on 5 October 2026 and unchanged. `make abstention` prints this table first, and
+beneath it the same draws under the rule as it stood before the D-057 correction (§10.2).*
 
 **The offer-ladder optimiser** (choosing *which* intervention per customer, learned from a
 randomised multi-arm pilot):
@@ -571,7 +572,7 @@ committed to version control **first**:
 
 ### 6.4 Invariants enforced by continuous integration
 
-Thirteen invariants are documented, and the ones that can be are enforced automatically:
+Fourteen invariants are documented, and the ones that can be are enforced automatically:
 temporal splits only; latent variables never reachable from observable data; never
 hand-tune the hazard intercept; voluntary and involuntary churn never summed; value always
 measured against doing nothing; splits by subject and never by row; never extrapolate past
@@ -732,7 +733,7 @@ self-consistency tests cannot detect a units error.* The test that now catches i
 value computed by hand.
 
 Correcting it reduced losses from −3,531 to −1,070 and improved the win rate against
-ranking from 75% to 93% — and **changed no qualitative conclusion**.
+ranking from 74% to 93% — and **changed no qualitative conclusion**.
 
 ### 10.3 A gate that could not have been passed
 

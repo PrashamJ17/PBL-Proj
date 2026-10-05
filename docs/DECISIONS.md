@@ -2266,3 +2266,66 @@ the four papers do not cover. The public texts that still carry the earlier word
 (`README.md` scope note, `papers/RESEARCH_PAPER.md`, `papers/paper1/README.md`,
 `docs/RESEARCH-PLAN.md` §2, `PROJECT_REPORT.md`, the `spectrum.py` docstring, and the
 published record) are **not** changed by this entry and remain to be corrected.
+
+---
+
+## D-069 — `make abstention` printed the superseded rule; the result is now printed first
+
+**The defect.** Since D-057, `run_once` has recorded two pairs of policies on every draw:
+the rule as Phase 4 first ran it (`abstention` against `top_k_expected_value`, a log-odds
+effect multiplied by money) and the corrected rule (`abstention_money` against
+`top_k_money`). `summarise` and `report` read only the first pair. So `make abstention`
+printed, under the heading "PHASE 4 GATE", 75/80/70/65/80% against ranking and −3,531 at
+n = 2,000, while the README, the project report, the panel speech and the paper all quoted
+93% and −1,070. No command printed the corrected rows. The paper's own reproduction table
+names this command for the *post-fix* table.
+
+**How it was found.** Not by a test. On 5 October 2026 the command was re-run while the
+project report was being revised, and its output did not match the table it was supposed
+to reproduce.
+
+**Why it survived.** D-057 kept `decide` "so D-054/055/056 stay reproducible", which was
+right, and added the corrected policies to `run_once`, which was also right. It did not
+change what was printed. The corrected figures were computed once from the sweep and
+copied into documents, and every later check compared one document with another. That is
+the shape of D-057 and D-066 again: consistent with itself, never compared with what the
+command prints. The live-demo runbook lists this command.
+
+**The quoted figures are correct.** Recomputed from the `*_money` rows of the sweep:
+95/85/95/100/90% against ranking by size; 20/5/5/0/0% beating doing nothing;
+70/70/80/70/80% tying it; 5/23, 12/46, 14/90, 27/181, 21/359 treated; 93 of 100 draws
+overall; mean realised −524 against −2,919; −1,070 at n = 2,000. Every one matches what
+the documents say. One figure does not: D-057 gives the earlier win rate as 75%, and the
+legacy table prints 74 of 100.
+
+**The change.**
+
+- The two pairs are named: `CORRECTED` and `LEGACY`.
+- `summarise(frame, rule)` takes the rule as an argument **with no default**. Which rule a
+  table shows is the difference between the result and a superseded one, so every caller
+  states it, in the same spirit as `allow_extrapolation=True` (invariant 12).
+- `make abstention` prints the corrected rule first, under the Phase 4 heading, and the
+  legacy rule second, under a heading that says it is the rule before the correction and
+  is not to be quoted. The legacy table stays because D-054 to D-056 were run on it.
+- The table gains the tie rate. D-054 says "beats doing nothing" and "ties it" must be
+  read together; the printed table had only the first.
+- A rule with no draws prints a sentence saying so, never an empty table.
+
+**Tests, and a trade-off stated plainly.** No test was added. Two existing tests in
+`tests/test_sensitivity.py` were extended: one now asserts that each rule's summary reads
+its own pair of policies (the two pairs are given different outcomes), that the printed
+output leads with the corrected rule, and that an absent rule is reported as absent; the
+other asserts that `run_once` still records the four policy names the summaries depend
+on. Separate tests would be cleaner. They were not added because the test count is
+quoted in the deck, the speech, the runbook, the storyboard and a recorded video, all
+rebuilt the same day. Split them the next time the count changes for another reason.
+
+**Not done, and owed.** `make sensitivity` still runs the legacy rule, deliberately, and
+the call site now says so. The consequence is that the outcomes of D-057's pre-registered
+predictions 1b, 1d and 2a, which concern the corrected rule on each rung of the ladder,
+are **not reproducible by any command today**. That needs the same treatment as this one.
+
+**Rule.** A number quoted in a document must be the number its named command prints
+today. Check it by running the command, never by reading another document. Now invariant
+14.
+

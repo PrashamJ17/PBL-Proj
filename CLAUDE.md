@@ -104,6 +104,8 @@ before dashboards → dunning autopilot → retention decisions, ordered by *tru
     assumption a visible line of code (D-046, D-050).
 13. **Degenerate survival inputs raise errors about the DATA, not the solver** (D-051).
     NaN covariates raise rather than impute — filling is a loader decision.
+14. **A quoted number is what its named command prints TODAY.** Run the command; never copy
+    a figure from another document (D-057, D-066, D-069 are all this failure).
 
 ---
 
@@ -203,13 +205,15 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-22** — **`make abstention` printed the PRE-D-057 rule under the Phase 4 heading (D-069)**
+  while every document quoted the corrected 93%. The figures were right; the command was not.
+  Now prints corrected first, legacy second; `summarise` takes the rule with NO default.
+  `make sensitivity` is still legacy ON PURPOSE: D-057's predictions 1b/1d/2a are reproducible by NO command. Owed.
 - **CP-21** — **Four papers read in full; novelty narrowed (D-068).** Ascarza 2018 App. A3.4
-  already simulates corr(RISK, LIFT) (her studies ≈ ±0.2); her Study 2 has risk targeting RAISING
-  churn (+4.4pp). Profit-scored targeting + validated cutoff = Lemmens & Gupta 2020, **not yet a
-  baseline**. Left: pilot size, low-churn floor, uplift losing at finite n. **Our five points are
-  NOT like-for-like** (real: estimates, pooled risk, one seed; SubSim: TRUE effect, ORACLE vs
-  score); six checks owed. All repo docs, deck, speech, report, explainer corrected (+20 tests → 487); paper text NOT.
-  **`make abstention` PRINTS THE PRE-D-057 RULE** (65–80%); the 93% lives in the `*_money` rows. Task raised.
+  simulates corr(RISK, LIFT) (her studies ≈ ±0.2); her Study 2 has risk targeting RAISING churn.
+  Profit-scored targeting = Lemmens & Gupta 2020, **not yet a baseline**. Left: pilot size,
+  low-churn floor, uplift losing at finite n. **Five points NOT like-for-like** (SubSim = ORACLE
+  on TRUE effects); six checks owed. All repo docs, deck, speech, report, explainer corrected; paper text NOT.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% < 96.7% for always
   'stays'** — never a headline. Readiness PER COMPONENT. Live recording caught the demo export
@@ -218,20 +222,16 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   `22009471` was the paper. Self-referential citations are locally coherent — D-057's shape.
   **Rule: resolve every identifier, never recall it.** Repo public → Zenodo↔GitHub release;
   `make paper` / `make paper-docx` replace manual exports. README numbers re-verified.
-- **CP-17** — **AI outreach priced, not argued (D-064).** Cost per contact is not what
-  harms; salience is, and nobody measures it — so it was SWEPT. **Break-even salience =
-  0.80, BELOW neutral**: a channel merely as intrusive as a standard offer loses money sent
-  to everyone (−4.93/cust, 55% harmed). At MATCHED salience the AI call DOES win (5.31 vs
-  3.97). **Cheap actuators make selection matter MORE** (oracle share 70%→14%). AI email
-  (sal 0.35) is the best channel — the finding is intrusiveness, not AI. `docs/AUTOMATION.md`:
-  policy gate is code not a prompt; TCPA is $500-1,500 PER CALL. Holdout BEFORE any sender.
-- **CP-16** — **The Autopsy can finally be delivered (D-062).** "It's a sales task" hid an
-  engineering blocker: no command took a client CSV → report. Tested against a real Stripe
-  export, **4 failures in a row**; alias resolution is now table-aware. **`preflight` is the
-  important piece** — Stripe exports CENTS, so `Plan Amount=2900` is $29.00 and a report
-  would quote churn cost at **100x**. It BLOCKS, never converts (converting silently = the
-  D-057 error again). `docs/SALES-RUNBOOK.md` lists FORBIDDEN claims, each tied to the
-  experiment forbidding it. **Gate still open: nobody has paid.**
+- **CP-17** — **AI outreach priced, not argued (D-064).** Salience harms, not cost per
+  contact, so it was SWEPT. **Break-even salience = 0.80, BELOW neutral**: a channel as
+  intrusive as a standard offer loses money sent to everyone (−4.93/cust). At MATCHED salience
+  the AI call DOES win (5.31 vs 3.97). **Cheap actuators make selection matter MORE**. AI email
+  is the best channel — the finding is intrusiveness, not AI. Holdout BEFORE any sender.
+- **CP-16** — **The Autopsy can finally be delivered (D-062).** No command took a client CSV
+  → report; a real Stripe export failed **4 times in a row**. **`preflight` is the important
+  piece** — Stripe exports CENTS, so a report would quote churn cost at **100x**. It BLOCKS,
+  never converts (converting silently = D-057 again). `docs/SALES-RUNBOOK.md` lists FORBIDDEN
+  claims, each tied to the experiment forbidding it. **Gate still open: nobody has paid.**
 - **CP-15/14/13** — **Phase 5 built, then shipped (D-058/059/061).** Optimizer makes money
   (28% of oracle vs 13%) but beats the achievable rival on only **58% [.42,.72]** — chance;
   a hindsight uniform rung captures **73%**, so **choosing the offer beats choosing the

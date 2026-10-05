@@ -15,7 +15,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from retainiq.experiments.abstention import run_once, summarise
+from retainiq.experiments.abstention import (
+    CORRECTED,
+    LEGACY,
+    render,
+    report,
+    run_once,
+    summarise,
+)
 from retainiq.experiments.sensitivity import (
     TAU_BAND,
     economics,
@@ -33,6 +40,10 @@ def test_default_path_is_unchanged_by_parameterisation():
     bare = run_once(400, seed=1001)
     explicit = run_once(400, seed=1001, config=SimConfig(), offer=REFERENCE_OFFER)
     assert bare.keys() == explicit.keys()
+    # Every summary is built from these four names. If one is renamed here and not
+    # there, `summarise` skips the size and the printed table is silently empty (D-069).
+    for rule in (CORRECTED, LEGACY):
+        assert {rule.ours, rule.comparator} <= bare.keys()
     for name in bare:
         assert bare[name].realised_value == pytest.approx(explicit[name].realised_value)
         assert bare[name].n_treated == explicit[name].n_treated
@@ -102,21 +113,55 @@ def test_in_band_flag_tracks_the_calibration_gate():
 
 def test_ties_and_wins_are_counted_separately():
     """A rule that treats nobody scores exactly 0. Conflating that with a loss would
-    hide the safety property; conflating it with a win would invent one."""
+    hide the safety property; conflating it with a win would invent one.
+
+    The frame carries both decision rules with *different* outcomes, so this also pins
+    that a summary reads the pair of policies it was asked for and no other, and that
+    the printed report leads with the corrected rule. `make abstention` once printed
+    the pre-D-057 rule under the Phase 4 heading while every document quoted the
+    corrected one (D-069).
+    """
+    draws = [
+        {"abstention": 0.0, "top_k_expected_value": -5.0,
+         "abstention_money": 2.0, "top_k_money": 9.0,
+         "treat_all": 3.0, "random_30pct": -1.0},
+        {"abstention": 4.0, "top_k_expected_value": -5.0,
+         "abstention_money": 0.0, "top_k_money": -1.0,
+         "treat_all": -2.0, "random_30pct": -1.0},
+    ]
     frame = pd.DataFrame([
         {"n_customers": 500, "seed": s, "policy": p, "value": v,
          "n_treated": 0, "n_harmed": 0, "n_eligible": 100}
-        for s, vals in enumerate([{"abstention": 0.0, "top_k_expected_value": -5.0,
-                                   "treat_all": 3.0, "random_30pct": -1.0},
-                                  {"abstention": 4.0, "top_k_expected_value": -5.0,
-                                   "treat_all": -2.0, "random_30pct": -1.0}])
+        for s, vals in enumerate(draws)
         for p, v in vals.items()
     ])
-    s = summarise(frame)
-    assert s["abstain_positive"].iloc[0] == pytest.approx(0.5)
-    assert s["abstain_ties"].iloc[0] == pytest.approx(0.5)
-    assert s["abstain_not_worse"].iloc[0] == pytest.approx(1.0)
-    assert s["treat_all_positive"].iloc[0] == pytest.approx(0.5)
+
+    legacy = summarise(frame, LEGACY)
+    assert legacy["abstain_positive"].iloc[0] == pytest.approx(0.5)
+    assert legacy["abstain_ties"].iloc[0] == pytest.approx(0.5)
+    assert legacy["abstain_not_worse"].iloc[0] == pytest.approx(1.0)
+    assert legacy["treat_all_positive"].iloc[0] == pytest.approx(0.5)
+    assert legacy["beats_topk"].iloc[0] == pytest.approx(1.0)      # 0 > -5, 4 > -5
+
+    corrected = summarise(frame, CORRECTED)
+    assert corrected["beats_topk"].iloc[0] == pytest.approx(0.5)   # 2 < 9, 0 > -1
+    assert corrected["abstain_mean"].iloc[0] == pytest.approx(1.0)
+    assert corrected["topk_mean"].iloc[0] == pytest.approx(4.0)
+    assert corrected["abstain_ties"].iloc[0] == pytest.approx(0.5)
+
+    # The printed output: the corrected rule first and under the Phase 4 heading, the
+    # superseded rule second and labelled as superseded, each with its own figures.
+    text = render(frame)
+    assert text.index("PHASE 4 GATE") < text.index("BEFORE THE D-057 CORRECTION")
+    first, second = text.split("BEFORE THE D-057 CORRECTION")
+    assert "beats ranking on 1 of 2 draws (50%); mean realised 1 vs 4" in first
+    assert "beats ranking on 2 of 2 draws (100%); mean realised 2 vs -5" in second
+    assert "not the Phase 4 result" in second
+    assert "ties 0" in first
+
+    # A rule whose policies are absent says so; it never prints an empty table.
+    only_baseline = frame[frame.policy == "treat_all"]
+    assert "no draws recorded" in report(summarise(only_baseline, CORRECTED), CORRECTED)
 
 
 def test_regret_is_normalised_and_the_best_policy_scores_zero():

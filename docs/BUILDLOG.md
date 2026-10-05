@@ -1647,3 +1647,23 @@ task, and footnoted in the report's §5.8.
 **Not changed.** `papers/RESEARCH_PAPER.md`, `papers/paper1/`, the built paper PDF and DOCX,
 the Zenodo record. §5.4 to §5.7 and the offer-ladder table of the report were not re-run.
 
+## `make abstention` prints the corrected rule first (D-069)
+
+**Changed.** `retainiq/experiments/abstention.py`: `Rule`, `CORRECTED`, `LEGACY`;
+`summarise(frame, rule)` with no default; `report` gains a tie-rate column, an all-sizes
+line and a sentence for a rule with no draws; `render` prints both rules from one sweep,
+the corrected one first. `retainiq/experiments/sensitivity.py` passes `LEGACY` explicitly
+and says why.
+
+**What the command prints now.** First table: 95/85/95/100/90% against ranking; 93 of 100
+draws; mean realised −524 against −2,919; −1,070 at n = 2,000. Second table, headed
+"BEFORE THE D-057 CORRECTION": 75/80/70/65/80%; 74 of 100; −3,531 at n = 2,000.
+
+**Tested.** Two existing tests extended (see D-069 for why none was added); 487 tests,
+lint and both calibration gates pass. `_gate` in the sensitivity analysis was run by hand
+and still returns the legacy figures.
+
+**Documents.** `PROJECT_REPORT.md`: the §5.8 footnote now says the command prints this
+table; §10.2's earlier win rate changed from 75% to the 74% the command prints.
+`papers/paper1/README.md` still says 75% and is not changed.
+

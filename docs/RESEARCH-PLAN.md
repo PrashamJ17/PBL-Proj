@@ -120,7 +120,7 @@ Do not start with the code.
 | Order | What | Why |
 |---|---|---|
 | 1 | `explainer/00`–`09` | Written for a reader with no background. Gets you the shape in an evening. |
-| 2 | `CLAUDE.md` — thesis and the 13 invariants | Each invariant is a mistake someone can make. Learn what breaks without it. |
+| 2 | `CLAUDE.md` — thesis and the 14 invariants | Each invariant is a mistake someone can make. Learn what breaks without it. |
 | 3 | `docs/DECISIONS.md`, selectively | The *why*. Start with **D-002, D-011, D-013, D-020, D-023, D-026, D-031, D-054, D-055, D-057, D-058, D-060, D-068**. |
 | 4 | `papers/paper1/main.tex` | Now the argument will read as familiar rather than new. |
 | 5 | `retainiq/sim/counterfactual.py` → `models/uplift/bayesian.py` → `policy/economics.py` | The three files that carry the intellectual content. |

@@ -57,7 +57,7 @@ from dataclasses import replace
 import numpy as np
 import pandas as pd
 
-from retainiq.experiments.abstention import summarise, sweep
+from retainiq.experiments.abstention import LEGACY, summarise, sweep
 from retainiq.sim import SimConfig, simulate
 from retainiq.sim.counterfactual import LADDER, REFERENCE_OFFER, Offer, potential_outcomes
 
@@ -104,8 +104,11 @@ def economics(
 
 def _gate(sizes, seeds, config=None, offer=REFERENCE_OFFER, alpha=0.30, budget=0.30):
     """Run the Phase 4 gate under one setting and reduce it to the two headline rates."""
+    # LEGACY on purpose. D-055 and D-056 were run on the rule as it then stood, and
+    # D-057 keeps that rule so they stay reproducible. This module does not print the
+    # corrected rule's sensitivity; see D-069.
     s = summarise(sweep(sizes=sizes, seeds=seeds, alpha=alpha, budget=budget,
-                        config=config, offer=offer))
+                        config=config, offer=offer), LEGACY)
     cols = ["beats_topk", "beats_nothing", "ties_nothing", "treat_all_wins",
             "abstain_mean", "treated"]
     if s.empty:
