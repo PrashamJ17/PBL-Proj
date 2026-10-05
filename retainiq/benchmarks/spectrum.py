@@ -76,6 +76,9 @@ FIG_DIR = Path(__file__).resolve().parents[2] / "papers" / "figures"
 UPLIFT_MODELS = [TLearner, SLearner, ClassTransform]
 OUTCOME_MODELS = [OutcomePropensity, ResponseModel]
 
+ESTIMATED = "estimated"
+ORACLE = "oracle"
+
 
 @dataclass
 class Point:
@@ -87,6 +90,10 @@ class Point:
     """(best uplift - best outcome) / |best outcome|, as a percentage."""
     negative_share: float
     n: int
+    basis: str = ESTIMATED
+    """How the point was measured. ``ESTIMATED``: two fitted models on a real
+    experiment. ``ORACLE``: true effects and an oracle policy against a fitted score,
+    which is an upper bound and not like-for-like with an estimated point (D-068)."""
 
 
 def measure(rct, budget_fraction: float = 0.30, seed: int = 0) -> tuple[float, float, float]:
@@ -166,6 +173,7 @@ def subsim_point() -> Point:
         name="SubSim (churn)", domain="subscription retention",
         correlation=corr, uplift_advantage=advantage,
         negative_share=float((po["tau_true"] > 0).mean()), n=len(po),
+        basis=ORACLE,
     )
 
 
@@ -185,74 +193,118 @@ def collect() -> list[Point]:
     return points
 
 
+COLOURS = {
+    "advertising": "#C62828",
+    "promotional email": "#EF6C00",
+    "retail promotion": "#1565C0",
+    "subscription retention": "#2E7D32",
+}
+
+# Hand-placed label offsets, in points: (dx, dy, horizontal alignment). Criteo and
+# Hillstrom (mens) sit close together near zero advantage, as do Lenta and Hillstrom
+# (womens), so automatic placement collides.
+LABEL_OFFSETS = {
+    "SubSim (churn)": (16, 0, "left"),
+    "Lenta": (-4, 32, "center"),
+    "Hillstrom (womens)": (14, -2, "left"),
+    "Criteo": (-12, 32, "center"),
+    "Hillstrom (mens)": (-4, -32, "center"),
+}
+
+
+def marker_style(point: Point) -> dict:
+    """Filled for an estimated point, hollow for an oracle one.
+
+    The distinction is drawn from ``Point.basis`` and not from the point's name, so a
+    point measured against true effects cannot be plotted as if it were an estimate.
+    """
+    colour = COLOURS.get(point.domain, "#455A64")
+    if point.basis == ORACLE:
+        return {"marker": "D", "s": 150, "facecolor": "white", "edgecolor": colour,
+                "linewidth": 2.6}
+    return {"marker": "o", "s": 190, "facecolor": colour, "edgecolor": "white",
+            "linewidth": 1.6}
+
+
+def point_label(point: Point) -> str:
+    advantage = f"{point.uplift_advantage:+.1f}%".replace("-", "\u2212")
+    # A share that rounds to zero is not zero: Hillstrom (mens) has 0.5% predicted
+    # negative, and printing "0%" would say there are none.
+    share = "<1%" if 0 < point.negative_share < 0.005 else f"{point.negative_share:.0%}"
+    head = f"{point.name}  {advantage}"
+    if point.basis == ORACLE:
+        return (f"{head}\n{share} with a negative effect (known)\n"
+                "oracle on true effects: an upper bound")
+    return f"{head}\n{share} predicted negative"
+
+
 def figure_3(points: list[Point] | None = None, out: Path | None = None) -> Path:
     points = points or collect()
-    fig, ax = plt.subplots(figsize=(10.5, 6.2))
-
-    colours = {
-        "advertising": "#C62828",
-        "promotional email": "#EF6C00",
-        "retail promotion": "#1565C0",
-        "subscription retention": "#2E7D32",
-    }
+    fig, ax = plt.subplots(figsize=(10.5, 6.6))
 
     ax.axhline(0, color="#263238", lw=1.3, zorder=2)
     ax.axvline(0, color="#90A4AE", lw=1.0, ls=":", zorder=1)
 
-    # Hand-placed label offsets: Criteo and Hillstrom(mens) sit almost on top of
-    # each other at corr ~0.6, so automatic placement collides.
-    offsets = {
-        "SubSim (churn)": (55, -6),
-        "Hillstrom (womens)": (-6, -36),
-        "Lenta": (4, 30),
-        "Criteo": (-78, -34),
-        "Hillstrom (mens)": (-6, 30),
-    }
     for p in points:
-        ax.scatter(p.correlation, p.uplift_advantage, s=190,
-                   color=colours[p.domain], zorder=5, edgecolor="white", lw=1.6)
-        dx, dy = offsets.get(p.name, (0, 22))
+        ax.scatter(p.correlation, p.uplift_advantage, zorder=5, **marker_style(p))
+        dx, dy, ha = LABEL_OFFSETS.get(p.name, (0, 26, "center"))
         ax.annotate(
-            f"{p.name}\n({p.negative_share:.0%} predicted negative)",
-            xy=(p.correlation, p.uplift_advantage),
+            point_label(p), xy=(p.correlation, p.uplift_advantage),
             xytext=(dx, dy), textcoords="offset points",
-            ha="left" if dx > 0 else "center", va="center", fontsize=9.5,
+            ha=ha, va="center", fontsize=9.5, linespacing=1.25, zorder=6,
+            # Opaque backing, so a label never has a grid or axis line through it.
+            bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.5, "alpha": 0.92},
         )
 
-    ax.set_ylim(-14, 125)
+    ax.set_ylim(-30, 125)
     ax.set_xlim(-0.32, 0.82)
 
-    ax.axvspan(-0.32, 0.0, color="#2E7D32", alpha=0.06, lw=0, zorder=0)
-    ax.annotate("uplift PAYS\norderings conflict", xy=(-0.295, 62),
-                fontsize=10, color="#2E7D32", ha="left", weight="bold")
-    ax.annotate("uplift barely helps\nsame ordering, harder to estimate", xy=(0.26, 52),
-                fontsize=10, color="#C62828", ha="left")
-
-    ax.set_xlabel("corr( treatment effect , outcome propensity )", fontsize=11)
-    ax.set_ylabel("Uplift model's advantage over outcome model (%)", fontsize=11)
+    ax.set_xlabel("corr( treatment effect , outcome propensity )", fontsize=10.5)
+    ax.set_ylabel("Advantage of effect-based over outcome-based targeting (%)", fontsize=10.5)
     ax.set_title(
-        "When is uplift modelling worth it?\n"
-        "Retention is the adversarial case — and it is the only one where it matters much",
+        "Advantage of effect-based targeting, against the risk\u2013lift correlation\n"
+        "four settings from three public experiments, and one simulator",
         fontsize=12.5, pad=14,
     )
     ax.grid(alpha=0.25, lw=0.6)
     ax.set_axisbelow(True)
-    # Four points is a contrast, not a fitted relationship. Deliberately no trend line.
-    ax.text(
-        0.5, -0.19,
-        "Five settings, not a fitted curve: the ordering among the four positive-correlation "
-        "points is within noise\n(their confidence intervals overlap heavily). The signal is "
-        "the order-of-magnitude gap at negative correlation.",
-        transform=ax.transAxes, ha="center", fontsize=8.5, color="#546E7A",
+
+    # Five points are a contrast, not a fitted relationship. Deliberately no trend
+    # line, and no shaded "uplift pays" region: the one point at negative correlation
+    # is an oracle on a simulator configured to have that correlation (D-068).
+    fig.text(
+        0.5, 0.118,
+        "Negative: the customers an outcome model ranks highest are the ones who benefit "
+        "least.   Positive: they benefit most.",
+        ha="center", va="bottom", fontsize=9.5, color="#263238",
+    )
+    fig.text(
+        0.5, 0.012,
+        "Filled: best fitted uplift model against best fitted outcome model on a public "
+        "randomised experiment; one seed, one split, no interval.\n"
+        "The ordering among the filled points is within noise. Hollow: a simulator whose "
+        "negative correlation is configured; an oracle on true effects\n"
+        "against a churn score, so an upper bound and not like-for-like. The correlation "
+        "is the one varied in Ascarza (2018, Web Appendix A3.4).",
+        ha="center", va="bottom", fontsize=8.5, color="#455A64", linespacing=1.45,
     )
 
-    handles = [
-        plt.Line2D([], [], marker="o", ls="", color=c, ms=9, label=d)
-        for d, c in colours.items()
-    ]
+    handles, seen = [], set()
+    for p in points:
+        key = (p.domain, p.basis)
+        if key in seen:
+            continue
+        seen.add(key)
+        style = marker_style(p)
+        label = p.domain if p.basis == ESTIMATED else f"{p.domain} (simulator, oracle)"
+        handles.append(plt.Line2D(
+            [], [], ls="", marker=style["marker"], ms=11 if p.basis == ESTIMATED else 9,
+            markerfacecolor=style["facecolor"], markeredgecolor=style["edgecolor"],
+            markeredgewidth=style["linewidth"], label=label,
+        ))
     ax.legend(handles=handles, frameon=False, fontsize=9.5, loc="upper right")
 
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0.14, 1, 1))
     out = out or (FIG_DIR / "fig03_when_uplift_pays.png")
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=170, bbox_inches="tight", facecolor="white")
@@ -268,18 +320,22 @@ def report(points: list[Point]) -> str:
         "-" * 84,
     ]
     for p in sorted(points, key=lambda q: -q.correlation):
+        name = f"{p.name} *" if p.basis == ORACLE else p.name
         lines.append(
-            f"{p.name:<22}{p.domain:<24}{p.correlation:>8.2f}"
+            f"{name:<22}{p.domain:<24}{p.correlation:>8.2f}"
             f"{p.uplift_advantage:>12.1f}%{p.negative_share:>12.1%}"
         )
     lines.append("-" * 84)
     lines.append(
         "High correlation => outcome model ranks the same customers, via an easier\n"
         "estimation problem, so uplift modelling costs variance and buys nothing.\n"
-        "Negative correlation => the outcome model actively selects customers it harms.\n"
-        "SubSim row: true effects, oracle vs churn score. It is an upper bound, not\n"
-        "like-for-like with the rows above (D-068)."
+        "Negative correlation => the outcome model actively selects customers it harms."
     )
+    if any(p.basis == ORACLE for p in points):
+        lines.append(
+            "* true effects, oracle vs churn score. An upper bound, not like-for-like\n"
+            "  with the estimated rows (D-068)."
+        )
     return "\n".join(lines)
 
 

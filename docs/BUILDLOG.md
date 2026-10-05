@@ -1518,3 +1518,44 @@ re-run: the table values are those recorded on 15 August 2026.
 **Tested.** `spectrum.report` printed with the new footer; lint clean; `make check` green
 (467 tests, both calibration gates). No test reads the changed strings.
 
+## Correlation figure redrawn so it cannot be read as one curve (D-068)
+
+**Changed.** `fig03_when_uplift_pays.png`, from `python -m retainiq.benchmarks.spectrum`.
+`Point` gains a `basis` field (`estimated` or `oracle`); the marker, the label, the legend
+and the printed report are derived from it, so a point measured against true effects cannot
+be drawn as if it were an estimate. Estimated points are filled; the SubSim point is a hollow
+diamond labelled "oracle on true effects: an upper bound". Removed: the title "Retention is
+the adversarial case — and it is the only one where it matters much", the shaded region
+captioned "uplift PAYS", the note "uplift barely helps", and the footnote sentence calling the
+gap at negative correlation "the signal". Added: a neutral title, each point's advantage in
+its label, a plain reading of the axis sign, and a footnote stating how each kind of point is
+measured and that the correlation is the one varied in Ascarza (2018, Web Appendix A3.4).
+
+**Found while redrawing.** Three defects in the old figure that were not about the claim.
+The SubSim label read "26% predicted negative" although that share is the *true* share
+harmed; it now says "known". Hillstrom (mens) read "0% predicted negative" for a share of
+0.47%; a share that rounds to zero now prints "<1%". Two labels collided with the axis and
+with each other, so "Hillstrom (mens)" sat beside the Criteo point.
+
+**Numbers.** Re-measured on the datasets on disk (61 s): +0.69 / −5.6%, +0.58 / +0.6%,
++0.19 / +12.7%, +0.17 / +20.3%, −0.19 / +106.9%. Identical to the 15 August 2026 run and to
+the README table.
+
+**Also changed.** The explainer's copy of the figure was from 8 August and showed
+superseded values; it is synced, and the three paragraphs of `explainer/05` that describe
+the figure now explain the hollow point, credit the idea, and quote the current values
+(+0.17, between +0.58 and −0.19). The rest of the explainer has not been reviewed against
+D-068.
+
+**Not changed.** The captions in `PROJECT_REPORT.md`, `papers/RESEARCH_PAPER.md` and
+`papers/paper1/main.tex`, which now sit beside a more cautious figure than they describe; the
+built paper PDF and DOCX, which still embed the old one.
+
+**Tested.** Looked at the rendered figure at full size. Ad-hoc checks, not added to the suite:
+default basis is `estimated`; oracle and estimated markers differ; the oracle label carries
+"upper bound" and an estimated one does not; 0.47% prints "<1%" and a true zero prints "0%";
+the report stars only oracle rows and omits the footnote when there are none; a point with an
+unknown name and domain renders (the old code raised `KeyError`). `make check` green, 467
+tests. **No tests were added**, because the test count is quoted throughout the panel
+materials and the recorded video; adding them is a separate, coordinated change.
+

@@ -61,8 +61,8 @@ landed, though the test is underpowered (D-031).
 
 ![When uplift pays](papers/figures/fig03_when_uplift_pays.png)
 
-*The figure's title and footnote predate D-068. The SubSim point is the oracle on true
-effects, so the gap it shows is an upper bound, not a like-for-like measurement.*
+*Filled points are fitted models on real experiments. The hollow point is the simulator's
+oracle on true effects: an upper bound, not a like-for-like measurement.*
 
 **2. At the scale of the businesses this most concerns, neither method is reliable.**
 

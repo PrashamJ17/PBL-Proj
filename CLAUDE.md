@@ -208,7 +208,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   churn (+4.4pp). Profit-scored targeting + validated cutoff = Lemmens & Gupta 2020, **not yet a
   baseline**. Left: pilot size, low-churn floor, uplift losing at finite n. **Our five points are
   NOT like-for-like** (real: estimates, pooled risk, one seed; SubSim: TRUE effect, ORACLE vs
-  score); six checks owed. README, plan, `spectrum.py` corrected; paper, fig03, PROJECT_REPORT NOT.
+  score); six checks owed. README, plan, `spectrum.py`, fig03 corrected; paper, PROJECT_REPORT NOT.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. Kill-test model AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% <
   96.7% for always 'stays'** — never a headline. Readiness PER COMPONENT. Recording live caught

@@ -260,23 +260,37 @@ being merely wasteful and starts actively selecting the customers you will harm.
 Each point is one setting. The horizontal axis measures how closely the two orderings
 agree. The vertical axis is how much better the effect-based approach does.
 
-Everything on the right — advertising, promotional email, retail texts — sits near zero.
-The orderings agree there, so the sophisticated approach buys almost nothing. Only
-subscription retention sits on the left, and it is an order of magnitude above the rest.
+The four filled points are real experiments: an advertising campaign, two promotional
+emails and a retail promotion. In each one we fitted both kinds of model and compared
+them. Where the two orderings agree closely, on the right, the sophisticated approach
+buys nothing or does slightly worse. Where they agree less, it does somewhat better.
 
-### Why this made the argument stronger, not weaker
+The hollow point is different and should be read differently. It is our simulator, not a
+real business. We built the simulator so that the two orderings conflict, and the point
+shows the best that *any* targeting could do there, because it uses the true effect of
+the offer on each customer, which only a simulator can know. It is a ceiling on the gain,
+not a gain anyone has achieved.
+
+### What this does and does not show
 
 It replaced *"this approach is better"* — which is **false in advertising, and we can
-prove it** — with something narrower and testable: **subscription retention has a
-structure that advertising does not.**
+show it** — with something narrower: **how much the effect-based approach gains depends
+on how far the two orderings disagree.**
+
+That idea is not ours. A 2018 study by Eva Ascarza varied this same quantity in a
+simulation and reported two field experiments; in one of them, targeting the customers
+most likely to cancel made cancellations rise. What we add is the measurement on public
+experiments, and what happens when there is little data to learn from.
 
 It also produced a prediction we could get wrong. Before downloading Lenta, we wrote down
 that retail promotion should land *between* advertising and subscription retention. It
-landed at +0.18, between +0.61 and −0.19, as predicted.
+landed at +0.17, between +0.58 and −0.19, as predicted.
 
-One caveat we state plainly, and the figure states on its face: with five settings this
-is a contrast, not a curve. The ordering among the four points on the right is within
-noise. The finding is the gap on the left.
+Two caveats we state plainly, and the figure states on its face. With five settings this
+is a contrast, not a curve: the ordering among the four filled points is within noise.
+And none of the four real experiments is about cancellations, so the claim that
+subscription retention sits on the left rests on our simulator and on other researchers'
+field experiments, not on data of our own.
 
 ---
 
