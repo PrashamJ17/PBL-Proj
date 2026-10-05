@@ -11,7 +11,7 @@ const path = require("path");
 
 const A = path.join(__dirname, "build", "assets");
 const VIDEO_URL = (process.env.VIDEO_URL || "").trim();
-const TESTS = process.env.TESTS || "467";
+const TESTS = process.env.TESTS || "487";
 const OUT = process.env.OUT || path.join(__dirname, "RetainIQ_Presentation.pptx");
 
 const C = {
@@ -100,10 +100,10 @@ async function main() {
     T(s, VIDEO_URL ? [{ text: "Watch the demo video", options: { hyperlink: { url: VIDEO_URL } } }]
                    : "Watch the demo video",
       { x: 1.28, y: 5.05, w: 2.55, h: 0.64, fontSize: 16, bold: true, color: "FFFFFF", valign: "middle" });
-    T(s, VIDEO_URL ? [{ text: VIDEO_URL, options: { hyperlink: { url: VIDEO_URL } } }]
-                   : "Paste the Google Drive link here",
-      { x: 4.1, y: 5.05, w: 4.4, h: 0.64, fontSize: 13, italic: !VIDEO_URL,
-        color: VIDEO_URL ? C.SOFT : C.GOLD, valign: "middle" });
+    if (!VIDEO_URL) {
+      T(s, "Paste the Google Drive link here",
+        { x: 4.1, y: 5.05, w: 4.4, h: 0.64, fontSize: 13, italic: true, color: C.GOLD, valign: "middle" });
+    }
 
     T(s, [
       para("Code: ", { color: C.DIM }),
@@ -156,8 +156,8 @@ async function main() {
       para("What most tools do", { bold: true, fontSize: 15, color: C.INK }),
       para("Score every customer's churn risk, then send the riskiest ones a discount.", { fontSize: 13.5 }),
       para("Why that fails", { bold: true, fontSize: 15, color: C.INK }),
-      { text: "Risk is not responsiveness. Some customers leave because they were contacted: the offer reminds a " +
-              "dormant payer to cancel (Ascarza, 2018).", options: { fontSize: 13.5 } },
+      { text: "Risk is not responsiveness. In field experiments, contact has raised churn (Ascarza et al., 2016; " +
+              "Ascarza, 2018): an offer can remind a dormant payer to cancel.", options: { fontSize: 13.5 } },
     ], { x: 0.6, y: 3.15, w: 6.25, h: 1.75, paraSpaceAfter: 4 });
 
     T(s, "Project objectives", { x: 0.6, y: 5.0, w: 6.2, h: 0.32, fontSize: 15, bold: true, color: C.INK });
@@ -209,8 +209,8 @@ async function main() {
       "The quadrant is the core idea. A churn score finds people likely to leave, which mixes Persuadables with Lost " +
       "Causes and Sleeping Dogs. Only Persuadables are worth paying for. Sleeping Dogs are made worse by contact. In " +
       "the simulated business they make up 59.1% of the model's top predicted-risk decile against 5.3% of the bottom " +
-      "decile (25.7% overall), which is why risk-ranked targeting loses money. The ineffectiveness of risk targeting " +
-      "is prior work (Ascarza, JMR 2018) and is not claimed as new. The objectives are the four questions the system answers.");
+      "decile (25.7% overall), which is why risk-ranked targeting loses money. That risk targeting fails, and can " +
+      "raise churn, is prior work (Ascarza, JMR 2018) and is not claimed as new. The objectives are the four questions the system answers.");
   }
 
   // ------------------------------------------------------------- 3. Data & pipeline
@@ -273,8 +273,8 @@ async function main() {
       "cents, which would overstate every revenue figure 100x; (3) every fact carries occurred_at and available_at, and " +
       "features only see what was available at decision time; (4) models; (5) the money layer and policy; (6) outputs " +
       "and the holdout ledger. Datasets (Table 1 of the paper): Hillstrom 64,000; Criteo-UPLIFT v2.1 13,979,592; Lenta " +
-      "687,029; Telco 7,043 loaded, 7,032 after cleaning; GBSG2 686; SubSim configurable. The four public RCTs have real " +
-      "randomised treatment, which is what allows causal evaluation. SubSim exists because no public dataset contains " +
+      "687,029; Telco 7,043 loaded, 7,032 after cleaning; GBSG2 686; SubSim configurable. The three public RCTs have real " +
+      "randomised treatment, which is what allows causal evaluation; Hillstrom's two e-mail arms give four settings. SubSim exists because no public dataset contains " +
       "individual ground-truth treatment effects. Sources: Hillstrom (2008); Diemert et al. (2018); scikit-uplift; IBM/Kaggle; Schumacher et al. (1994).");
   }
 
@@ -452,7 +452,8 @@ async function main() {
 
     T(s, [
       para("When does causal (uplift) targeting pay?", { bold: true, fontSize: 13, color: C.INK }),
-      { text: "τ = estimated offer effect, π = estimated churn risk", options: { fontSize: 10, color: C.MUTED } },
+      { text: "τ = offer effect, π = outcome propensity  ·  correlation after Ascarza (2018)",
+        options: { fontSize: 10, color: C.MUTED } },
     ], { x: 7.55, y: 1.45, w: 5.2, h: 0.6 });
     const Hd = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: C.INK } } });
     const cr = [
@@ -460,18 +461,20 @@ async function main() {
       ["Criteo · advertising", "+0.58", "+0.6%", C.TEXT],
       ["Hillstrom · women's e-mail", "+0.19", "+12.7%", C.TEXT],
       ["Lenta · retail promotion", "+0.17", "+20.3%", C.TEXT],
-      ["SubSim · subscription churn", "−0.19", "+106.9%", C.TEAL_D],
+      ["SubSim · simulator, oracle*", "−0.19", "+106.9%*", C.MUTED],
     ];
     const crows = [[Hd("Setting"), Hd("corr(τ, π)"), Hd("Uplift advantage")]].concat(cr.map(([a, b, c, col], i) => [
-      { text: a, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, bold: i === 4 } },
-      { text: b, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", bold: i === 4 } },
-      { text: c, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", bold: true, color: col } },
+      { text: a, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, italic: i === 4 } },
+      { text: b, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", italic: i === 4 } },
+      { text: c, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", bold: i !== 4,
+        italic: i === 4, color: col } },
     ]));
     s.addTable(crows, { x: 7.55, y: 2.1, w: 5.2, colW: [2.3, 1.2, 1.7], fontFace: BODY, fontSize: 11.5, color: C.TEXT,
       rowH: 0.38, valign: "middle", border: { type: "solid", pt: 0.5, color: C.LINE }, margin: [2, 6, 2, 6] });
-    T(s, "The lower the correlation between effect and risk, the more causal targeting is worth; retention is the " +
-         "adversarial case. Lenta's position was predicted before its data was obtained.",
-      { x: 7.55, y: 4.5, w: 5.2, h: 0.8, fontSize: 11, color: C.MUTED });
+    T(s, "Rows 1–4: fitted models on public experiments; their order is within noise. Lenta's position was " +
+         "predicted before its data was obtained. * The simulator's negative correlation is configured and the row " +
+         "uses true effects: a ceiling, not a like-for-like result.",
+      { x: 7.55, y: 4.45, w: 5.2, h: 0.95, fontSize: 10.5, color: C.MUTED });
 
     const stats = [
       ["75%", "of draws where the best uplift method beats random targeting at n = 500 (real Hillstrom RCT)"],
@@ -490,9 +493,11 @@ async function main() {
     s.addNotes(
       "Left, from make killtest: with the same 20% budget, targeting by churn score loses 22,823, worse than random " +
       "(-17,035); treating everyone loses 89,869 (bar truncated). The oracle rows use true effects and are upper bounds. " +
-      "Right, paper Table 4: across four real randomised trials and the simulator, the gain from uplift modelling rises " +
-      "as corr(tau, propensity) falls. When the two rankings agree, the simpler outcome model wins because it estimates " +
-      "an easier quantity; the order among the four positive-correlation settings is within noise. Bottom: at n = 500 " +
+      "Right, paper Table 4: the risk-lift correlation, which Ascarza (2018, Web Appendix A3.4) varied in a simulation, " +
+      "measured here from fitted models on four settings from three public randomised experiments. Where the two " +
+      "rankings agree, the simpler outcome model does as well or better because it estimates an easier quantity; the " +
+      "order among those four settings is within noise. The SubSim row is not like-for-like: it uses true effects and an " +
+      "oracle policy, on a simulator configured to have a negative correlation, so it is a ceiling. Bottom: at n = 500 " +
       "on the real Hillstrom experiment the best uplift method beats random on 75% of draws, which is why win rate is " +
       "reported instead of the mean. The abstention rule beats ranking on 93% of draws but does not beat doing nothing, " +
       "because the break-even effect is four times the delivered effect. The per-customer optimiser wins 58% of draws, " +
@@ -585,7 +590,8 @@ async function main() {
     const num = { color: C.SOFT, bullet: { type: "number" }, indentLevel: 0 };
     T(s, [
       para("A churn model can be accurate and still lose money: AUC 0.700, yet targeting its top 20% returns −22,823.", num),
-      para("One measurable number, corr(τ, π), predicts whether causal targeting pays, confirmed on four real trials.", num),
+      para("Causal targeting does not always pay: where risk and responsiveness line up, a plain model did as well " +
+           "on public experiments, and at n = 500 the best method beats random on 75% of draws.", num),
       { text: "For small businesses, reliability and measurability limit results more than the choice of model.", options: num },
     ], { x: 0.85, y: 2.08, w: 3.45, h: 3.2, fontSize: 12.5, paraSpaceAfter: 10 });
 
@@ -610,30 +616,31 @@ async function main() {
       para("A first paying Churn Autopsy client (the Phase 2 gate)", bul),
       para("A live pilot with a permanent randomised holdout", bul),
       para("Pool evidence across businesses to get past the measurement floor", bul),
-      para("Derive corr(τ, π) analytically, not only measure it", bul),
+      para("Add Lemmens & Gupta (2020) as a baseline; re-measure the correlation with intervals", bul),
       { text: "Models for non-contractual (e-commerce) churn", options: bul },
     ], { x: 9.19, y: 2.08, w: 3.35, h: 3.2, fontSize: 12.5, paraSpaceAfter: 8 });
 
     card(s, 0.6, 5.6, 4.6, 1.35, C.TEAL);
     circleIcon(s, I.play, 0.85, 5.9, 0.72, "0B7A6B");
     T(s, "Demo video", { x: 1.8, y: 5.78, w: 3.2, h: 0.38, fontSize: 17, bold: true, color: "FFFFFF" });
-    T(s, VIDEO_URL ? [{ text: VIDEO_URL, options: { hyperlink: { url: VIDEO_URL }, color: "FFFFFF" } }]
+    T(s, VIDEO_URL ? [{ text: "LINK", options: { hyperlink: { url: VIDEO_URL }, color: "FFFFFF" } }]
                    : "Paste the Google Drive link here",
       { x: 1.8, y: 6.18, w: 3.25, h: 0.6, fontSize: 12, italic: !VIDEO_URL, color: "FFFFFF", underline: !VIDEO_URL });
 
     card(s, 5.4, 5.6, 7.35, 1.35, C.INK2);
     T(s, "Key references", { x: 5.62, y: 5.68, w: 4, h: 0.28, fontSize: 11, bold: true, color: C.TEAL_L });
     T(s, [
-      para("Ascarza (2018) Retention futility, J. Marketing Research  ·  Künzel et al. (2019) Metalearners, PNAS", { color: C.SOFT }),
-      para("Cox (1972)  ·  Ishwaran et al. (2008) Random survival forests  ·  Katzman et al. (2018) DeepSurv", { color: C.SOFT }),
-      para("Kaufman et al. (2012) Leakage in data mining  ·  Gelman et al. (2013) Bayesian Data Analysis", { color: C.SOFT }),
+      para("Ascarza (2018), JMR  ·  Ascarza, Iyengar & Schleicher (2016), JMR  ·  Lemmens & Gupta (2020), Marketing Science", { color: C.SOFT }),
+      para("Devriendt et al. (2021), Information Sciences  ·  Künzel et al. (2019), PNAS  ·  Kaufman et al. (2012) Leakage", { color: C.SOFT }),
+      para("Cox (1972)  ·  Ishwaran et al. (2008) RSF  ·  Katzman et al. (2018) DeepSurv  ·  Gelman et al. (2013) BDA", { color: C.SOFT }),
       { text: "Full reference list: paper, DOI 10.5281/zenodo.22009470  ·  code: github.com/PrashamJ17/PBL-Proj",
         options: { color: C.DIM, hyperlink: { url: REPO } } },
     ], { x: 5.62, y: 5.98, w: 7.0, h: 0.92, fontSize: 9.5, paraSpaceAfter: 1 });
     footer(s, 8, true);
     s.addNotes(
-      "Takeaways: prediction quality and decision quality are different things; corr(tau, propensity) tells you in " +
-      "advance whether modelling the effect is worth its extra variance; and at small-business scale, reliability and " +
+      "Takeaways: prediction quality and decision quality are different things; modelling the effect is not always " +
+      "worth its extra variance, because where risk and responsiveness line up a plain model does as well (the " +
+      "correlation is Ascarza's, 2018; the measurement on public experiments is ours); and at small-business scale, reliability and " +
       "measurability are the binding limits. Readiness is stated precisely because the evidence differs by component. " +
       "Ready: the delivery path from a billing export to a report, the dashboard, and the engineering around them " +
       "(tests on three Python versions, four CI gates, archived releases). Validated only on simulation and public " +

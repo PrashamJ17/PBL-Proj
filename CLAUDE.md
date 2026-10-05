@@ -33,7 +33,7 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-467 tests. CI green.
+487 tests. CI green.
 **Phase 5 COMPLETE**; gate met on its own terms, evidence did NOT improve (58% [.42,.72]).
 **Phase 2's delivery path is BUILT (D-062)** — `make preflight` then `make autopsy` on real
 CSVs — but its gate is a sales task and **nobody has paid anything**. Next action is
@@ -131,7 +131,7 @@ retainiq/experiments/  kill_test · leakage_penalty · dunning · survival_bench
                    ai_channels (D-064) · holdout_validation (D-065) · figures
 retainiq/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           467 — fairness, realism, edge cases, leakage gate
+tests/           487 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -139,7 +139,7 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 467 tests + calibration gates — run before every commit
+make check      # lint + 487 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
@@ -208,7 +208,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   churn (+4.4pp). Profit-scored targeting + validated cutoff = Lemmens & Gupta 2020, **not yet a
   baseline**. Left: pilot size, low-churn floor, uplift losing at finite n. **Our five points are
   NOT like-for-like** (real: estimates, pooled risk, one seed; SubSim: TRUE effect, ORACLE vs
-  score); six checks owed. README, plan, `spectrum.py`, fig03 corrected; paper, PROJECT_REPORT NOT.
+  score); six checks owed. README, plan, fig03, deck, speech corrected (+20 tests → 487); paper, PROJECT_REPORT NOT.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. Kill-test model AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% <
   96.7% for always 'stays'** — never a headline. Readiness PER COMPONENT. Recording live caught

@@ -1559,3 +1559,53 @@ unknown name and domain renders (the old code raised `KeyError`). `make check` g
 tests. **No tests were added**, because the test count is quoted throughout the panel
 materials and the recorded video; adding them is a separate, coordinated change.
 
+## Tests for the correlation measurement and figure; panel materials brought into line (D-068)
+
+**Tests: 467 → 487, 22 → 23 files.** `tests/test_spectrum.py`, no dataset needed.
+*Measurement* (4): on synthetic randomised experiments whose risk–lift correlation is built
+in, `measure` recovers the sign in both directions (+0.50 to +0.60 and −0.28 to −0.52 over
+five seeds; thresholds at ±0.1), the uplift model's advantage is larger when the orderings
+conflict, and harm is predicted in both designs, so harm alone is not what separates them.
+*Basis* (2): a point is `estimated` unless stated; the simulator point is `oracle`, asserted
+on signs only (D-063). *Figure and report* (14): oracle hollow and estimated filled; only an
+oracle label says "upper bound"; only an estimated share says "predicted"; 0.47% prints
+"<1%" while a true zero prints "0%"; a negative advantage uses a minus sign; the legend
+merges two arms of one experiment and never merges an oracle with an estimated point in the
+same domain; the report stars oracle rows only; the figure renders from points alone, and
+with an unknown name and domain. `legend_entries` was split out of `figure_3` to be testable.
+
+**Panel materials.** Every quoted count moved to 487 tests, 23 files, 68 decisions: deck
+source and default, speech, runbook, storyboard, video caption, README, `CLAUDE.md`.
+
+**Speech and Q&A, rewritten where D-068 made them wrong.** Slide 3: "four real randomised
+experiments" listed five datasets of which three are randomised; now three experiments and
+two survival datasets. Slide 4: the decision is no longer "the actual contribution"; deciding
+on expected profit is credited to Lemmens & Gupta (2020). Slide 6: the correlation table is no
+longer "our main research contribution"; the quantity is credited to Ascarza (2018), the four
+real rows are called within noise, and the simulator row is called a ceiling. Slide 8: the
+second takeaway no longer says one number predicts whether causal targeting pays. Q&A: the
+answers on what is new, on simulated data, on why worse-than-random did not replicate, on
+originality, and on what would be done differently are rewritten; two questions added (the
+closest published work; why the last row is five times the others); a prior-work row added
+to the number sheet. **The two answers about how much was built by the student and how much
+an AI wrote are replaced by an instruction to write them personally and accurately.** The
+earlier wording limited the AI assistant's part to implementation, which is not accurate, so
+it was removed; the answer has to come from the student.
+
+**Deck.** Slide 2 cites the field evidence for harm (Ascarza et al. 2016; Ascarza 2018).
+Slide 6: the simulator row is italic, starred and no longer highlighted; the caption states
+what each kind of row is. Slide 8: takeaway 2 and one next step rewritten; references add
+the three papers that were missing. With `VIDEO_URL` set, slide 1 no longer prints the raw
+URL beside the button and slide 8 shows a short hyperlinked label.
+
+**Verified.** Deck exported to PDF through PowerPoint and all eight slides inspected. The
+three documents checked by extracting their text (487 present, 467 absent, no withdrawn
+phrase) and rendered through Pages for layout, because Word's scripted export failed with a
+user document open; nothing of the user's was closed. Storyboard scene 9 frame regenerated
+from a fresh `make check` capture (487 passed); scenes 1 and 10 from the new deck. Demo video
+re-recorded (4 min 35 s, 1080p); a frame from step 1 shows "487 passed" under the caption
+"487 automated tests". `make check` green, 487 passed.
+
+**Not changed.** `PROJECT_REPORT.md` (433 tests), `explainer/09` (414) and the paper source
+(463) quote older counts and were already out of date.
+

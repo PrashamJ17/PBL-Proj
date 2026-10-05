@@ -238,6 +238,23 @@ def point_label(point: Point) -> str:
     return f"{head}\n{share} predicted negative"
 
 
+def legend_entries(points: list[Point]) -> list[tuple[str, dict]]:
+    """One legend entry per (domain, basis), in first-seen order.
+
+    Two arms of one experiment share an entry. An oracle point never shares one with an
+    estimated point, even in the same domain, and its entry says what it is.
+    """
+    entries, seen = [], set()
+    for p in points:
+        key = (p.domain, p.basis)
+        if key in seen:
+            continue
+        seen.add(key)
+        label = p.domain if p.basis == ESTIMATED else f"{p.domain} (simulator, oracle)"
+        entries.append((label, marker_style(p)))
+    return entries
+
+
 def figure_3(points: list[Point] | None = None, out: Path | None = None) -> Path:
     points = points or collect()
     fig, ax = plt.subplots(figsize=(10.5, 6.6))
@@ -289,19 +306,14 @@ def figure_3(points: list[Point] | None = None, out: Path | None = None) -> Path
         ha="center", va="bottom", fontsize=8.5, color="#455A64", linespacing=1.45,
     )
 
-    handles, seen = [], set()
-    for p in points:
-        key = (p.domain, p.basis)
-        if key in seen:
-            continue
-        seen.add(key)
-        style = marker_style(p)
-        label = p.domain if p.basis == ESTIMATED else f"{p.domain} (simulator, oracle)"
-        handles.append(plt.Line2D(
-            [], [], ls="", marker=style["marker"], ms=11 if p.basis == ESTIMATED else 9,
+    handles = [
+        plt.Line2D(
+            [], [], ls="", marker=style["marker"], ms=9 if style["facecolor"] == "white" else 11,
             markerfacecolor=style["facecolor"], markeredgecolor=style["edgecolor"],
             markeredgewidth=style["linewidth"], label=label,
-        ))
+        )
+        for label, style in legend_entries(points)
+    ]
     ax.legend(handles=handles, frameon=False, fontsize=9.5, loc="upper right")
 
     fig.tight_layout(rect=(0, 0.14, 1, 1))

@@ -101,9 +101,9 @@ const SLIDES = [
       "so the model can never see the future. Then the models, then the money layer that turns a " +
       "predicted effect into rupees, then the outputs: a report, a dashboard, worklists, and a holdout " +
       "ledger for measurement. " +
-      "For evidence we use **four real randomised experiments** — Hillstrom with 64,000 customers, " +
-      "Criteo with 14 million, Lenta with 687,000, and the Telco and GBSG2 datasets for survival — " +
-      "plus our own simulator, SubSim. The simulator exists for one reason: real data never contains " +
+      "For evidence we use **three public randomised experiments** — Hillstrom with 64,000 customers, " +
+      "Criteo with 14 million and Lenta with 687,000 — the Telco and GBSG2 datasets for survival, " +
+      "and our own simulator, SubSim. The simulator exists for one reason: real data never contains " +
       "the counterfactual. You see what happened to the customer you treated, never what would have " +
       "happened if you had left them alone. SubSim generates both, so a model can be scored against " +
       "**per-customer truth**. It is an instrument, not a result: every claim that rests only on the " +
@@ -123,10 +123,12 @@ const SLIDES = [
       "effect on the log-odds of churn is a linear function of the customer's features, with shrinkage so " +
       "that at small sample sizes it defaults to the population effect rather than to noise. We get a " +
       "posterior, not a point estimate. " +
-      "**Third, and this is the actual contribution, the decision.** We convert the log-odds effect into " +
+      "**Third, the decision.** We convert the log-odds effect into " +
       "a change in probability, multiply by what the customer is worth, subtract what the offer costs, " +
       "and treat only if the posterior probability of making money exceeds **70%**. Otherwise the system " +
-      "**abstains** — it recommends doing nothing, which is a valid answer. " +
+      "**abstains** — it recommends doing nothing, which is a valid answer. Deciding on expected " +
+      "profit is established practice, from Lemmens and Gupta in 2020. What we add is a test of whether " +
+      "such a rule holds up on a few hundred customers. " +
       "On the right is the discipline that makes the numbers trustworthy: strictly temporal splits, " +
       "splitting by customer and never by row, and a leakage audit. That audit matters: with leaky " +
       "features our churn model scores **0.954 AUC**; done honestly, about **0.60**. Most of that gap is the " +
@@ -162,20 +164,22 @@ const SLIDES = [
     n: 6, title: "Results II — decisions, and the success metrics",
     screen: "Policy value chart, the correlation table, the four stat cards.",
     speech:
-      "Here is what those predictions are worth as decisions. Same budget, same 3,589 customers. " +
+      "Here is what those predictions are worth as decisions. Same budget, same 3,589 simulated customers. " +
       "Treating everyone loses **89,869**. Targeting at random loses **17,035**. Targeting by churn score " +
       "loses **22,823** — **worse than random**, on six out of six seeds. That is the founding result: a " +
       "model with respectable AUC, used the standard way, is not merely useless, it is **anti-informative**. " +
       "The last two rows use the simulator's true effects, so they are an upper bound and labelled as one: " +
       "targeting by effect earns 5,877, and adding abstention earns **8,610 while contacting only 209 " +
       "customers instead of 718**. " +
-      "The table on the right is our main research contribution. Whether effect-based targeting pays is " +
-      "predicted by a single measurable quantity: the **correlation between the estimated effect and the " +
-      "estimated risk**. When it is high, the two rankings agree and the simpler model wins: at +0.69, " +
-      "uplift modelling is **5.6% worse**. As the correlation falls, the advantage rises: +12.7%, +20.3%, " +
-      "and at a negative correlation, **+106.9%**. Subscription retention is the adversarial case. We " +
-      "tested this out of sample: before obtaining the Lenta dataset we predicted where it would fall, " +
-      "and it landed there. " +
+      "The table on the right asks when effect-based targeting is worth the trouble. It uses the " +
+      "**correlation between the effect of an offer and the customer's risk**. That quantity is not our " +
+      "idea: Ascarza studied it in a simulation in 2018. What we did is **measure it on public " +
+      "experiments**. When it is high, the two rankings agree and the simpler model wins: at +0.69, " +
+      "uplift modelling is **5.6% worse**. At lower correlations it does better, +12.7% and +20.3%, " +
+      "though those four rows are within noise of one another. Before obtaining the Lenta dataset we " +
+      "predicted where it would fall, and it landed there. The last row, **+106.9%**, is our simulator, " +
+      "and it is a different kind of number. The simulator is built to have a negative correlation, and " +
+      "that row uses its true effects, so it is a **ceiling**, not something we achieved. " +
       "The four cards are the honest summary. At 500 customers, the best method beats random on **75% of " +
       "draws** — a business gets one draw, so we report win rate, not the average. Abstention beats risk " +
       "ranking on **93% of draws**, but it does **not** beat doing nothing, because the break-even effect " +
@@ -184,7 +188,7 @@ const SLIDES = [
       "as a failed gate rather than rounding it up. And the last card is the most consequential finding: " +
       "to detect the retention lift this offer actually delivers, a business needs about **119,500 " +
       "customers**. Below that, a small business cannot measure its own retention campaign at all.",
-    point: "Say “worse than random” slowly. Then move to the table without pausing for effect — the argument is the correlation, not the shock.",
+    point: "Say “worse than random” slowly. Then move to the table. Say that the last row is the simulator's ceiling before anyone asks.",
     ask: "“So your system does not work?” — See Q&A section F, question 1. Answer with what was established, not with a defence.",
   },
   {
@@ -203,7 +207,7 @@ const SLIDES = [
       "that it pays, and the reasons behind it — computed exactly from the model, not approximated. The " +
       "first thing on the page is a warning that cannot be switched off, stating that the engine beat one " +
       "well-chosen offer on only 58% of tests. " +
-      "Underneath it: **467 automated tests**, continuous integration on three Python versions with four " +
+      "Underneath it: **487 automated tests**, continuous integration on three Python versions with four " +
       "gates — tests, calibration, leakage, and the founding experiment itself — and the code, data and " +
       "paper archived on Zenodo with DOIs.",
     point: "If the panel wants to see it live, this is the moment to offer: “I can run it now, it takes about a minute.”",
@@ -214,8 +218,9 @@ const SLIDES = [
     screen: "Three takeaways, production readiness, next steps, references and DOIs.",
     speech:
       "Three takeaways. First, **a churn model can be accurate and still lose money** — ours has an AUC " +
-      "of 0.700 and its top slice returns minus 22,823. Second, **one measurable number tells you in " +
-      "advance whether causal targeting is worth it**, and we confirmed it on four real randomised trials. " +
+      "of 0.700 and its top slice returns minus 22,823. Second, **causal targeting does not always pay**: " +
+      "on public experiments where risk and responsiveness line up, a plain model did as well, and at " +
+      "500 customers the best method beats random on three draws in four. " +
       "Third, at the scale of a small business, the binding limits are **reliability and measurability**, " +
       "not the choice of algorithm. " +
       "On readiness I want to be precise, because it differs by component. **Ready**: the delivery path " +
@@ -249,7 +254,9 @@ const mmss = (x) => `${Math.floor(x / 60)}:${String(Math.round(x % 60)).padStart
 const QA = [
   ["A. The questions you will almost certainly be asked", [
     ["What exactly is new here? Ascarza already showed risk targeting is ineffective.",
-      "Correct, and I say so in the paper — that is prior work and I do not claim it. My contribution is the **condition**: whether effect-based targeting pays is predicted by corr(τ, π), the correlation between the estimated effect and the estimated risk. I measured it across four real randomised trials and one simulator, it orders them monotonically, and I used it to make an out-of-sample prediction about the Lenta dataset before I obtained the data, which landed. The second contribution is the measurement floor: a business needs about 119,500 customers to detect the effect these offers deliver."],
+      "She showed more than that, and I claim none of it: that targeting by effect beats targeting by risk, that risk targeting raised churn in one of her two field experiments, and, in an appendix, that the correlation between risk and response explains when. Lemmens and Gupta added profit-based targeting in 2020. Three things are mine. First, small samples: she names pilot size as an open question, and on a real experiment I measured that at 500 customers the best method beats random on 75% of draws. Second, the measurement floor: a business needs about 119,500 customers to detect the effect these offers deliver. Third, I measured her correlation on three public experiments, found settings where an uplift model does no better than a plain one, and predicted where the Lenta dataset would fall before obtaining it."],
+    ["Which published work is closest to yours, and how do you differ?",
+      "Four papers. **Ascarza (2018)**: two field experiments, 12,137 and 2,100 customers, with churn of 44% and 62%; targeting by effect beats targeting by risk. **Ascarza, Iyengar and Schleicher (2016)**: a retention call to 64,147 telecom customers raised churn from 6.4% to 10.0%. **Lemmens and Gupta (2020)**: target on expected profit and choose the campaign size on held-out data. **Devriendt, Berrevoets and Verbeke (2021)**: uplift against churn models on 200,903 bank customers. They work with thousands of customers and high churn or large effects. I ask what happens at a few hundred customers, 3% monthly churn and a one-point effect. One gap I state myself: Lemmens and Gupta's method is not yet a baseline in my experiments."],
     ["In one sentence, what does your system do?",
       "It decides which customers are worth spending retention money on, prices that decision in rupees with an explicit uncertainty, and declines to act when the evidence is too thin."],
     ["Why not just use a churn prediction model, like everyone else?",
@@ -259,11 +266,11 @@ const QA = [
     ["Did you beat the state of the art?",
       "On survival prediction, yes on two of three baselines: our discrete-time hazard beats Cox and Random Survival Forests on ten of ten resplits on the Telco dataset by integrated Brier score, and ties DeepSurv — 0.0824 against 0.0825. I call that a tie, not a win. On the decision layer, the honest answer is that two of my own gates were not met, and I report them as failures."],
     ["What is your dataset?",
-      "Four real randomised trials — Hillstrom 64,000 customers, Criteo-UPLIFT 14 million, Lenta 687,000, plus Telco 7,043 and GBSG2 686 for survival — and SubSim, our own calibrated simulator. Only the simulator has individual ground-truth treatment effects, which is why it exists."],
+      "Three public randomised experiments — Hillstrom 64,000 customers, Criteo-UPLIFT 14 million, Lenta 687,000 — two public survival datasets, Telco 7,043 and GBSG2 686, and SubSim, our own calibrated simulator. Only the simulator has individual ground-truth treatment effects, which is why it exists."],
     ["Is this simulated data? Then how is it valid?",
-      "The decision-layer results are simulated, and I label them as such throughout. The simulator's calibration is enforced in continuous integration against published benchmarks. The correlation criterion, which is the main contribution, is measured on **real randomised experiments**, not on the simulator."],
+      "The decision-layer results are simulated, and I label them as such throughout. The simulator's calibration is enforced in continuous integration against published benchmarks. The small-sample result, 75% at 500 customers, comes from a **real randomised experiment**, and so do four of the five rows in the correlation table. The fifth row is the simulator, and it is a ceiling."],
     ["How much of this did you build yourself?",
-      "The design, the experiments, the decisions and the verification are mine, and every one is logged with its reasoning in a decision log of 67 entries. I used AI-assisted programming tools for parts of the implementation, under my direction, and the paper declares that explicitly. Every number in the paper was reproduced from the released code before submission."],
+      "**Write this answer yourself before the panel, and say it in your own words.** It has to be accurate about what the AI assistant did and what you did, because the panel can ask you to open any file and explain it. Say plainly which parts an AI tool wrote or drafted, which decisions were yours, and what you can reproduce and explain unaided. Do not use a line you could not back up if asked to demonstrate it."],
     ["Where is it published?",
       "The paper is archived on Zenodo with a DOI, along with the software and a dataset of ground-truth counterfactuals, which is the artifact no public dataset provides. The repository is public under Apache 2.0."],
     ["What is the practical use for a business?",
@@ -293,7 +300,7 @@ const QA = [
     ["Why is calibration more important than discrimination here?",
       "Because we multiply probabilities by money. A model that ranks well but is miscalibrated produces a confidently wrong budget. That is why we report integrated Brier score and calibration slope, not only C-index."],
     ["What would you do differently with more time?",
-      "Derive the correlation criterion analytically rather than only measuring it, and run a real pilot. The derivation is the single change that would most raise the paper's level."],
+      "Read the prior work in full before building, which would have changed what I claimed. Then three things: add Lemmens and Gupta's method as a baseline, re-measure the correlation over many splits with an interval, and run a real pilot."],
   ]],
   ["C. Results and statistics", [
     ["Why report win rate instead of the mean?",
@@ -309,7 +316,9 @@ const QA = [
     ["Is 6 out of 6 seeds enough to claim a result?",
       "For the founding experiment yes, because the effect is large and the direction is consistent; the paper states the seed count. For the marginal results — 58%, for instance — I do not claim significance, precisely because the interval is wide."],
     ["Why did worse-than-random not replicate on the real datasets?",
-      "Because those are advertising and retail promotions, where the effect and the risk correlate positively. The condition for harm is negative correlation, which is a property of subscription retention. That is the scoping, and it is why the correlation criterion is the contribution rather than the shock result."],
+      "Because those are an email promotion, an advertising campaign and a retail promotion, where the effect and the propensity move together. Harm needs them to pull apart. In my simulator that is built in. For real subscription businesses the evidence is other people's: Ascarza's 2018 experiment, where targeting the riskiest customers raised churn, and the 2016 telecom experiment, where a retention call raised churn from 6.4% to 10.0%. I have no retention experiment of my own, and I say so."],
+    ["Your last row is +106.9% and the others are under 21%. Is that real?",
+      "It is real for the simulator and it is not comparable with the rows above it. Those four compare two fitted models on a real experiment. The simulator row compares an oracle, which knows each customer's true effect, with a churn score, on a simulator I configured to have a negative correlation. So it is the most that could be gained there, not what a fitted model gains. The figure in the repository draws it as a hollow point for that reason. A like-for-like simulator row is one of the checks I still owe."],
     ["What is the effect size you are targeting, in business terms?",
       "About one percentage point of retention per month on the treated group. Small, which is exactly why measurement is the binding constraint."],
     ["Were any results discarded?",
@@ -321,7 +330,7 @@ const QA = [
     ["What is the technology stack?",
       "Python 3.11 to 3.13, NumPy, pandas, SciPy, scikit-learn for the churn baseline, lifelines and scikit-survival for Cox and Random Survival Forest baselines, PyTorch for DeepSurv, matplotlib for figures, pytest and ruff, GitHub Actions for CI. The Phase 0 result runs on numpy, pandas and scipy alone."],
     ["How is it tested?",
-      "467 automated tests across 22 files, including edge cases, fairness checks and a leakage suite. CI runs four gates on every push: the test suite on three Python versions, the calibration gates, the leakage gate, and the founding experiment. If the founding claim ever stops holding, the build fails."],
+      "487 automated tests across 23 files, including edge cases, fairness checks and a leakage suite. CI runs four gates on every push: the test suite on three Python versions, the calibration gates, the leakage gate, and the founding experiment. If the founding claim ever stops holding, the build fails."],
     ["How long does the whole thing take to run?",
       "The full check is about two and a half minutes. The founding experiment is a second or two. The dashboard, including a simulated pilot, is about two seconds."],
     ["How would you deploy this for a real client?",
@@ -361,11 +370,11 @@ const QA = [
     ["Isn't the negative result just because your model is weak?",
       "No, and that is why the oracle rows are in the table. Even with the simulator's **true** effects, an ideal targeter would treat only 5.8% of customers, because break-even needs four times the effect the offer delivers. The limit is the economics, not the estimator."],
     ["This looks like a literature survey with code, not original work.",
-      "The correlation criterion is original, it is measured across five settings, and it made a correct out-of-sample prediction before the data was seen. The measurement floor result is original. The simulator with exact counterfactuals is released as a dataset because no public dataset provides it."],
+      "Three things are original. The small-sample result: on a real experiment, at 500 customers the best method beats random on 75% of draws, and pilot size is a question the literature leaves open. The measurement floor: about 119,500 customers to detect the delivered effect. And the simulator with exact counterfactuals, released as a dataset because no public dataset provides one. The correlation itself is Ascarza's. I measured it; I did not invent it."],
     ["How much of this did an AI write?",
-      "AI tools assisted with implementation under my direction, and the paper declares it. What is mine is the problem framing, the experimental design, every decision in a 67-entry log, the pre-registrations, and finding my own units error. I can walk you through any file or any decision and explain why it is that way."],
+      "**Write this answer yourself before the panel, and say it in your own words.** It has to be accurate about what the AI assistant did and what you did, because the panel can ask you to open any file and explain it. Say plainly which parts an AI tool wrote or drafted, which decisions were yours, and what you can reproduce and explain unaided. Do not use a line you could not back up if asked to demonstrate it."],
     ["Why should we accept simulated results at all?",
-      "You should not accept them alone, and I do not ask you to. The central claim is measured on four real randomised trials. The simulator is only used where real data cannot help: nowhere on earth is there a dataset that contains both outcomes for the same customer."],
+      "You should not accept them alone, and I do not ask you to. The small-sample result and four of the five correlation rows come from three public randomised experiments. The simulator is used where real data cannot help: no dataset contains both outcomes for the same customer. Anything that rests on the simulator alone, including the worse-than-random result, I label as simulated."],
   ]],
   ["G. Fundamentals they may check", [
     ["Churn, MRR, CLV", "Churn is the rate at which customers leave. MRR is monthly recurring revenue. CLV is the expected revenue a customer generates before leaving, discounted."],
@@ -432,14 +441,14 @@ children.push(table([2500, 3500, 2000, W - 8000], [
   ["Churn prediction", "AUC / average precision (base rate 3.3%)", "0.700 / 0.118", "Met"],
   ["Survival model", "Integrated Brier, Telco, 10 resplits", "0.0824", "Met: beats Cox and RSF 10/10; ties DeepSurv"],
   ["Negative control", "GBSG2, fixed covariates", "loses, as predicted", "Met as a control"],
-  ["Causal criterion", "corr(τ, π) across 5 settings", "−5.6% → +106.9%", "Met; out-of-sample prediction landed"],
-  ["Value of money layer", "Realised value vs churn-score targeting", "−22,823 vs −17,035 random", "Met: the founding result, 6/6 seeds"],
+  ["Risk–lift correlation", "Uplift's gain on 4 real settings; simulator ceiling", "−5.6% to +20.3%; ceiling +106.9%", "Measured; prediction landed; idea is Ascarza's"],
+  ["Value of money layer", "Realised value vs churn-score targeting", "−22,823 vs −17,035 random", "Met in the simulator: the founding result, 6/6 seeds"],
   ["Small-sample reliability", "Share of draws beating random at n = 500", "75%", "Reported, not a pass/fail"],
   ["Abstention", "Draws beating a ranking policy", "93%", "Partial: does not beat doing nothing"],
   ["Offer optimiser", "Draws beating one well-chosen offer", "58%, CI 42–72%", "Not met, reported as such"],
   ["Measurement", "Bias and interval coverage vs known truth", "≈0 bias, 88–98%", "Met"],
   ["Measurement floor", "Customers needed to detect the delivered effect", "≈119,500", "Met as a finding"],
-  ["Engineering", "Tests, CI gates, Python versions", "467, 4 gates, 3.11–3.13", "Met"],
+  ["Engineering", "Tests, CI gates, Python versions", "487, 4 gates, 3.11–3.13", "Met"],
   ["Research output", "Paper, software and data archived", "3 Zenodo DOIs", "Met"],
   ["Commercial", "A paying client", "none yet", "Open"],
 ]));
@@ -471,12 +480,13 @@ children.push(table([3200, W - 3200], [
   ["Founding experiment", "3,589 customers, 20% budget. Do nothing 0 · treat everyone −89,869 · random −17,035 · churn score −22,823 · oracle +5,877 · oracle with abstention +8,610 treating 209. Holds on 6 of 6 seeds."],
   ["Churn model", "AUC 0.700 · average precision 0.118 vs 3.3% base rate · recall 44.5% · precision 7.4% · F1 0.127 · accuracy 79.6% vs 96.7% for “nobody churns” · confusion 53 / 665 / 66 / 2,805."],
   ["Sleeping dogs", "59.1% of the top predicted-risk decile, 5.3% of the bottom, 25.7% of the population."],
-  ["Correlation criterion", "Hillstrom men +0.69 → −5.6% · Criteo +0.58 → +0.6% · Hillstrom women +0.19 → +12.7% · Lenta +0.17 → +20.3% · SubSim −0.19 → +106.9%."],
+  ["Risk–lift correlation", "Fitted models, one split, within noise of each other: Hillstrom men +0.69 → −5.6% · Criteo +0.58 → +0.6% · Hillstrom women +0.19 → +12.7% · Lenta +0.17 → +20.3%. Simulator, oracle on true effects, a ceiling: SubSim −0.19 → +106.9%."],
+  ["Prior work", "Ascarza 2018: 12,137 and 2,100 customers; at 40% targeted, risk targeting raised churn 4.4 points in one study; appendix simulates the correlation. Ascarza, Iyengar & Schleicher 2016: 64,147 customers, churn 6.4% → 10.0%. Lemmens & Gupta 2020: profit-based targeting. Devriendt et al. 2021: 200,903 bank customers."],
   ["Survival", "Telco IBS: ours 0.0824 · DeepSurv 0.0825 · Cox 0.0914 · RSF 0.0964 · Kaplan–Meier 0.1823. C-index 0.865. GBSG2: ours 0.1867, loses as predicted."],
   ["Reliability and gates", "75% of draws beat random at n = 500 · abstention beats ranking on 93% · optimiser 58%, CI 42–72% · break-even effect 0.040 vs delivered 0.010 · an oracle treats 5.8%."],
   ["Measurement", "Bias ≈ 0, coverage 88–98% · MDE at 10,000 customers 0.0374 vs delivered 0.0108 · ≈119,500 customers needed · campaigns looked significant on 0–10% of runs."],
   ["Leakage", "≈0.60 honest against 0.954 leaked (the paper reports 0.603 for its configuration). Value-at-risk and churn-risk top deciles overlap by only 21%."],
-  ["Engineering", "467 tests, 22 files · 4 CI gates · Python 3.11–3.13 · 67 logged decisions · Apache 2.0."],
+  ["Engineering", "487 tests, 23 files · 4 CI gates · Python 3.11–3.13 · 68 logged decisions · Apache 2.0."],
   ["Outputs", "Paper: ~7,500 words, 12 tables, 5 figures, 27 references. DOIs: paper 10.5281/zenodo.22009470 · software 10.5281/zenodo.22025879 · data 10.5281/zenodo.22025123."],
   ["Demo figures", "Dashboard: 1,500 customers, 472 assessed, 142 to contact, 330 left alone, 131 downgrades, 10 discounts, 1 pause. Sample report: 900 customers, ₹2.6 lakh a year lost, 31% involuntary."],
 ]));
@@ -484,7 +494,7 @@ children.push(table([3200, W - 3200], [
 children.push(H1("6. Rehearsal checklist"));
 [
   "Read the speech aloud three times with the deck advancing. Time it against the per-slide targets in Section 2; if you run long, cut from slides 3 and 4, never from 6 or 8.",
-  "Rehearse slide 6 alone until you can say “worse than random” without hesitating, and until the correlation table comes out as a story, not a list.",
+  "Rehearse slide 6 alone until you can say “worse than random” without hesitating, and until you can say, without looking, which rows of the correlation table are real experiments and which is the simulator's ceiling.",
   "Have someone ask you five questions from Section F, the hostile ones, and answer them standing up.",
   "Practise the sentence “I do not know” once, out loud, so that it is available to you under pressure.",
   "Check the room: HDMI or Type-C adapter, the deck exported to PDF as a backup, the demo video on the laptop, and the repository open in a terminal.",
