@@ -19,7 +19,7 @@ by *churn risk* by only **21%** — the score finds the wrong 79% of the money, 
 causal argument is made.
 
 **Real data (Hillstrom, Criteo, Lenta RCTs).** Worse-than-random did NOT replicate →
-claim SCOPED (D-020). **Governing quantity = corr(τ, propensity)** (D-026), re-run
+claim SCOPED (D-020). **corr(τ, propensity)** (D-026; NOT ours, see D-068), re-run
 15 Aug 2026 — use THESE, an older compressed line here had drifted: Hillstrom-mens
 +0.69→**−5.6%** · Criteo +0.58→+0.6% · Hillstrom-womens +0.19→+12.7% ·
 Lenta +0.17→+20.3% · SubSim churn −0.19→**+106.9%**. Ordering among the positive
@@ -68,9 +68,10 @@ business method + program *per se*).
 period to ~19 Aug 2027.
 
 **Papers (D-042):** merged 1+2 **drafted** → `papers/paper1/` (read its README first; §8
-REPORTS results + why the gate was unpassable). Lead = corr(τ,propensity) + small-*n*
-reliability; simulator is the *instrument*. arXiv → EJOR/DSS, not JMR (Ascarza's turf).
-Novelty is NOT "churn scores are bad" — that is Ascarza 2018. **GTM (D-040/041):** reports
+REPORTS results + why the gate was unpassable). **Positioning narrowed by D-068:** lead =
+pilot size / small-*n* reliability + low-churn regime; simulator is the *instrument*. NOT
+ours: "churn scores are bad", harm from risk targeting, the risk–lift correlation (Ascarza
+2018, App. A3.4), profit-scored targeting (Lemmens & Gupta 2020). **GTM (D-040/041):** reports
 before dashboards → dunning autopilot → retention decisions, ordered by *trust required*.
 
 ---
@@ -202,16 +203,17 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-20** — **Silent demo video, recorded live (`make demo-video`).** Terminal steps run in a
-  PTY with real timing and replay through pyte; report/dashboard are real Chrome screencasts.
-  **Recording live caught the demo export not producing the numbers the slides quote** (RNG
-  order: amounts vs dates) — fixed and pinned by a test → 467. Long runs always labelled `N×`.
-- **CP-19** — **Presentation + video storyboard (D-067).** `presentation/` builds the 8-slide
-  .pptx and storyboard .docx from real outputs only. Slide 5 metrics from the kill-test model:
-  AUC 0.700, recall 44.5%, precision 7.4%, F1 0.127; **accuracy 79.6% < 96.7% for always
-  'stays'**, so accuracy is never a headline. Readiness stated PER COMPONENT. `make demo-data`
-  (Stripe-shaped, cents; +3 tests → 466). Rendering the demo report found **2 unfixed defects**:
-  ₹ shown for a USD export; involuntary advice with no invoice data. Raised as tasks.
+- **CP-21** — **Four papers read in full; the novelty claim is narrowed (D-068).** Ascarza 2018
+  App. A3.4 already simulates corr(RISK, LIFT) −1…+1 (her studies ≈ ±0.2); her Study 2 has
+  risk targeting RAISING churn (+4.4pp). Profit-scored targeting + validated cutoff = Lemmens
+  & Gupta 2020, **not yet a baseline here**. Left: pilot size (her open question), low-churn
+  floor, uplift losing at finite n. **Our five points are NOT like-for-like** (real: estimates,
+  pooled-arm risk, one seed; SubSim: TRUE effect, ORACLE vs score) — six checks owed first.
+- **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
+  outputs only. Kill-test model AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% <
+  96.7% for always 'stays'** — never a headline. Readiness PER COMPONENT. Recording live caught
+  the demo export not producing the quoted numbers (RNG order) — fixed, pinned → 467 tests.
+  **2 unfixed report defects:** ₹ shown for a USD export; involuntary advice with no invoices.
 - **CP-18** — **Published; the paper cited itself as its software archive (D-066).** DOI
   `22009471` was the paper. Self-referential citations are locally coherent — D-057's shape.
   **Rule: resolve every identifier, never recall it.** Repo public → Zenodo↔GitHub release;

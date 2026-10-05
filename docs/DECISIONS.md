@@ -2122,3 +2122,147 @@ consistent, wrong about the world. They are recorded here and raised as separate
 than fixed inside a presentation checkpoint; the video uses the sample report, which is
 denominated in rupees by design and includes invoices, so it does not demonstrate either
 defect as if it were correct behaviour.
+
+---
+
+## D-068 — Four papers read in full: the correlation criterion and the harm result are prior art
+
+D-042 positioned the paper against Ascarza (2018) and ended with an instruction to check
+the Verbeke group's work "before drafting". That check was not done before the paper was
+drafted and published (D-066). In October 2026 the four closest papers were read in full,
+appendices included. Two claims this log has carried since D-020 and D-026 do not survive
+the reading, and two more are narrowed. This entry records what each paper establishes,
+what that withdraws, and what is left. Earlier entries are not edited; where they conflict
+with this one, this one governs.
+
+**What each paper establishes.**
+
+*Ascarza (2018), Journal of Marketing Research 55(1):80–98, with web appendix.* Defines
+RISK = P(churn | X, no offer) and LIFT = P(churn | no offer) − P(churn | offer), estimates
+LIFT with an uplift random forest on a randomised pilot, and targets customers whose LIFT
+exceeds a threshold. Two randomised experiments: a Middle East prepaid telecom (12,137
+customers, churn about 44%) and a North American membership organisation (2,100, about
+62%). Half of each dataset is the pilot; results are averaged over 1,000 splits. Targeting
+the top 40% by RISK cut churn by 1.9 points in Study 1 and *raised* it by 4.4 points in
+Study 2; targeting by LIFT cut it by 6.0 and 4.3 points. The top RISK decile in Study 2
+went from 79.4% churn untreated to 82.7% treated. The top deciles of the two rankings
+overlap by 16% and 6%. **Web Appendix A3.4 simulates 5,000 customers with the RISK–LIFT
+correlation set from −1 to +1 in steps of 0.2, and places her two studies at about +0.2
+and −0.2 by comparing patterns.** A3.6 lowers the churn rate from 50% to 5% and reports
+LIFT's advantage shrinking without reversing. Footnote 9 suggests setting the threshold
+from cost, risk preferences and confidence intervals, and does not implement it. Named as
+open: the optimal size of the pilot, multiple incentives, stability over time, longer
+horizons. She also warns that a logistic model ties the estimated effect to baseline risk
+mechanically.
+
+*Ascarza, Iyengar & Schleicher (2016), Journal of Marketing Research 53(1):46–60.* A
+randomised experiment at a South American mobile operator: 64,147 over-spending customers,
+54,089 phoned with a recommendation to move to a better-fitting plan plus a credit, 10,058
+held out. Three-month churn was 6.4% in control and 10.0% in treatment (difference 3.6
+points, standard error 0.3). Only 828 customers (1.5%) accepted, and they churned at 5.9%;
+the 53,261 who declined churned at 10.1%. The harm is larger for customers with variable
+usage (+4.8 against +2.7 points) and a falling trend (+4.6 against +2.4). A second
+campaign on 150,038 customers is used to argue that contact alone is not the cause. The
+mechanisms offered (lowered inertia, salience of past usage) are supported indirectly, and
+the authors say so. Control-group churn is 6.1–6.7% across their segments, so this paper
+is weak evidence that harm rises with *untreated* risk.
+
+*Lemmens & Gupta (2020), Marketing Science 39(5):956–973* (read as the authors' December
+2019 manuscript). Defines profit lift as the customer's value if targeted, less the cost,
+less their value if not targeted. Fits a model with a profit-based loss (the target is
+expected profit lift, the weight is its absolute size) and chooses how many customers to
+target by evaluating candidate sizes on a validation split. Study 1: a European
+interactive-TV provider, 5,190 customers, **propensity-matched, not randomised**. Study 2:
+a randomised experiment on 2,100 members of a North American organisation, which appears
+to be the experiment in Ascarza's Study 2. Holdout profit, Study 1 / Study 2: churn model
+€1,872 / −$1,669; churn model re-ranked €1,254 / −$1,709; uplift €4,093 / −$1,305; theirs
+€5,026 / +$1,328. Rule-of-thumb campaign sizes lose most of that. Their simulations find
+the weighting helps most with small samples, the smallest being 1,000. Limitations they
+name: a single incentive, no long-run effect, strategic churning.
+
+*Devriendt, Berrevoets & Verbeke (2021), Information Sciences 548:497–515.* One European
+financial institution, 200,903 customers: 118,809 control (churn 25.52%) and 82,094
+treated (13.25%), an average uplift of 12.27 points. Logistic regression and random
+forest, each as a churn model and as an uplift model. Under the older profit measure,
+which assumes a constant retention rate, the churn model wins; under their MPU measure,
+which takes the retention rate from the treated–control difference at the cutoff, the
+uplift model wins in every cost setting. Section 4.3.3 reports rank correlations of
+0.17–0.59 between the churn and uplift rankings and a top-5% overlap of 21–55%. Costs and
+benefits are assumed, not observed. The causal reading rests on an ignorability
+assumption; on our reading the paper does not state that assignment was randomised, and
+that must be re-checked against its data section before it is asserted anywhere.
+
+**What this withdraws.**
+
+| Claim carried in this log | Entry | Status | Why |
+|---|---|---|---|
+| Prior work shows risk targeting is only *ineffective*; showing when it becomes *harmful* is ours | D-020, D-042 item 2 | **withdrawn** | Ascarza's Study 2 shows risk targeting raising churn (+4.4 points at 40%). The 2016 paper shows a retention campaign raising churn on average in a 64,147-customer experiment. |
+| corr(τ, propensity) is a principle introduced here, the "governing quantity" | D-026, D-042 item 2 | **withdrawn as stated** | Appendix A3.4 varies this same correlation and reads her two studies against it. |
+| Scoring decisions in money, not Qini, is a contribution | D-042 item 4 | **withdrawn** | Lemmens & Gupta train and evaluate on profit; Devriendt et al. evaluate on profit. |
+| Abstention at small samples is "not in Ascarza" | D-042 item 1 | **narrowed** | Her footnote 9 anticipates an uncertainty-aware threshold. Lemmens & Gupta choose the campaign size on held-out data, which is the nearest implemented rival. |
+| Ground-truth individual effects are a contribution | D-042 item 3 | **narrowed to "instrument"** | A3.4 is also a simulation with known individual effects, though with two latent variables and no billing process. |
+| Ascarza's gain is "up to 6.8pp" | D-042 | **not traceable** | The gains read from her results are 4.1 and 8.7 points at 40% targeted. Do not repeat 6.8 (D-066: resolve, never recall). |
+
+**What is left, and on what evidence.**
+
+1. **How small a pilot can be.** Ascarza names pilot size as open. None of the four fits
+   on fewer than about 700 customers (a third of 2,100). D-023 measures it directly on
+   Hillstrom: uplift beats random on 75% of draws at n=500. This is the strongest
+   remaining claim, and it rests on one dataset that is not retention data.
+2. **The low-churn, small-effect regime at small-business scale.** The three targeting
+   papers work at 25–62% churn. The 2016 experiment is at 6.4%, with 64,147 customers.
+   A3.6 simulates 5% churn and finds a shrinking gain. What is ours is the size of the
+   gap at a few thousand customers: break-even effect 0.040 against a delivered 0.010, an
+   oracle treating 5.8% (D-055), and a holdout that can detect 0.0374 at 10,000 customers
+   against an effect of 0.0108 (D-065). Simulation only.
+3. **The correlation measured, not set.** She sets it in a simulation and infers her
+   studies' values from patterns. D-026 and D-031 compute it from fitted models on four
+   public experimental settings and tabulate it against the measured gain, including
+   settings where the uplift model does no better than the outcome model (Criteo +0.6%)
+   or worse (Hillstrom men −5.6%). Her conclusion that LIFT never loses is about the
+   quantity; ours is about its estimate from a finite sample. None of our real datasets
+   is a retention experiment.
+4. **An implemented threshold, with its failure reported.** D-054 and D-057: the rule
+   beats ranking on 93% of draws and does not beat doing nothing. That is a negative
+   result about footnote 9's suggestion in this regime, and is worth reporting as one.
+
+**Our five points are not measured the same way.** Reading `benchmarks/spectrum.py`
+beside her appendix found three differences that the paper and D-026 do not state:
+
+- For the four real points the correlation is Pearson, between a T-learner's estimate
+  and an outcome model **fitted on both arms pooled**. Her RISK is fitted on control
+  customers only. One seed, one split, no interval.
+- For the SubSim point the correlation is between the **true** benefit and an estimated
+  churn score, and the "+106.9%" compares the **oracle** against the churn score. The
+  four real points compare the best *estimated* uplift model against the best outcome
+  model. The large gap at negative correlation is therefore partly oracle against
+  estimate, not only the sign of the correlation.
+- SubSim's −0.19 follows from how the simulator's latent variables were configured. It
+  is an assumption we chose that happens to sit near her inferred −0.2, not independent
+  evidence that retention has a negative correlation.
+
+**Owed before the correlation result is claimed again.**
+
+1. Rank correlation beside Pearson, on the probability scale and the log-odds scale.
+   Her warning about logistic models and our own D-057 both say the scale matters.
+2. RISK fitted on control customers only, to match her definition.
+3. Many splits per dataset, with an interval on each correlation.
+4. The SubSim point recomputed like for like: an estimated uplift model against an
+   estimated outcome model, shown beside the oracle version.
+5. Lemmens & Gupta's validated cutoff as a baseline in the abstention experiment, given
+   the same pilot and scored on fresh customers; estimator and stopping rule crossed, so
+   a difference can be attributed to one of them.
+6. The randomisation question in Devriendt et al. settled from the paper.
+
+**Sign conventions, recorded because they differ.** Ascarza and Devriendt et al. define
+the effect as control minus treated, so positive helps. Here τ is treated minus control,
+so negative helps. `spectrum.py` correlates *benefit* with the propensity of the outcome
+the naive model predicts, which for retention is her corr(LIFT, RISK) with the same sign.
+
+**Consequence.** "Governing quantity" is retired as a name for something we introduced;
+the correlation is hers, and what we add is a measurement of it and its limits. The
+paper's lead moves from a criterion to evidence on a question she left open, in a regime
+the four papers do not cover. The public texts that still carry the earlier wording
+(`README.md` scope note, `papers/RESEARCH_PAPER.md`, `papers/paper1/README.md`,
+`docs/RESEARCH-PLAN.md` §2, `PROJECT_REPORT.md`, the `spectrum.py` docstring, and the
+published record) are **not** changed by this entry and remain to be corrected.
