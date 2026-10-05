@@ -16,7 +16,8 @@ often fatal.
 So companies try to predict who is about to leave, and send those people a discount to
 stay. This is a large industry. Nearly every business tool sells some version of it.
 
-**It doesn't work, and we can now show precisely why.**
+**It often doesn't work. Published research has shown why, and we have measured how badly
+it can go.**
 
 Predicting *who will leave* is a different question from knowing *who you can help* —
 and treating them as the same question is not merely wasteful, it actively destroys
@@ -26,9 +27,11 @@ had forgotten they were paying you.
 We built a system that answers the second question instead: **who should we actually
 help, with what, at what cost — and when should we do nothing at all?**
 
-We have proven the core claim in simulation: a retention campaign targeted the standard
-way loses money, and loses *more than targeting customers completely at random*. Our
-approach turns that same budget profitable.
+We have shown the core claim in simulation: a retention campaign targeted the standard
+way loses money, and loses *more than targeting customers completely at random*. With
+perfect knowledge of every customer, the same budget can be made profitable. Our working
+method, which has to estimate that knowledge from limited data, avoids the losses but does
+not yet make a profit.
 
 We have also tested it against real-world experimental data, where it **partly failed** —
 and understanding why sharpened the idea considerably. See
@@ -58,7 +61,7 @@ Everything else is consequence.
 | 02  | [How the big companies do it](02-how-the-big-companies-do-it.md) | What Netflix, Spotify, Amazon and telecoms actually do — and where they are weak |
 | 03  | **[The core insight](03-the-core-insight.md)**                   | **Why predicting who leaves is the wrong question**                              |
 | 04  | [What we are building](04-what-we-are-building.md)               | The product and how it works, in plain language                                  |
-| 05  | [The evidence](05-the-evidence.md)                               | What we have proven so far, and why you should believe it                        |
+| 05  | [The evidence](05-the-evidence.md)                               | What we have shown so far, and why you should believe it                         |
 | 06  | [The business case](06-the-business-case.md)                     | Market, competitors, pricing, defensibility                                      |
 | 07  | [Risks and limitations](07-risks-and-limitations.md)             | What could go wrong and what we have *not* proven                                |
 | 08  | [Glossary](08-glossary.md)                                       | Every term, defined plainly                                                      |
@@ -70,7 +73,8 @@ Everything else is consequence.
 
 **1. The industry is solving the wrong problem.** Nearly every churn tool ranks
 customers by likelihood of leaving. That ranking is the wrong basis for deciding who to
-contact — and in subscription retention specifically, we measured it to be *worse than
+contact. This insight is not ours: it comes from published field experiments. In our
+simulation of subscription retention, we measured that ranking to be *worse than
 targeting at random*. (We later tested this on a real-world email campaign and it did
 **not** hold there. Why, and what that means, is in [05](05-the-evidence.md) — the
 short version is that the harm requires a particular kind of customer that email
@@ -89,8 +93,10 @@ assumptions is not a result.
 
 ## Honest statement of status
 
-We have a **calibrated simulation** and a **result proven within it**. We do **not** yet
-have paying customers or real-world validation. [Document 09](09-status-and-roadmap.md)
+We have a **calibrated simulation** and a **result shown within it**; tests on three
+public experiments, none of them a subscription business; and working software. We do
+**not** yet have paying customers or real-world validation, and our own measurement work
+found that a small business cannot verify results of this size on its own data. [Document 09](09-status-and-roadmap.md)
 is precise about what is done and what is not, and
 [07](07-risks-and-limitations.md) is precise about what could still go wrong.
 

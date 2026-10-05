@@ -1609,3 +1609,41 @@ re-recorded (4 min 35 s, 1080p); a frame from step 1 shows "487 passed" under th
 **Not changed.** `PROJECT_REPORT.md` (433 tests), `explainer/09` (414) and the paper source
 (463) quote older counts and were already out of date.
 
+## Project report and explainer brought into line with D-068 and with the current state
+
+**PROJECT_REPORT.md** is a dated submission (11 August 2026, commit `6e05749`), so it was
+revised visibly, not silently: the date line says so and a revision note at the top lists
+what changed and what was not re-run. Corrected: the prior-work section (§2), the
+abstention rule's attribution (§4C), the correlation section and Figure 2 caption (§5.3,
+now the 15 August values in five rows with three cautions), limitations, future work, two
+examination answers and the references (three added, each resolved against Crossref). Added:
+§5.9 on the measurement floor, §10.5 recording the novelty error. Counts moved to 487 tests,
+68 decisions, 13,675 lines in `retainiq/`. The AI-assistance clause no longer limits
+assistance to the implementation and is left for the author to complete.
+
+**Explainer.** `09` had not been updated since the diagnostic became deliverable: it now has
+a current status table, plain-language sections on what Phase 6 found and on what had been
+wrongly called ours, the papers table (published as a preprint, being revised), and four
+change-log entries (AI outreach, Phase 6, publication, prior work). `05`: founding-table row
+corrected to −22,823 and 18 harmed (it said −22,123 and 19), the "0.2% predicted harmed"
+figure to about 0.5%, and the honest-status lists rewritten. `07`: four new limitations, two
+new "ways we fooled ourselves", and where two falsifiable conditions now stand. `03`, `00`:
+the 209-versus-718 result is labelled as perfect knowledge in simulation, and the practical
+method's actual standing is stated beside it. `04`, `06`: **the claim that we can prove
+results for a small client, and price on them, is withdrawn** for voluntary churn, because
+Phase 6 found the effect undetectable below roughly 120,000 customers. `02`, `08`: history
+softened; glossary gains "perfect-knowledge version" and "preprint".
+
+**Checked by re-running.** `make killtest` (−22,823; harmed 18), the leakage measurement
+(0.606 / 0.615 / 0.954; the report said 0.603), and the abstention sweep.
+
+**Found while checking.** `make abstention` prints the decision rule as it was *before* the
+D-057 correction: 75/80/70/65/80% against ranking, −3,531 at n = 2,000. The corrected
+figures quoted everywhere (93% overall; 95/85/95/100/90%; −524 against −2,919; −1,070) are
+recorded by the same sweep under `abstention_money` and `top_k_money` and were reproduced
+exactly from those rows, but no command prints them. Not fixed here; raised as a separate
+task, and footnoted in the report's §5.8.
+
+**Not changed.** `papers/RESEARCH_PAPER.md`, `papers/paper1/`, the built paper PDF and DOCX,
+the Zenodo record. §5.4 to §5.7 and the offer-ladder table of the report were not re-run.
+

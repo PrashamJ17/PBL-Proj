@@ -100,14 +100,17 @@ results.
 high early (people who never got started), falling as habits form.
 
 **Uplift modelling** — estimating how much your action changes behaviour, per person, so
-you can target people you'll *help* rather than people likely to leave. Invented by
-telecom companies. Central to this project.
+you can target people you'll *help* rather than people likely to leave. First developed
+around 2000 and taken up early by telecom and direct-marketing companies. Central to this
+project.
 
 **CATE (Conditional Average Treatment Effect)** — the technical term for "the effect of
 acting on a customer like this one."
 
 **Holdout / control group** — customers deliberately *not* contacted, so you can compare
-and know your real effect. The only honest way to measure retention work.
+and know your real effect. The only honest way to measure retention work. It has a limit:
+if the group is small and the effect is small, the comparison cannot tell a real
+improvement from chance ([09](09-status-and-roadmap.md)).
 
 **A/B test** — comparing two approaches by randomly assigning people to each. A holdout
 is an A/B test where one option is "do nothing".
@@ -142,7 +145,16 @@ from larger ones. The basis of our long-term advantage.
 allow useful answers from small samples.
 
 **Abstention** — declining to make a recommendation when evidence is insufficient. Rare in
-commercial systems, and one of our core contributions.
+commercial systems. The idea has been suggested in earlier research; building it and
+testing it on small amounts of data is where our work is concentrated.
+
+**Perfect-knowledge version (oracle)** — a version of a method that is told each customer's
+true response, which only a simulation can know. It shows the most that could be gained,
+not what a real method achieves. Used in this project as an upper limit, and labelled as
+one.
+
+**Preprint** — a research paper made public by its authors before any journal has reviewed
+and accepted it.
 
 **Qini curve / AUUC** — standard scores for uplift models. Both assume you rank customers
 and treat the top slice. Neither accounts for a budget, varying costs, or the option to

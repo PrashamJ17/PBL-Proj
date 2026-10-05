@@ -208,12 +208,12 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   churn (+4.4pp). Profit-scored targeting + validated cutoff = Lemmens & Gupta 2020, **not yet a
   baseline**. Left: pilot size, low-churn floor, uplift losing at finite n. **Our five points are
   NOT like-for-like** (real: estimates, pooled risk, one seed; SubSim: TRUE effect, ORACLE vs
-  score); six checks owed. README, plan, fig03, deck, speech corrected (+20 tests → 487); paper, PROJECT_REPORT NOT.
+  score); six checks owed. All repo docs, deck, speech, report, explainer corrected (+20 tests → 487); paper text NOT.
+  **`make abstention` PRINTS THE PRE-D-057 RULE** (65–80%); the 93% lives in the `*_money` rows. Task raised.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
-  outputs only. Kill-test model AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% <
-  96.7% for always 'stays'** — never a headline. Readiness PER COMPONENT. Recording live caught
-  the demo export not producing the quoted numbers (RNG order) — fixed, pinned → 467 tests.
-  **2 unfixed report defects:** ₹ shown for a USD export; involuntary advice with no invoices.
+  outputs only. AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% < 96.7% for always
+  'stays'** — never a headline. Readiness PER COMPONENT. Live recording caught the demo export
+  not producing the quoted numbers — fixed, pinned. **2 unfixed report defects:** ₹ on a USD export; involuntary advice with no invoices.
 - **CP-18** — **Published; the paper cited itself as its software archive (D-066).** DOI
   `22009471` was the paper. Self-referential citations are locally coherent — D-057's shape.
   **Rule: resolve every identifier, never recall it.** Repo public → Zenodo↔GitHub release;

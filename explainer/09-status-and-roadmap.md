@@ -3,19 +3,23 @@
 **This document is updated as the project progresses. Everything else in this folder is
 relatively stable; this is the living record.**
 
-**Last updated:** Phase 5 complete (the decision engine, plain-language explanations and
-the dashboard), a serious bug found and fixed in our own decision rule, and the diagnostic
-made deliverable against real Stripe and Razorpay exports. Still nothing sold.
+**Last updated:** 5 October 2026. Since the previous update: the machinery for proving
+results with a held-back group was built, and it showed that a small business cannot detect
+its own results that way; the paper, the software and the data were published; and a full
+reading of earlier research showed that three things we had described as our own findings
+were already known. Still nothing sold.
 
 ---
 
 ## Where we are in one line
 
-**The founding claim has been tested and survived; the data plumbing that keeps future
-results honest is built; we can put a figure on each customer and on how much of it is at
-risk; our decision method reliably beats the standard approach without yet beating doing
-nothing; and a business can now send us two spreadsheets and get a report back. Nothing
-has been sold to a real customer yet, and that is the only thing still in the way.**
+**The founding claim has been tested in our simulation and survived there; the data
+plumbing that keeps future results honest is built; we can put a figure on each customer and
+on how much of it is at risk; our decision method reliably beats the standard approach
+without yet beating doing nothing; a business can send us two spreadsheets and get a report
+back; and we can now say how many customers it takes to measure whether a retention campaign
+worked — far more than a small business has. Part of what we believed was new turned out to
+be already published. Nothing has been sold to a real customer yet.**
 
 ---
 
@@ -30,18 +34,21 @@ has been sold to a real customer yet, and that is the only thing still in the wa
 | **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts — see [below](#what-phase-2-found-about-failed-payments) |
 | **A report a business can actually receive** | ✅ Built | Two spreadsheet exports in, one web page out — tested against real Stripe and Razorpay formats |
 | **Predicting when a customer leaves, and what they are worth** | ✅ Done | Matches or beats established methods on public data — see below |
-| **Quality controls** | ✅ Done | 414 automated tests, all passing |
+| **Quality controls** | ✅ Done | 487 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
 | **The practical version of our method** | 🟨 Built | Beats the standard approach on 93% of runs; does **not** yet beat doing nothing — [see below](#what-phase-4-was-about-and-what-it-honestly-found) |
 | **Customer-facing product** | 🟨 Built | Decision engine, plain-language reasons, and a dashboard an owner can act from — not yet in anyone's hands |
+| **A way to prove results with a held-back group** | 🟨 Built | The calculation is honest, and it shows that one small business cannot detect an effect this small — [see below](#what-phase-6-found-a-small-business-cannot-measure-its-own-campaign) |
+| **Published** | ✅ Done | Paper, software and data are public, each with a permanent identifier |
+| **Checked against earlier research** | 🟨 Done late | Three things we called ours were already published — [see below](#what-we-had-wrongly-called-ours) |
 | Proof with a real business | ⬜ Not started | — |
 | Paying customers | ⬜ **None** | — |
 
-**Eleven rows of thirteen.** But note *which* eleven: all of it is groundwork, evidence
-or machinery, and two of those rows are complete only in the sense that they were built,
-tested and found wanting. **Nothing yet has earned anyone money**, and the two rows that
-would prove the idea works outside our own machinery are both still empty. Those two are
-now the entire remaining risk.
+**Fourteen rows of sixteen.** But note *which* fourteen: all of it is groundwork, evidence
+or machinery, and four of those rows are complete only in a limited sense — built, tested
+and found wanting, or done later than they should have been. **Nothing yet has earned
+anyone money**, and the two rows that would prove the idea works outside our own machinery
+are both still empty. Those two are now the entire remaining risk.
 
 ---
 
@@ -341,6 +348,82 @@ sent.
 
 ---
 
+## What Phase 6 found: a small business cannot measure its own campaign
+
+Every claim about money in this project depends on one comparison: customers who were
+offered something, against a randomly chosen group who were deliberately left alone. That
+second group is called a **holdout** or control group ([glossary](08-glossary.md)). Phase 6
+built the machinery for it. Who is held back is fixed by a rule that cannot be quietly
+changed later, and the result is reported as a range ("between this and that"), never as a
+single flattering number.
+
+We tested it on simulated businesses, where we know the true answer. **The calculation is
+honest**: on average it lands on the truth.
+
+Then we asked the question that matters: how big does a business have to be before that
+range is narrow enough to show the campaign did anything?
+
+![The measurement floor](figures/fig06_measurement_floor.png)
+
+Our simulated offer keeps about **one extra customer in a hundred**. The right-hand panel
+shows the smallest improvement a held-back group can reliably detect, for businesses of
+different sizes. At 10,000 customers it is still about three and a half times larger than
+the improvement the offer delivers. To detect an effect this small, a business would need
+roughly **120,000 customers**.
+
+Put plainly: **a business with a few hundred or a few thousand customers cannot tell, from
+its own numbers, whether its retention campaign worked.** Not because the measuring is done
+badly, but because the held-back group is too small.
+
+There is a second, more uncomfortable finding. In our tests, campaigns *looked* like clear
+successes on up to one run in ten, purely by chance. A business that runs several campaigns
+and remembers the ones that "worked" will conclude that its retention programme is
+effective when it has seen nothing but luck.
+
+**What this changes for us.** Earlier documents in this folder describe a monthly report
+that proves what we earned a client, and pricing based on a share of proven results. For a
+single small business, with offers of the size we have tested, **that proof is not
+obtainable**. It would need evidence combined across many businesses, or offers with a much
+larger effect. [04](04-what-we-are-building.md) and [06](06-the-business-case.md) now say
+so. All of this is from simulation.
+
+---
+
+## What we had wrongly called ours
+
+A project should know what was already known before it claims to have found something. We
+checked this later than we should have. In October 2026 we read, in full, the four
+published studies closest to this work. Three things these documents had described as our
+findings were already in them.
+
+| What we said was ours | Where it already was |
+|---|---|
+| Targeting the riskiest customers can do active harm, not just waste money | A 2018 study by Eva Ascarza: in one of her two real-world experiments, contacting the riskiest customers made more of them leave. And a 2016 experiment on 64,000 telecom customers, in which a retention phone call raised cancellations from 6.4% to 10% |
+| The pattern that explains when this happens: whether the customers most likely to leave are also the ones an offer helps | An appendix of the same 2018 study, which explores exactly this in a simulation |
+| Judging a retention method by the money it makes | A 2020 study by Lemmens and Gupta |
+
+**What is still ours** is narrower:
+
+- How these methods behave when a business has only a few hundred customers. The 2018
+  study names "how big does the trial need to be?" as an open question. On real data, we
+  found that with 500 customers the best method beats picking at random only three times
+  in four.
+- The measurement finding in the section above.
+- Measuring that pattern on real public experiments, including cases where the
+  sophisticated method does no better than the simple one.
+
+**We also found a flaw in one of our own pictures.** A chart in
+[05](05-the-evidence.md) showed five results as if they had been measured the same way.
+Four were real experiments. The fifth was our simulator, using perfect knowledge that no
+real method has, which made it look far better than the others. The chart has been redrawn
+to show that point differently, and the text beside it now explains why.
+
+**One comparison we still owe.** The 2020 study includes its own way of deciding how many
+customers to contact. We have not yet tested our method against it. Until we do, we cannot
+say that ours is better.
+
+---
+
 ## The plan, in order
 
 Each phase has a **gate** — a condition that must be met before moving on. Gates exist to
@@ -355,7 +438,7 @@ force early failure rather than late failure.
 | **4** | **The practical version of our method** | Beat existing approaches on money earned, at small scale | 🟨 **Built — gate half passed** |
 | **5** | Decision engine, plain-language explanations, dashboard | An owner can act without asking us | ✅ **Passed** — with a caution, below |
 
-| **6** | Control-group infrastructure; proof-of-results reporting | **A real client's verified return** | ⬜ |
+| **6** | Control-group infrastructure; proof-of-results reporting | **A real client's verified return** | 🟨 **Built — gate still open** |
 | **7** | Cross-business learning; retail support | Client #10 outperforms client #1 on day one | ⬜ |
 
 ### Why revenue comes at Phase 2, before the clever work
@@ -373,16 +456,16 @@ have no data to fit it with.
 
 ---
 
-## The three research papers
+## The research papers
 
 | # | Subject | Depends on | Status |
 |---|---|---|---|
-| 1 | The simulator as a shared benchmark for the research community | Phase 0 | ⬜ Ready to draft |
-| 2 | **Estimating causal effects reliably with very little data** | Phase 4 | 🟨 Drafted and ready to submit — reports a partial result, honestly |
-| 3 | Choosing interventions under a budget, with real client results | Phase 6 | ⬜ |
+| 1 and 2, merged | When the sophisticated method is worth it, how reliable it is with very little data, and what a small business can measure. The simulator's data is released alongside | Phases 0–6 | 🟨 Published in August 2026 as a preprint — a public draft, not a paper a journal has accepted. **Being revised**: it overstated what was new, as described [above](#what-we-had-wrongly-called-ours) |
+| 3 | Choosing interventions under a budget, with real client results | A real client | ⬜ |
 
-Paper 1 is writable now. Paper 2 is the one that matters, and it is gated on the hardest
-technical problem in the project.
+The first paper is public and can be cited. It is not finished: its claims have to be
+narrowed to what survives, the comparison we owe has to be run, and it has not been
+accepted by a journal.
 
 ---
 
@@ -391,11 +474,14 @@ technical problem in the project.
 1. **Get the failed-payment work in front of real businesses.** This is not a coding
    task and no further code completes it. The report described above needs to be run
    against real billing exports and shown to the people who own them.
-2. **Nothing further to build until somebody uses it.** Phases 6 and 7 — proving results
-   with a control group, and learning across businesses — both require a real client by
-   definition. They cannot be finished, or honestly started, from a desk. Every remaining
-   gate needs a person outside this project.
-3. **In parallel, keep talking to businesses.** Twenty conversations with subscription
+2. **Run the checks we owe on our own evidence.** Re-measure the pattern across the real
+   experiments in more than one way, and test our method against the published 2020 one.
+   None of this needs a client.
+3. **Nothing further to build for clients until somebody uses it.** The measuring
+   machinery of Phase 6 is built and tested on simulated businesses. Finishing it, and all
+   of Phase 7 (learning across businesses), needs a real client by definition. Every
+   remaining commercial gate needs a person outside this project.
+4. **In parallel, keep talking to businesses.** Twenty conversations with subscription
    founders will reshape this plan more than twenty more pages of it. This does not
    depend on the product existing.
 
@@ -415,6 +501,10 @@ Concrete, checkable signals — in order of how much they should update your con
 The second row is the decisive one. Everything else is commercial execution; that row is
 whether the idea is true outside a simulation.
 
+*A caution added after Phase 6:* the last row may not be obtainable from one small business
+at all, because of the measurement finding above. A verified figure is more likely to come
+from several businesses' results combined, or from a larger business.
+
 ---
 
 ## What would tell you to stop
@@ -425,12 +515,56 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 - **Our method cannot beat simple rules on real data at small scale.** ← the one to watch
 - A payment processor ships a competent free version.
 - Clients refuse to allow control groups.
+- *Added after Phase 6:* results cannot be shown even with a control group, because
+  clients are too small and no way is found to combine their evidence.
 
 ---
 
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### What was already known, and the documents corrected
+
+Read the four closest published studies in full. Three things described here as our own
+findings were already in them; the section above has the details. Every document that made
+those claims has been corrected: this folder, the project's main description, the project
+report, and the presentation with its speaking notes. The chart of five results was redrawn
+so that our simulator's point is not mistaken for a real measurement. The paper's own text
+still has to be rewritten.
+
+20 new automated tests (487 total). They stop the chart and its table from ever again
+showing a perfect-knowledge result as if it were a measured one.
+
+### Published, and a mistake in the paper's own references
+
+The paper, the software and the simulator's data were made public, each with a permanent
+identifier so that others can cite and check them. While doing this we found that the paper
+cited *itself* as the archive of its software — a link that worked, pointed to a real
+record, and was the wrong record. It was found only by opening every link instead of
+trusting memory. A presentation and a recorded demonstration were also prepared; recording
+the demonstration live exposed example figures that the slides quoted and the software did
+not produce, which was fixed.
+
+467 automated tests at that point.
+
+### Phase 6 — the measuring stick built, and what it measured
+
+Built the held-back-group machinery and an honest calculation of what a campaign earned.
+Tested against simulated businesses where the true answer is known: the calculation is
+right on average. Its main result was not the one hoped for — a small business cannot
+detect an improvement of the size our offers deliver. Details are in the section above.
+
+### Could AI make the calls? Priced, not argued
+
+A tempting idea: use AI-written emails or AI voice calls so that contacting a customer
+costs almost nothing, and then contact far more of them. We tested it in the simulator.
+Making contact cheap does not remove the harm, because the harm comes from *being
+contacted*, not from what the contact costs. A cheap channel that is as intrusive as an
+ordinary retention offer loses money if sent to everyone. The best channel tested was the
+least intrusive one, a quiet email. The system is therefore designed so that an AI may
+write the wording of a message but never decides who receives one, whether to send it, or
+how large a discount is. Nothing that sends messages automatically has been built.
 
 ### The diagnostic becomes deliverable
 

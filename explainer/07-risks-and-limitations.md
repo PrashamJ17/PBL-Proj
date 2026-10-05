@@ -10,27 +10,48 @@ discover it.
 
 ## Part 1 — What we have not proven
 
-**No real business has used this.** Every result in [05](05-the-evidence.md) comes from a
-simulation. The simulation is calibrated to published benchmarks and deliberately
-configured to make our claim harder, but it is still a model of reality, not reality.
+**No real business has used this.** The central result in [05](05-the-evidence.md) comes
+from a simulation. The simulation is calibrated to published benchmarks and deliberately
+configured to make our claim harder, but it is still a model of reality, not reality. Our
+tests on real data use public experiments from email, advertising and retail. **None of
+them is a subscription business.**
 
-**The size of the effect in the real world is unknown.** We know the *direction* of the
-argument is right — contacting a disengaged customer can cause them to leave, and churn
-models rank such customers highest. We do not know whether real businesses lose a little
-or a lot to this.
+**The size of the effect in the real world is unknown.** Published field experiments by
+other researchers report that retention contact can make customers leave, and that the
+riskiest customers are not the most responsive ([05](05-the-evidence.md)). So the
+*direction* of the argument has support outside this project. We do not know whether real
+businesses lose a little or a lot to this.
 
 **Our headline comparison uses a perfect-knowledge version of our own method.** The
 "contact only where it's worth it" row in [05](05-the-evidence.md) assumes the system
 knows each customer's true responsiveness. It does not — that is what must be estimated
 from data, and estimating it reliably from a few hundred customers is **the unsolved
-research problem this project exists to address.** We have proven the prize is real. We
-have not yet built the thing that claims it.
+research problem this project exists to address.** We have since built the version that
+has to estimate it (Phase 4, in [09](09-status-and-roadmap.md)). It beats the standard
+approach on 93% of runs and does **not** beat doing nothing. The prize exists in our
+simulation; our method does not yet claim it.
 
 **The share of sleeping dogs is our most consequential assumption.** We used 17%, chosen
 to sit inside the range published literature supports. If a particular business has very
 few, our advantage shrinks toward ordinary. The argument's direction holds at any
 non-zero level, but its commercial value scales with this number, and it will vary by
 industry.
+
+**The picture of five results is not one measurement.** In [05](05-the-evidence.md), four
+points are real experiments in which two fitted methods were compared. The fifth is our
+simulator, set up so that risk and responsiveness pull apart, and it uses perfect knowledge
+of each customer. It shows the most that could be gained, not what a real method gains.
+The four real points are each one run with no margin of error, and their order is within
+noise.
+
+**We have not tested our method against the closest published one.** A 2020 study includes
+its own rule for deciding how many customers to contact. Until ours is compared with it on
+the same data, we cannot say ours is better.
+
+**A small business cannot verify our results on its own data.** Our measurement work
+(Phase 6, in [09](09-status-and-roadmap.md)) found that with offers of the size we tested,
+detecting the effect takes roughly 120,000 customers. For a small client, an honest report
+would say "somewhere between a loss and a gain".
 
 **A technical caveat we disclose in our own notes:** the forward-looking portion of our
 simulation is slightly less random than reality, which marginally understates
@@ -62,9 +83,12 @@ hardest go-to-market in the industry. Publishing research and giving away early
 diagnostics are plans, not evidence.
 
 **The core technique is not novel.**
-Uplift modelling is roughly two decades old and well published. Our contribution is
-making it work at small scale, packaging it for people without data teams, and proving
-results in money. A better-resourced team could replicate any of that.
+Uplift modelling is roughly two decades old and well published, and so are the two ideas
+we once described as ours: that targeting the riskiest customers can do harm, and that
+methods should be judged by profit. Our contribution is narrower: measuring how these
+methods behave at small scale (often unreliably), finding what a small business can and
+cannot measure, and packaging the parts that do work for people without data teams. A
+better-resourced team could replicate any of that.
 
 ---
 
@@ -157,6 +181,20 @@ an occasional study.
 "Save rate among contacted customers" always looks good and means nothing. We measure
 against doing nothing, always.
 
+**Claiming as ours what was already known.**
+This one happened. For several months these documents described three published ideas as
+our own findings, because the closest earlier studies had not been read in full before we
+wrote. It was found by reading them, and corrected in October 2026
+([09](09-status-and-roadmap.md)). Countermeasure: read the nearest prior work in full
+before describing anything as new, and name in writing what each earlier study already
+showed.
+
+**Putting unlike things on one chart.**
+This also happened: a perfect-knowledge result from our simulator was drawn beside four
+real measurements as if it were a fifth. Countermeasure: every point on that chart now
+records how it was measured, and automated checks stop a perfect-knowledge result from
+being drawn or tabulated as a measured one.
+
 ---
 
 ## Part 5 — What would change our minds
@@ -167,10 +205,15 @@ Falsifiable conditions. If these occur, we should stop or change direction.
    businesses. The advantage would shrink to ordinary optimisation.
 2. **Small-sample estimation proves intractable** — if, at 300–1,000 customers, our
    method cannot beat simple rules on real data, the core research claim fails. This is
-   the primary risk in Phase 4.
+   the primary risk in Phase 4. *Where this stands:* on simulated data it beats the
+   standard ranking rule and does not beat doing nothing. On real data it is untested.
 3. **A payment processor ships a competent free version.** The window closes.
 4. **Businesses refuse control groups.** If clients will not accept holding back 5–10% of
-   customers, we cannot prove results, and the pricing model collapses.
+   customers, we cannot prove results, and the pricing model collapses. *Where this
+   stands:* our own measurement work found a harder version of this problem. Even with a
+   control group, one small business cannot detect an effect of the size we tested. Unless
+   evidence can be combined across businesses, results-based pricing for voluntary churn
+   does not work at small scale.
 5. **Failed-payment recovery turns out to be the whole business.** Possible. It would be
    a smaller, simpler, less defensible company — and we should recognise it rather than
    subsidise research with it.
@@ -182,17 +225,22 @@ an interesting observation.
 
 ## The honest summary
 
-We have strong evidence that the industry standard is broken, obtained under conditions
-we deliberately made unfavourable to ourselves. We have a coherent explanation for why,
-a design that addresses it, and a business model the market already accepts in adjacent
-form.
+We have evidence that the industry standard can lose money. It comes from our own
+simulation, run under conditions we deliberately made unfavourable to ourselves, and it
+agrees with field experiments other researchers have published. We have a design that
+addresses the problem, and a business model whose failed-payment part the market already
+accepts.
 
-We have no customers, no real-world validation, and the central technical problem —
-making causal estimates reliable with very little data — remains unsolved. The market is
-crowded, the buyers are difficult, and the largest platforms could enter.
+We have no customers and no real-world validation. The central technical problem —
+making causal estimates reliable with very little data — remains unsolved: our method
+avoids the standard approach's losses but does not make money. We have found that a small
+business cannot measure these results on its own. Part of what we thought was new was
+already published. The market is crowded, the buyers are difficult, and the largest
+platforms could enter.
 
-**This is an early-stage project with a validated premise and unvalidated execution.**
-Anyone evaluating it should weight the premise highly and the execution not at all yet.
+**This is an early-stage project with a premise that has outside support and execution
+that is unvalidated.** Anyone evaluating it should weight the premise, and the execution
+not at all yet.
 
 ---
 

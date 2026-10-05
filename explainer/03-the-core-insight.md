@@ -52,6 +52,13 @@ They look identical in the data. And a churn model, working exactly as designed,
 
 The industry has a name for the second type: **sleeping dogs.** As in, let them lie.
 
+**How much of this is established, and by whom.** That the customers most likely to leave
+are not the ones most helped by an offer, and that contacting customers can make more of
+them leave, has been shown in published field experiments by other researchers (2016 and
+2018; details in [05](05-the-evidence.md)). It is not our discovery. Priya's reason, that
+she had forgotten she was paying, is one proposed explanation; the authors of the 2016
+study say they can only speculate about why it happens. Our simulation assumes this explanation.
+
 ---
 
 ## The real question
@@ -119,6 +126,10 @@ Read that again, because it is the finding this project is built on:
 > **Using a good churn model to decide who to contact was worse than using no model at
 > all.**
 
+That is a result inside our simulation, which is built to contain sleeping dogs. On the
+three real experiments we tested it did not hold, and none of those is a subscription
+business. [05](05-the-evidence.md) explains what that does and does not mean.
+
 ---
 
 ## Why — and this is the crux
@@ -157,9 +168,9 @@ contacting this person change their behaviour, and in which direction?**" That n
 can be positive (helps) or negative (harms). Sleeping dogs have it pointing the wrong
 way, and are automatically excluded.
 
-This technique is called **uplift modelling**. It was invented by telecom companies for
-exactly this reason and it is well established — but it is nearly absent from tools that
-small businesses can buy.
+This technique is called **uplift modelling**. It dates from around 2000, was taken up
+early by telecom and direct-marketing companies, and is well established — but it is
+nearly absent from tools that small businesses can buy.
 
 ### 2. Weigh the money, not just the effect
 
@@ -168,7 +179,8 @@ retain a customer worth ₹200 is a loss. So for each person we compare:
 
 > *(how much contacting them helps) × (how much they're worth) — (what the offer costs)*
 
-Only act when that is positive.
+Only act when that is positive. (Judging retention by profit in this way is also
+established: a 2020 study did it on real customer data.)
 
 We also insist on trying the **cheapest thing that could work first**. The industry
 reaches for a discount immediately. A discount is the *most expensive* tool available.
@@ -183,7 +195,9 @@ earlier rungs, and almost every competing product starts at the last one.
 
 ### 3. Know when to say nothing — and admit when you don't know
 
-This is the part nobody else does, and it is the heart of the research contribution.
+This is the part that tools sold to small businesses leave out, and it is where our own
+work is concentrated. The idea has been suggested in earlier research; what we did is
+build it and test it on small amounts of data.
 
 With only a few hundred customers, you often **cannot tell** whether contacting someone
 will help or hurt. The honest answer is "we don't have enough evidence about this
@@ -193,11 +207,18 @@ Every existing method produces a confident-looking number anyway. Ours produces 
 *and a measure of how uncertain it is* — and when the uncertainty is too large to justify
 spending money, **it recommends doing nothing.**
 
-That sounds like a limitation. It is the opposite. In our experiments, the strategy that
-contacted **209 customers** made **more money** than the one that contacted **718** —
-because the extra 509 contacts included people it was harming.
+That sounds like a limitation. It is the opposite. In our simulation, given perfect
+knowledge of every customer, the strategy that contacted **209 customers** made **more
+money** than the one that contacted **718** — because the extra 509 contacts included
+people it was harming.
 
 > **Knowing when not to act was worth more than being better at ranking.**
+
+**What the practical version achieves so far.** No real method has perfect knowledge. Our
+working version has to estimate all of this from a few hundred customers. In simulation it
+reliably avoids the losses of the standard approach, and it does **not** yet make money:
+most of the time it correctly decides to contact nobody
+([09](09-status-and-roadmap.md)).
 
 ---
 
@@ -225,12 +246,14 @@ contribution and the commercial opportunity, which is a rare and fortunate align
 
 Every churn tool answers "who is likely to leave?" That is the wrong question. The right
 question is "whose behaviour will my action change, and is that change worth what it
-costs?" Answering the wrong question is not merely unhelpful — we measured it to be
-worse than acting at random, because the customers a churn model ranks highest are
-disproportionately the ones an offer will drive away. We estimate the *effect* of acting
+costs?" Answering the wrong question is not merely unhelpful — in our simulation we
+measured it to be worse than acting at random, because the customers a churn model ranks
+highest are disproportionately the ones an offer will drive away. We estimate the *effect* of acting
 rather than the *risk* of leaving, weigh it against cost, try the cheapest effective
-intervention first, and **abstain when the evidence is too thin** — which turns out to be
-worth more than any improvement in ranking.
+intervention first, and **abstain when the evidence is too thin** — which, in our
+simulation, turns out to be worth more than any improvement in ranking. The underlying
+insight comes from published research; our work is on making it usable when data is
+scarce, and so far it avoids losses without yet making a profit.
 
 ---
 

@@ -57,8 +57,14 @@ is therefore already accepted in this category — but *only for failed payments
 that is the only outcome anyone can currently prove. Nobody prices on results for
 voluntary churn, because nobody can measure it.
 
-**We can.** That is the wedge, and it is a direct extension of a pricing model buyers
-already accept.
+**We set out to, and found the limit.** We built the measurement — a held-back group and
+an honest calculation — and tested it on simulated businesses. It is right on average. But
+for one small business the held-back group is too small to detect an effect of the size
+our offers deliver; that would take roughly 120,000 customers
+([09](09-status-and-roadmap.md)). So results-based pricing for voluntary churn is **not
+something we can offer a single small client today**. It would need evidence combined
+across many clients, or offers with a much larger effect. The wedge that remains is the
+failed-payment work, where results are counted directly.
 
 ---
 
@@ -78,6 +84,11 @@ The second part is only credible because of the held-back control group describe
 
 For a small business owner who has been sold analytics dashboards that changed nothing,
 that is a materially different offer.
+
+**Status of this part: not yet achievable for voluntary churn.** As explained above, one
+small business's held-back group cannot prove a figure this small. Today the
+results-based part can honestly apply only to recovered failed payments, which are
+counted, not estimated.
 
 ---
 
@@ -164,15 +175,19 @@ Four fair objections:
 
 **"The model isn't the business."** Correct, and we agree. Distribution is the business.
 The technique in [03](03-the-core-insight.md) is two decades old and published. Our
-contribution is making it work at small scale, packaging it for people without data
-teams, and proving results. Any of those could be replicated by a better-funded team.
+contribution is narrower than we first thought: measuring how it behaves at small scale
+(often unreliably), finding what a small business can and cannot measure, and packaging
+the parts that work for people without data teams. Any of those could be replicated by a
+better-funded team.
 
 **"Small business is the hardest market in software."** Also correct. High acquisition
 cost, low willingness to pay, high failure rate. This is why the plan starts with
 services and results-based pricing rather than a self-serve product.
 
-**"No customers yet."** Correct. Everything in [05](05-the-evidence.md) is simulation. The
-mechanism is demonstrated; commercial value is not.
+**"No customers yet."** Correct. The central result in [05](05-the-evidence.md) is from
+our simulation, and the tests on real data use public experiments from email, advertising
+and retail, not subscription businesses. The mechanism is demonstrated in simulation and
+reported in other researchers' field experiments; commercial value is not demonstrated.
 
 **"A founder with no network selling to businesses."** Correct, and the weakest point.
 Mitigations — publishing the research openly, giving away the first diagnostics for case
@@ -186,12 +201,15 @@ We would rather you weigh these now than discover them later.
 
 The problem is severe and universal. The largest single component of it — failed
 payments — is unaddressed by most small businesses and needs no clever technology to
-fix. The harder component is handled badly by *everyone*, and we can now demonstrate
-precisely why. The pricing model that makes it sellable is already accepted in the
-category. And the segment most likely to buy it has just been vacated by the incumbent.
+fix. The harder component is handled badly by most tools, for reasons that published
+research has explained and our simulation reproduces. Results-based pricing is accepted in
+the category for failed payments; for voluntary churn we have shown that it cannot yet be
+supported at small scale. And the segment most likely to buy has just been vacated by the
+incumbent.
 
-The technique is proven. The market is real. The open question is execution and
-distribution — which is the honest position for any project at this stage.
+The technique is established in research on larger businesses; at small scale our own
+results are mixed. The market is real. The open questions are whether the method can be
+made to pay at small scale, and execution and distribution.
 
 ---
 

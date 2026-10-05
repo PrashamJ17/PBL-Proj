@@ -112,7 +112,7 @@ A business of 6,000 customers; 3,589 eligible at the decision point; budget to c
 | Do nothing | 0 | 0 | 0 |
 | Contact everyone | 3,589 | **−89,869** | 44 |
 | Contact a random 20% | 718 | −17,035 | 9 |
-| **Contact highest-churn-risk 20%** | 718 | **−22,123** | 19 |
+| **Contact highest-churn-risk 20%** | 718 | **−22,823** | 18 |
 | Contact the truly persuadable 20% | 718 | +5,877 | 0 |
 | **Contact only where it's worth it** | **209** | **+8,610** | **0** |
 
@@ -152,7 +152,7 @@ same trait that makes contacting them dangerous.
 ## Three findings worth stating separately
 
 **1. A churn score is worse than nothing for this decision — where sleeping dogs exist.**
-Random targeting is uninformed; it meets sleeping dogs at their natural 17% rate. A churn
+Random targeting is uninformed; it meets sleeping dogs at the rate they occur. A churn
 score is *anti-informed* — it seeks them out. **The scope condition matters**: this
 requires a harmed group that resembles the people the model ranks highest. The real-data
 test below shows what happens when no such group exists.
@@ -206,7 +206,7 @@ We investigated rather than explained it away. Sorting customers by how much the
 thought the email would help them, then checking what *actually* happened to each group:
 
 **Every single group benefited from the email.** Even the customers predicted to respond
-worst still visited more often when emailed. In the men's campaign, only 0.2% of
+worst still visited more often when emailed. In the men's campaign, only about 0.5% of
 customers were predicted to be harmed at all.
 
 **Hillstrom has no sleeping dogs.** There is nobody the email drives away. And when a
@@ -228,7 +228,7 @@ where it exists and is measurable.
 
 ---
 
-## Two more real datasets, and the rule that explains all of them
+## Two more real datasets, and what separates them
 
 We then tested two further real experiments: **Criteo** (14 million people, online
 advertising) and **Lenta** (687,000 supermarket customers, promotional text messages).
@@ -237,10 +237,10 @@ Criteo gave the opposite answer to Hillstrom. Targeting by *effect* — the appr
 argue for — was no better than targeting by *likelihood of responding*. Every method was
 tied.
 
-Two real datasets, two contradictory answers. Neither was a fluke, and the explanation
-is the most useful thing in this project.
+Two real datasets, two contradictory answers. Neither was a fluke. The explanation is an
+idea from earlier research (credited below) that we were able to measure.
 
-### The rule
+### Two orderings
 
 Two different questions can be asked about a customer:
 
@@ -328,15 +328,15 @@ nothing.
 uplift model is closer to a gamble than a decision — and below that is precisely where
 the businesses we care about live.
 
-This is the strongest argument yet for the part of our approach nobody else builds:
-**when the evidence is too thin to know whether acting will help, say so and do
+This is the strongest argument yet for the part of our approach that existing tools
+leave out: **when the evidence is too thin to know whether acting will help, say so and do
 nothing.** And unlike everything else in this document, it rests on real experimental
 data rather than our own simulation.
 
 
 ## How thoroughly this is checked
 
-**58 automated tests**, all passing, run on every change. Beyond ordinary correctness:
+**487 automated tests**, all passing, run on every change. Beyond ordinary correctness:
 
 - **Fairness tests** — no hidden fact may leak into what models can see.
 - **Direction tests** — with the harm mechanism switched off, sleeping dogs must be
@@ -357,42 +357,54 @@ the two kinds of churn.
 
 ## Honest status — please read this
 
-**What we have proven:**
+**What we have shown:**
 
 - In a benchmark-calibrated simulation, under settings chosen to make our claim harder
   rather than easier, the standard approach to retention targeting loses money and
   performs worse than random — **given a population containing sleeping dogs**.
-- On **real randomised data**, uplift-based targeting beats outcome-based targeting.
+- On **one real randomised experiment** (Hillstrom), targeting by effect beat the standard
+  kind of targeting. On another (Criteo) it did no better. Which happens depends on how
+  far the two orderings described above disagree.
 - On **real randomised data**, conventional uplift methods are **unreliable below about
-  2,000 customers** — beating random on only 75% of attempts at n=500. This is the
-  strongest support for our abstention approach and it does not come from our own
-  simulation.
+  2,000 customers** — beating random on only 75% of attempts at n=500. This does not come
+  from our own simulation.
+- In simulation, a business with a few thousand customers **cannot detect** whether a
+  campaign with an effect this small worked, even with a held-back group
+  ([09](09-status-and-roadmap.md)).
 
-**What we have NOT proven:**
+**What we have NOT shown:**
 
 - **The worse-than-random result did not replicate on real email-campaign data**, because
   that dataset contains no harmed customers at all. The claim is therefore *conditional*
-  on a mechanism we have demonstrated only in simulation. We believe it applies to
-  subscription retention on well-understood grounds, but we have not shown it on real
-  subscription data — and no public dataset exists that could.
+  on a mechanism we have demonstrated only in simulation. Other researchers' field
+  experiments, described next, report retention contact raising cancellations in real
+  businesses; we have no subscription data of our own that shows it.
 - **Nothing has been validated on a real business.** No paying customers yet.
 - The real-world share of sleeping dogs is uncertain. We used 17% based on published
   literature. If the true figure is far lower in a given business, the effect shrinks —
   though the *direction* of the argument holds at any non-zero level.
-- **The core idea is not new.** Eva Ascarza (*Journal of Marketing Research*, 2018)
-  established with field experiments that targeting the highest-risk customers is
-  ineffective, and that targeting on responsiveness works better. Our contribution is
-  characterising **when risk-based targeting becomes actively harmful rather than merely
-  ineffective**, and making the method work at small scale.
-- The comparison above uses a **perfect-knowledge** version of our method as the upper
-  bound. Building a real method that approaches it, from limited data, is the actual
-  research problem and is not yet solved. That is Phase 4.
+- **The core idea is not new, and neither is its explanation.** Eva Ascarza (*Journal of
+  Marketing Research*, 2018) established with field experiments that targeting the
+  highest-risk customers works worse than targeting on responsiveness; in one of her
+  experiments it made more customers leave; and an appendix of the same study explores
+  the pattern that explains when. A 2016 experiment on 64,000 telecom customers found
+  that a retention call raised cancellations. A 2020 study by Lemmens and Gupta judged
+  retention methods by profit. What we add is narrower: how these methods behave with a
+  few hundred customers, what a small business can and cannot measure, and that pattern
+  measured on public experiments.
+- **Our practical method does not make money.** The result table above uses a
+  **perfect-knowledge** version of our method as the upper bound. The version that has to
+  estimate everything from limited data (Phase 4, described in
+  [09](09-status-and-roadmap.md)) beats the standard approach on 93% of runs and does
+  **not** beat doing nothing.
+- **We have not compared our method with the closest published one**, from the 2020 study.
 - Our simulation's forward-looking window is slightly less random than reality, which
   marginally understates variability. This is disclosed in our technical notes.
 
-**The correct summary:** we have strong evidence that the industry standard is broken and
-that a better approach exists in principle. We have not yet built the practical version,
-and we have not yet earned anyone real money.
+**The correct summary:** we have evidence, from our simulation and consistent with other
+researchers' field experiments, that the industry standard can lose money. We have built a
+practical method that avoids those losses but does not turn a profit, and we have not yet
+earned anyone real money.
 
 [Document 09](09-status-and-roadmap.md) states precisely what is complete.
 [Document 07](07-risks-and-limitations.md) states what could still go wrong.
@@ -405,7 +417,7 @@ Everything is open and runs in under a minute on a laptop:
 
 ```bash
 pip install -e .
-python -m pytest tests/ -q            # 58 tests
+python -m pytest tests/ -q            # 487 tests
 python -m retainiq.experiments.figures    # regenerates the figure above
 ```
 

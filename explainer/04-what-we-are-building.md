@@ -103,8 +103,8 @@ unused. Similar customers who received an onboarding call stayed 61% of the time
 
 ### Layer 4 — Decide
 
-The layer that makes this a product rather than a dashboard, and the one nobody else
-builds.
+The layer that makes this a product rather than a dashboard, and the one that tools sold
+to small businesses leave out.
 
 Given a monthly budget, choose the set of customers and offers that **maximises expected
 profit**, subject to real constraints: don't exceed budget, don't go below a margin
@@ -147,6 +147,14 @@ number that matters:
 No competitor for small businesses can produce that sentence for voluntary churn,
 because none of them hold back a control group.
 
+**A limit we found after writing the above** ([09](09-status-and-roadmap.md)). We built
+this and tested it on simulated businesses. The held-back group does its job honestly, but
+for one small business it is too small to settle the question. With offers of the size we
+have tested, the sentence above could only be written as *"somewhere between a loss and a
+gain"*. A firm figure needs evidence combined across many businesses, or a much larger
+business. The held-back group is still essential, because without it nothing can ever be
+learned. It is not, on its own, proof for a single small client.
+
 ---
 
 ## Why this compounds — and why a competitor can't simply copy it
@@ -185,6 +193,10 @@ And the pooling is real, not marketing language. It is a specific statistical te
 pattern across all businesses. A new customer with 300 subscribers gets useful answers
 immediately because forty similar businesses have already contributed.
 
+*Status: this is the design. The technique is built and was tested on simulated
+businesses. Learning across real businesses has not started, because there are no clients
+yet.*
+
 A competitor can copy every line of our code and still not have that, because it is not
 in the code. It is in the accumulated record of what worked, for whom, across many
 businesses. That record only exists if you were disciplined enough to hold back control
@@ -199,7 +211,9 @@ groups from the very first customer.
    accurate on *your* data before we are trusted with your customers.
 3. We begin sending offers — deliberately varying them at first, because that is how the
    system learns what works for your business specifically.
-4. Monthly: a report showing what we earned you, with the held-back group as proof.
+4. Monthly: a report showing our best estimate of what we earned you, measured against the
+   held-back group, with an honest range around it. For a small business that range will
+   be wide (see Layer 5).
 
 Step 2 costs us two months of revenue per customer and we do it anyway. A retention
 system that starts contacting customers before it has been validated on that business's

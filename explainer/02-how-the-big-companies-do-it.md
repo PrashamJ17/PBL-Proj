@@ -75,7 +75,7 @@ costs you almost nothing.
 
 ## Telecom companies — where this field was born, and where it failed
 
-Mobile operators invented churn prediction. They had contracts, lock-in, subsidised
+Mobile operators were among the first to predict churn at scale. They had contracts, lock-in, subsidised
 handsets, and dedicated "retention desks" whose job was to talk you out of leaving with
 an escalating series of offers.
 
@@ -85,8 +85,8 @@ Ranking customers by churn score and sending them all a retention offer **destro
 margin**. They were paying customers who would have stayed anyway. And worse — they were
 prompting some customers to leave who had not been thinking about it.
 
-**Uplift modelling — the technique at the centre of this project — was invented in
-response to this problem, in this industry.** It is not new. It is roughly two decades
+**Uplift modelling — the technique at the centre of this project — grew out of this
+problem, in telecoms and direct marketing.** It is not new. It is roughly two decades
 old, well studied, and used at large scale by large firms.
 
 **It is almost entirely absent from tools available to small businesses.** That gap is
@@ -166,8 +166,11 @@ return nothing.
 You cannot out-predict Netflix, and you do not need to. Netflix's retention comes from a
 content budget you cannot match.
 
-But **nobody, at any size, has solved the causal question well** — and at small scale,
-nobody has even attempted it. That is a defensible place to build.
+The causal question — who does an offer actually help? — has been studied in published
+research, on businesses with thousands of customers or more. In the studies we have read,
+the smallest group a method was built from is about 700 customers. For a business with a
+few hundred, we have found neither research nor a product that addresses it. That is a
+defensible place to build.
 
 ---
 
