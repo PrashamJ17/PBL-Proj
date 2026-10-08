@@ -93,10 +93,10 @@ children.push(
 children.push(H1("0. Before the panel walks in"));
 children.push(P("The whole demo is **under seven seconds of computation**. Everything else is you talking, so nothing needs to be rushed. Do this ten minutes early:"));
 children.push(cmd("cd ~/Desktop/pbl-proj && git pull"));
-children.push(cmd("make check          # about 2.5 min on mains power, 4 min on battery — run it NOW, not in front of them"));
+children.push(cmd("make check          # a little over 3 min on mains power, longer on battery — run it NOW, not in front of them"));
 children.push(cmd("make sample && make dashboard && rm -rf demo   # warm the caches, then clear the demo folder"));
 [
-  "`make check` must end with **590 passed** and **RESULT: ALL TARGETS MET** twice. Now you can quote it, and the Python caches are warm so the live commands are instant.",
+  "`make check` must end with **721 passed** and **RESULT: ALL TARGETS MET** twice. Now you can quote it, and the Python caches are warm so the live commands are instant.",
   "`rm -rf demo` matters: the refusal in step 3 only happens if the export is regenerated live.",
   "Terminal: full screen, font **18–20 pt**, dark theme, `clear` the scrollback.",
   "Browser: close every tab except one blank one. The pages are self-contained files, so no server and no internet is needed.",
@@ -127,7 +127,7 @@ children.push(table([3800, W - 3800], [
   [mono("make ladder"), "The Phase 5 gate: per-customer offer choice, 58% with CI 42–72%."],
   [mono("make sensitivity"), "Why that gate could not be passed: break-even 0.040 against a delivered 0.010."],
   [mono("make survival"), "Cox, Random Survival Forest and DeepSurv head-to-head. **Needs `make install-survival` first** — do not run this cold."],
-  [mono("make check"), "Lint, 590 tests, calibration gates. About two and a half minutes on mains power and about four on battery, so plug the laptop in: offer it, say it has already been run."],
+  [mono("make check"), "Lint, 721 tests, calibration gates. A little over three minutes on mains power and longer on battery, so plug the laptop in: offer it, say it has already been run."],
   [mono("make help"), "Every command the project exposes."],
   [mono("open docs/DECISIONS.md"), "73 logged decisions with their reasoning, including the two bugs found in our own code and the prior-art correction."],
 ]));
@@ -150,7 +150,7 @@ children.push(P("Do this **the day before**, never in the room: the install need
 children.push(cmd("git clone https://github.com/PrashamJ17/PBL-Proj.git"));
 children.push(cmd("cd PBL-Proj && python3 -m venv .venv && source .venv/bin/activate"));
 children.push(cmd("make install        # needs Python 3.11 or newer"));
-children.push(cmd("make check          # expect 590 passed, RESULT: ALL TARGETS MET twice"));
+children.push(cmd("make check          # expect 721 passed, RESULT: ALL TARGETS MET twice"));
 children.push(P("Then run section 0 to warm the caches. If the machine is Windows without make, every target is a plain Python command — `make help` lists them and the Makefile shows each one."));
 
 children.push(H1("6. The three things to say while your hands are busy"));

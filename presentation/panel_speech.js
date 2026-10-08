@@ -174,22 +174,26 @@ const SLIDES = [
       "The table on the right asks when effect-based targeting is worth the trouble. It uses the " +
       "**correlation between the effect of an offer and the customer's risk**. That quantity is not our " +
       "idea: Ascarza studied it in a simulation in 2018. What we did is **measure it on public " +
-      "experiments**. When it is high, the two rankings agree and the simpler model wins: at +0.69, " +
-      "uplift modelling is **5.6% worse**. At lower correlations it does better, +12.7% and +20.3%, " +
-      "though those four rows are within noise of one another. Before obtaining the Lenta dataset we " +
-      "predicted where it would fall, and it landed there. The last row, **+106.9%**, is our simulator, " +
-      "and it is a different kind of number. The simulator is built to have a negative correlation, and " +
-      "that row uses its true effects, so it is a **ceiling**, not something we achieved. " +
+      "experiments, over thirty random splits of each**. The brackets are how far the thirty spread. " +
+      "On the four real experiments, uplift modelling gains **little or nothing** over a plain model: " +
+      "every one of those ranges includes zero, and the four cannot be put in order. Before obtaining " +
+      "the Lenta dataset we predicted where it would fall, and it landed there. The last row is our " +
+      "simulator, measured the same way: fitted models on a simulated trial of 60,000 customers. There " +
+      "the uplift model wins on **30 splits of 30**, by about ten customers kept per thousand. The " +
+      "simulator is built to have a negative correlation, so that row shows the method finds the " +
+      "pattern where it exists. It does **not** show that real businesses have it. " +
       "The four cards are the honest summary. At 500 customers, the best method beats random on **72.5% " +
       "of 200 draws**, and the true figure lies somewhere between 66 and 79%. A business gets one draw, so " +
       "we report the win rate, not the average. Abstention beats risk " +
       "ranking on **93% of draws**, but it does **not** beat doing nothing, because the break-even effect " +
-      "is four times the effect the offer delivers. The per-customer offer optimiser wins **58% of the " +
+      "is four times the effect the offer delivers. Against the nearest published rule, Lemmens and " +
+      "Gupta's, it loses less **from about a thousand customers** and is not ahead below that. " +
+      "The per-customer offer optimiser wins **58% of the " +
       "time, with a confidence interval from 42 to 72%** — indistinguishable from chance, and we report it " +
       "as a failed gate rather than rounding it up. And the last card is the most consequential finding: " +
       "to detect the retention lift this offer actually delivers, a business needs about **119,500 " +
       "customers**. Below that, a small business cannot measure its own retention campaign at all.",
-    point: "Say “worse than random” slowly. Then move to the table. Say that the last row is the simulator's ceiling before anyone asks.",
+    point: "Say “worse than random” slowly. Then move to the table. Say that the last row is a simulation, and that its negative correlation is built in, before anyone asks.",
     ask: "“So your system does not work?” — See Q&A section F, question 1. Answer with what was established, not with a defence.",
   },
   {
@@ -208,7 +212,7 @@ const SLIDES = [
       "that it pays, and the reasons behind it — computed exactly from the model, not approximated. The " +
       "first thing on the page is a warning that cannot be switched off, stating that the engine beat one " +
       "well-chosen offer on only 58% of tests. " +
-      "Underneath it: **590 automated tests**, continuous integration on three Python versions with four " +
+      "Underneath it: **721 automated tests**, continuous integration on three Python versions with four " +
       "gates — tests, calibration, leakage, and the founding experiment itself — and the code, data and " +
       "paper archived on Zenodo with DOIs.",
     point: "If the panel wants to see it live, this is the moment to offer: “I can run it now, it takes about a minute.”",
@@ -220,7 +224,7 @@ const SLIDES = [
     speech:
       "Three takeaways. First, **a churn model can be accurate and still lose money** — ours has an AUC " +
       "of 0.700 and its top slice returns minus 22,823. Second, **causal targeting does not always pay**: " +
-      "on public experiments where risk and responsiveness line up, a plain model did as well, and at " +
+      "on four public experiments, measured thirty times each, a plain model did as well, and at " +
       "500 customers the best method beats random on about seven draws in ten. " +
       "Third, at the scale of a small business, the binding limits are **reliability and measurability**, " +
       "not the choice of algorithm. " +
@@ -255,9 +259,9 @@ const mmss = (x) => `${Math.floor(x / 60)}:${String(Math.round(x % 60)).padStart
 const QA = [
   ["A. The questions you will almost certainly be asked", [
     ["What exactly is new here? Ascarza already showed risk targeting is ineffective.",
-      "She showed more than that, and I claim none of it: that targeting by effect beats targeting by risk, that risk targeting raised churn in one of her two field experiments, and, in an appendix, that the correlation between risk and response explains when. Lemmens and Gupta added profit-based targeting in 2020. Three things are mine. First, small samples: she names pilot size as an open question, and on a real experiment I measured that at 500 customers the best method beats random on 72.5% of 200 draws. Second, the measurement floor: a business needs about 119,500 customers to detect the effect these offers deliver. Third, I measured her correlation on three public experiments, found settings where an uplift model does no better than a plain one, and predicted where the Lenta dataset would fall before obtaining it."],
+      "She showed more than that, and I claim none of it: that targeting by effect beats targeting by risk, that risk targeting raised churn in one of her two field experiments, and, in an appendix, that the correlation between risk and response explains when. Lemmens and Gupta added profit-based targeting in 2020. Three things are mine. First, small samples: she names pilot size as an open question, and on a real experiment I measured that at 500 customers the best method beats random on 72.5% of 200 draws. Second, the measurement floor: a business needs about 119,500 customers to detect the effect these offers deliver. Third, I measured her correlation on three public experiments over thirty splits each, found that an uplift model does no better than a plain one on any of them, found that most of the positive correlation belongs to the probability scale, which she warns of, and predicted where the Lenta dataset would fall before obtaining it."],
     ["Which published work is closest to yours, and how do you differ?",
-      "Four papers. **Ascarza (2018)**: two field experiments, 12,137 and 2,100 customers, with churn of 44% and 62%; targeting by effect beats targeting by risk. **Ascarza, Iyengar and Schleicher (2016)**: a retention call to 64,147 telecom customers raised churn from 6.4% to 10.0%. **Lemmens and Gupta (2020)**: target on expected profit and choose the campaign size on held-out data. **Devriendt, Berrevoets and Verbeke (2021)**: uplift against churn models on 200,903 bank customers. They work with thousands of customers and high churn or large effects. I ask what happens at a few hundred customers, 3% monthly churn and a one-point effect. One gap I state myself: Lemmens and Gupta's method is not yet a baseline in my experiments."],
+      "Four papers. **Ascarza (2018)**: two field experiments, 12,137 and 2,100 customers, with churn of 44% and 62%; targeting by effect beats targeting by risk. **Ascarza, Iyengar and Schleicher (2016)**: a retention call to 64,147 telecom customers raised churn from 6.4% to 10.0%. **Lemmens and Gupta (2020)**: target on expected profit and choose the campaign size on held-out data. **Devriendt, Berrevoets and Verbeke (2021)**: uplift against churn models on 200,903 bank customers. They work with thousands of customers and high churn or large effects. I ask what happens at a few hundred customers, 3% monthly churn and a one-point effect. I re-implemented Lemmens and Gupta's rule from their paper and ran it on the same simulated pilots as mine: from about 1,000 customers my rule loses less, and below that it is not ahead."],
     ["In one sentence, what does your system do?",
       "It decides which customers are worth spending retention money on, prices that decision in rupees with an explicit uncertainty, and declines to act when the evidence is too thin."],
     ["Why not just use a churn prediction model, like everyone else?",
@@ -301,7 +305,7 @@ const QA = [
     ["Why is calibration more important than discrimination here?",
       "Because we multiply probabilities by money. A model that ranks well but is miscalibrated produces a confidently wrong budget. That is why we report integrated Brier score and calibration slope, not only C-index."],
     ["What would you do differently with more time?",
-      "Read the prior work in full before building, which would have changed what I claimed. Then three things: add Lemmens and Gupta's method as a baseline, re-measure the correlation over many splits with an interval, and run a real pilot."],
+      "Read the prior work in full before building, which would have changed what I claimed. Then put an interval on every figure from the first day: two of my headline numbers came from too few runs, and both moved when I re-ran them properly. And run a real pilot, because none of the public experiments I used is a retention experiment."],
   ]],
   ["C. Results and statistics", [
     ["Why report win rate instead of the mean?",
@@ -320,8 +324,14 @@ const QA = [
       "For the founding experiment yes, because the effect is large and the direction is consistent; the paper states the seed count. For the marginal results — 58%, for instance — I do not claim significance, precisely because the interval is wide."],
     ["Why did worse-than-random not replicate on the real datasets?",
       "Because those are an email promotion, an advertising campaign and a retail promotion, where the effect and the propensity move together. Harm needs them to pull apart. In my simulator that is built in. For real subscription businesses the evidence is other people's: Ascarza's 2018 experiment, where targeting the riskiest customers raised churn, and the 2016 telecom experiment, where a retention call raised churn from 6.4% to 10.0%. I have no retention experiment of my own, and I say so."],
-    ["Your last row is +106.9% and the others are under 21%. Is that real?",
-      "It is real for the simulator and it is not comparable with the rows above it. Those four compare two fitted models on a real experiment. The simulator row compares an oracle, which knows each customer's true effect, with a churn score, on a simulator I configured to have a negative correlation. So it is the most that could be gained there, not what a fitted model gains. The figure in the repository draws it as a hollow point for that reason. A like-for-like simulator row is one of the checks I still owe."],
+    ["Your simulator row gains far more than the real ones. Is that real?",
+      "It is real for the simulator. All five rows are now measured the same way: fitted models on a randomised trial, thirty splits. On a simulated trial of 60,000 customers the uplift model beats the outcome model on all thirty, by about ten outcomes per thousand customers, and targeting by the outcome model adds churn on 26 of them. Two limits. The simulator is configured to have a negative correlation, so this shows the estimator finds it when it is there, not that real retention has it. And it is 60,000 customers: at a few hundred, nothing I tested beats doing nothing. An earlier version of this table showed +106.9% in that row. That was an oracle on true effects, in money, a ceiling in different units, and I replaced it."],
+    ["The Hillstrom men's row used to say +0.69 and −5.6%. Why did it change?",
+      "Because that was one split, and when I ran thirty it turned out to be the highest of them. The mean is +0.28 and the splits run from −0.21 to +0.66; the advantage averages −0.1% and is positive on 15 of 30. I had quoted one measurement without knowing how much it varied. The other three experiments were close to their means. I had also described two groups of settings, high correlation and low, and with thirty splits there are no such groups."],
+    ["Does that correlation depend on how you measure it?",
+      "Yes, and I tested that. Pearson and rank correlation agree. But on the log-odds scale the four real correlations are −0.46, +0.06, −0.22 and −0.05: none is clearly positive. An offer that multiplies everyone's odds by the same factor moves the probability most where the baseline is highest, so a positive correlation on the probability scale appears by arithmetic. Ascarza warns of exactly this. I use the probability scale because a campaign's gain is a sum of probability differences, but I cannot claim that likelier responders are more persuadable. I wrote five predictions down before running this. One failed outright and two failed in part."],
+    ["How does your rule compare with Lemmens and Gupta's?",
+      "I re-implemented theirs from the paper and gave both rules the same 500 simulated pilots, with six predictions written down first. From 1,000 customers mine loses less: ahead on 78% of the draws where the two differ, because theirs acts on two or three draws in four and on several times as many customers. At 250 and 500 mine is not ahead. At 250 their rule could not act at all, and that was a guard I added, ten customers per arm, not their method; without it mine is ahead on 70% overall. Two predictions failed. And the uncomfortable number is mine: my rule made money on 25 of the 139 draws on which it acted. It is a rule for losing less. Doing nothing beat both."],
     ["What is the effect size you are targeting, in business terms?",
       "About one percentage point of retention per month on the treated group. Small, which is exactly why measurement is the binding constraint."],
     ["Were any results discarded?",
@@ -333,9 +343,9 @@ const QA = [
     ["What is the technology stack?",
       "Python 3.11 to 3.13, NumPy, pandas, SciPy, scikit-learn for the churn baseline, lifelines and scikit-survival for Cox and Random Survival Forest baselines, PyTorch for DeepSurv, matplotlib for figures, pytest and ruff, GitHub Actions for CI. The Phase 0 result runs on numpy, pandas and scipy alone."],
     ["How is it tested?",
-      "590 automated tests across 27 files, including edge cases, fairness checks and a leakage suite. CI runs four gates on every push: the test suite on three Python versions, the calibration gates, the leakage gate, and the founding experiment. If the founding claim ever stops holding, the build fails."],
+      "721 automated tests across 30 files, including edge cases, fairness checks and a leakage suite. CI runs four gates on every push: the test suite on three Python versions, the calibration gates, the leakage gate, and the founding experiment. If the founding claim ever stops holding, the build fails."],
     ["How long does the whole thing take to run?",
-      "The full check is about two and a half minutes on mains power, and about four on battery. The founding experiment is a second or two. The dashboard, including a simulated pilot, is about two seconds."],
+      "The full check is a little over three minutes on mains power, and longer on battery. The founding experiment is a second or two. The dashboard, including a simulated pilot, is about two seconds."],
     ["How would you deploy this for a real client?",
       "Shadow mode first: predict, do not act, for four to eight weeks, and verify calibration on their data. Then a randomised exploration phase. Then policy mode with a permanent 5 to 10% holdout. The holdout ledger is append-only, so nobody can quietly shrink it when results disappoint."],
     ["Does it scale?",
@@ -377,7 +387,7 @@ const QA = [
     ["How much of this did an AI write?",
       "**Write this answer yourself before the panel, and say it in your own words.** It has to be accurate about what the AI assistant did and what you did, because the panel can ask you to open any file and explain it. Say plainly which parts an AI tool wrote or drafted, which decisions were yours, and what you can reproduce and explain unaided. Do not use a line you could not back up if asked to demonstrate it."],
     ["Why should we accept simulated results at all?",
-      "You should not accept them alone, and I do not ask you to. The small-sample result and four of the five correlation rows come from three public randomised experiments. The simulator is used where real data cannot help: no dataset contains both outcomes for the same customer. Anything that rests on the simulator alone, including the worse-than-random result, I label as simulated."],
+      "You should not accept them alone, and I do not ask you to. The small-sample result and four of the five correlation rows come from three public randomised experiments, and on those four the uplift model gains nothing reliable. The simulator is used where real data cannot help: no dataset contains both outcomes for the same customer. Anything that rests on the simulator alone, including the worse-than-random result, I label as simulated."],
   ]],
   ["G. Fundamentals they may check", [
     ["Churn, MRR, CLV", "Churn is the rate at which customers leave. MRR is monthly recurring revenue. CLV is the expected revenue a customer generates before leaving, discounted."],
@@ -444,14 +454,15 @@ children.push(table([2500, 3500, 2000, W - 8000], [
   ["Churn prediction", "AUC / average precision (base rate 3.3%)", "0.700 / 0.118", "Met"],
   ["Survival model", "Integrated Brier, Telco, 10 resplits", "0.0824", "Met: beats Cox and RSF 10/10; ties DeepSurv"],
   ["Negative control", "GBSG2, fixed covariates", "loses, as predicted", "Met as a control"],
-  ["Risk–lift correlation", "Uplift's gain on 4 real settings; simulator ceiling", "−5.6% to +20.3%; ceiling +106.9%", "Measured; prediction landed; idea is Ascarza's"],
+  ["Risk–lift correlation", "Uplift's gain over an outcome model, 30 splits, 4 real settings and a simulated trial", "real: −0.1% to +24.7%, none clear of zero; simulated trial +9.7 per 1,000", "Measured; the real settings cannot be ordered; idea is Ascarza's"],
   ["Value of money layer", "Realised value vs churn-score targeting", "−22,823 vs −17,035 random", "Met in the simulator: the founding result, 6/6 seeds"],
   ["Small-sample reliability", "Share of 200 draws beating random at n = 500", "72.5% (66–79%)", "Reported, not a pass/fail"],
   ["Abstention", "Draws beating a ranking policy", "93%", "Partial: does not beat doing nothing"],
+  ["Abstention vs Lemmens & Gupta", "Draws ahead, of those that differ, 500 simulated pilots", "78% from n = 1,000; 26% at 250; 47% at 500", "Ahead only from about 1,000 customers; 2 of 6 predictions failed"],
   ["Offer optimiser", "Draws beating one well-chosen offer", "58%, CI 42–72%", "Not met, reported as such"],
   ["Measurement", "Bias and interval coverage vs known truth", "≈0 bias, 88–98%", "Met"],
   ["Measurement floor", "Customers needed to detect the delivered effect", "≈119,500", "Met as a finding"],
-  ["Engineering", "Tests, CI gates, Python versions", "590, 4 gates, 3.11–3.13", "Met"],
+  ["Engineering", "Tests, CI gates, Python versions", "721, 4 gates, 3.11–3.13", "Met"],
   ["Research output", "Paper, software and data archived", "3 Zenodo DOIs", "Met"],
   ["Commercial", "A paying client", "none yet", "Open"],
 ]));
@@ -483,13 +494,14 @@ children.push(table([3200, W - 3200], [
   ["Founding experiment", "3,589 customers, 20% budget. Do nothing 0 · treat everyone −89,869 · random −17,035 · churn score −22,823 · oracle +5,877 · oracle with abstention +8,610 treating 209. Holds on 6 of 6 seeds."],
   ["Churn model", "AUC 0.700 · average precision 0.118 vs 3.3% base rate · recall 44.5% · precision 7.4% · F1 0.127 · accuracy 79.6% vs 96.7% for “nobody churns” · confusion 53 / 665 / 66 / 2,805."],
   ["Sleeping dogs", "59.1% of the top predicted-risk decile, 5.3% of the bottom, 25.7% of the population."],
-  ["Risk–lift correlation", "Fitted models, one split, within noise of each other: Hillstrom men +0.69 → −5.6% · Criteo +0.58 → +0.6% · Hillstrom women +0.19 → +12.7% · Lenta +0.17 → +20.3%. Simulator, oracle on true effects, a ceiling: SubSim −0.19 → +106.9%."],
+  ["Risk–lift correlation", "Fitted models, mean of 30 splits [2.5th to 97.5th percentile]. Correlation → extra outcomes per 1,000: Criteo +0.58 [+0.51, +0.65] → +0.1 · Hillstrom men +0.28 [−0.21, +0.66] → −0.1 · Hillstrom women +0.18 [−0.07, +0.49] → +2.6 · Lenta +0.13 [+0.05, +0.22] → +0.6 · simulated trial of 60,000, −0.21 [−0.33, −0.07] → +9.7 [+5.0, +14.4], uplift ahead on 30 of 30. Advantage in %: +0.7, −0.1, +14.0, +24.7, every interval includes zero; positive on 20, 15, 27 and 27 of 30 splits. Log-odds scale: +0.06, −0.46, −0.22, −0.05, simulator −0.26. The old single split for Hillstrom men, +0.69 → −5.6%, was the highest of 30."],
+  ["Against Lemmens & Gupta", "500 simulated pilots, 100 per size. Abstention ahead, of draws that differ: 250: 9 of 34 · 500: 23 of 49 · 1,000: 58 of 74 · 2,000: 61 of 78 · 4,000: 62 of 79 · all: 213 of 314, 68% [62%, 73%]. Mean money, abstention vs theirs: −36 / 0 · −431 / −378 · −189 / −1,282 · −396 / −2,946 · −691 / −3,939. Their rule could not act at 250 (ten-per-arm guard); without the guard abstention is ahead on 70% [66%, 75%]. Abstention made money on 25 of the 139 draws on which it acted."],
   ["Prior work", "Ascarza 2018: 12,137 and 2,100 customers; at 40% targeted, risk targeting raised churn 4.4 points in one study; appendix simulates the correlation. Ascarza, Iyengar & Schleicher 2016: 64,147 customers, churn 6.4% → 10.0%. Lemmens & Gupta 2020: profit-based targeting. Devriendt et al. 2021: 200,903 bank customers."],
   ["Survival", "Telco IBS: ours 0.0824 · DeepSurv 0.0825 · Cox 0.0914 · RSF 0.0964 · Kaplan–Meier 0.1823. C-index 0.865. GBSG2: ours 0.1867, loses as predicted."],
   ["Reliability and gates", "72.5% of 200 draws beat random at n = 500 (interval 66–79%; weakest method 62.5%; 84.5% at 1,000; 95.5% at 2,000) · abstention beats ranking on 93% · optimiser 58%, CI 42–72% · break-even effect 0.040 vs delivered 0.010 · an oracle treats 5.8%."],
   ["Measurement", "Bias ≈ 0, coverage 88–98% · MDE at 10,000 customers 0.0374 vs delivered 0.0108 · ≈119,500 customers needed · campaigns looked significant on 0–10% of runs."],
   ["Leakage", "≈0.60 honest against 0.954 leaked (the paper reports 0.603 for its configuration). Value-at-risk and churn-risk top deciles overlap by only 21%."],
-  ["Engineering", "590 tests, 27 files · 4 CI gates · Python 3.11–3.13 · 73 logged decisions · Apache 2.0."],
+  ["Engineering", "721 tests, 30 files · 4 CI gates · Python 3.11–3.13 · 75 logged decisions · Apache 2.0."],
   ["Outputs", "Paper: ~7,500 words, 12 tables, 5 figures, 27 references. DOIs: paper 10.5281/zenodo.22009470 · software 10.5281/zenodo.22025879 · data 10.5281/zenodo.22025123."],
   ["Demo figures", "Dashboard: 1,500 customers, 472 assessed, 142 to contact, 330 left alone, 131 downgrades, 10 discounts, 1 pause. Sample report: 900 customers, ₹2.6 lakh a year lost, 31% involuntary."],
 ]));
@@ -497,7 +509,7 @@ children.push(table([3200, W - 3200], [
 children.push(H1("6. Rehearsal checklist"));
 [
   "Read the speech aloud three times with the deck advancing. Time it against the per-slide targets in Section 2; if you run long, cut from slides 3 and 4, never from 6 or 8.",
-  "Rehearse slide 6 alone until you can say “worse than random” without hesitating, and until you can say, without looking, which rows of the correlation table are real experiments and which is the simulator's ceiling.",
+  "Rehearse slide 6 alone until you can say “worse than random” without hesitating, and until you can say, without looking, which rows of the correlation table are real experiments and which is the simulated trial, and what the brackets are.",
   "Have someone ask you five questions from Section F, the hostile ones, and answer them standing up.",
   "Practise the sentence “I do not know” once, out loud, so that it is available to you under pressure.",
   "Check the room: HDMI or Type-C adapter, the deck exported to PDF as a backup, the demo video on the laptop, and the repository open in a terminal.",

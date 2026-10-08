@@ -18,13 +18,19 @@ stable than estimating a difference between two, and at small n that variance ad
 dominates. This is a statement about estimates from a finite sample: with the true
 effect in hand, ranking by it cannot lose.
 
-Values from the 15 Aug 2026 run (run the module for current ones):
+**This module prints ONE split (seed 0). Do not quote it.** D-074 ran thirty splits of
+every setting (`spectrum_checks.py`, `make correlation-checks`) and found that the split
+printed here is the *highest of the thirty* for Hillstrom (mens): +0.69 here, +0.28 on
+average, with splits as low as -0.21. The grouping this docstring used to give, two
+"high-correlation" settings and two "low" ones, did not survive: Hillstrom (mens)
+overlaps every other real setting. On the log-odds scale none of the four real
+correlations is clearly positive.
+Quote the thirty-split figures, with their spread, from that command.
 
-    corr high  (Hillstrom mens +0.69, Criteo +0.58)   uplift loses or gains nothing
-    corr low   (Hillstrom womens +0.19, Lenta +0.17)  uplift wins modestly
-    corr < 0   (SubSim churn, -0.19)                  orderings conflict; the churn
-                                                      score selects customers the
-                                                      offer harms
+Values printed by this module, seed 0 (15 Aug 2026 run):
+
+    Hillstrom mens +0.69, Criteo +0.58, Hillstrom womens +0.19, Lenta +0.17,
+    SubSim churn -0.19 (oracle; see below)
 
 The ordering among the four positive points is within noise, and the five points are
 NOT measured the same way (D-068). Do not read the plot as one curve.
@@ -40,9 +46,9 @@ NOT measured the same way (D-068). Do not read the plot as one curve.
   * SubSim's negative correlation follows from how the simulator is configured. It is
     an assumption, not evidence that retention has one.
 
-Owed before this is claimed again (D-068): rank correlation beside Pearson, on the
-probability and the log-odds scale; risk fitted on control only; many splits with an
-interval; a like-for-like SubSim point.
+The checks D-068 listed as owed were run in D-074: rank correlation beside Pearson, the
+probability and the log-odds scale, risk fitted on control only, thirty splits with an
+interval, and a like-for-like SubSim point from fitted models on a simulated trial.
 
 The argument for abstention does not depend on who introduced the quantity: a
 practitioner cannot tell in advance which regime they are in, and choosing wrongly is
@@ -298,7 +304,7 @@ def figure_3(points: list[Point] | None = None, out: Path | None = None) -> Path
     fig.text(
         0.5, 0.012,
         "Filled: best fitted uplift model against best fitted outcome model on a public "
-        "randomised experiment; one seed, one split, no interval.\n"
+        "randomised experiment; ONE split, no interval (30 splits: fig07, D-074).\n"
         "The ordering among the filled points is within noise. Hollow: a simulator whose "
         "negative correlation is configured; an oracle on true effects\n"
         "against a churn score, so an upper bound and not like-for-like. The correlation "
@@ -348,6 +354,11 @@ def report(points: list[Point]) -> str:
             "* true effects, oracle vs churn score. An upper bound, not like-for-like\n"
             "  with the estimated rows (D-068)."
         )
+    lines.append(
+        "ONE split (seed 0), no interval. The spread across splits is large in some\n"
+        "settings, so this table is not to be quoted: `make correlation-checks` runs\n"
+        "thirty splits and prints every figure with its spread (D-074)."
+    )
     return "\n".join(lines)
 
 

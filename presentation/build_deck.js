@@ -11,7 +11,7 @@ const path = require("path");
 
 const A = path.join(__dirname, "build", "assets");
 const VIDEO_URL = (process.env.VIDEO_URL || "").trim();
-const TESTS = process.env.TESTS || "590";
+const TESTS = process.env.TESTS || "721";
 const OUT = process.env.OUT || path.join(__dirname, "RetainIQ_Presentation.pptx");
 
 const C = {
@@ -456,29 +456,30 @@ async function main() {
         options: { fontSize: 10, color: C.MUTED } },
     ], { x: 7.55, y: 1.45, w: 5.2, h: 0.6 });
     const Hd = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: C.INK } } });
+    // Mean of 30 splits [2.5th, 97.5th percentile], from `make correlation-checks` (D-074).
     const cr = [
-      ["Hillstrom · men's e-mail", "+0.69", "−5.6%", C.CORAL],
-      ["Criteo · advertising", "+0.58", "+0.6%", C.TEXT],
-      ["Hillstrom · women's e-mail", "+0.19", "+12.7%", C.TEXT],
-      ["Lenta · retail promotion", "+0.17", "+20.3%", C.TEXT],
-      ["SubSim · simulator, oracle*", "−0.19", "+106.9%*", C.MUTED],
+      ["Criteo · advertising", "+0.58 [+0.51, +0.65]", "+0.1 [−0.1, +0.3]", C.TEXT],
+      ["Hillstrom · men's e-mail", "+0.28 [−0.21, +0.66]", "−0.1 [−3.0, +2.8]", C.TEXT],
+      ["Hillstrom · women's e-mail", "+0.18 [−0.07, +0.49]", "+2.6 [−1.9, +6.2]", C.TEXT],
+      ["Lenta · retail promotion", "+0.13 [+0.05, +0.22]", "+0.6 [−0.1, +1.5]", C.TEXT],
+      ["SubSim · simulated trial*", "−0.21 [−0.33, −0.07]", "+9.7 [+5.0, +14.4]", C.TEAL_D],
     ];
-    const crows = [[Hd("Setting"), Hd("corr(τ, π)"), Hd("Uplift advantage")]].concat(cr.map(([a, b, c, col], i) => [
+    const crows = [[Hd("Setting"), Hd("corr(τ, π)"), Hd("Uplift gain per 1,000")]].concat(cr.map(([a, b, c, col], i) => [
       { text: a, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, italic: i === 4 } },
       { text: b, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", italic: i === 4 } },
-      { text: c, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", bold: i !== 4,
+      { text: c, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", bold: i === 4,
         italic: i === 4, color: col } },
     ]));
-    s.addTable(crows, { x: 7.55, y: 2.1, w: 5.2, colW: [2.3, 1.2, 1.7], fontFace: BODY, fontSize: 11.5, color: C.TEXT,
-      rowH: 0.38, valign: "middle", border: { type: "solid", pt: 0.5, color: C.LINE }, margin: [2, 6, 2, 6] });
-    T(s, "Rows 1–4: fitted models on public experiments; their order is within noise. Lenta's position was " +
-         "predicted before its data was obtained. * The simulator's negative correlation is configured and the row " +
-         "uses true effects: a ceiling, not a like-for-like result.",
+    s.addTable(crows, { x: 7.55, y: 2.1, w: 5.2, colW: [1.9, 1.65, 1.65], fontFace: BODY, fontSize: 10, color: C.TEXT,
+      rowH: 0.38, valign: "middle", border: { type: "solid", pt: 0.5, color: C.LINE }, margin: [2, 4, 2, 4] });
+    T(s, "Fitted models; mean of 30 splits [2.5th–97.5th percentile]. Rows 1–4 are public experiments: no gain is " +
+         "clear of zero and they cannot be ordered. On the log-odds scale their correlations are −0.46 to +0.06. " +
+         "* 60,000 simulated customers; the negative correlation is configured.",
       { x: 7.55, y: 4.45, w: 5.2, h: 0.95, fontSize: 10.5, color: C.MUTED });
 
     const stats = [
       ["72.5%", "of 200 draws where the best method beats random at n = 500 (real Hillstrom RCT; 95% interval 66–79%)"],
-      ["93%", "of draws where abstaining beats risk ranking; it still does not beat doing nothing"],
+      ["93%", "of draws where abstaining beats risk ranking; ahead of Lemmens & Gupta's rule only from n ≈ 1,000; never beats doing nothing"],
       ["58%", "per-customer offer choice vs one well-chosen offer: CI 42–72%, not distinguishable from chance"],
       ["≈119,500", "customers needed to detect the delivered 1.1-point retention lift with a 10% holdout"],
     ];
@@ -493,14 +494,20 @@ async function main() {
     s.addNotes(
       "Left, from make killtest: with the same 20% budget, targeting by churn score loses 22,823, worse than random " +
       "(-17,035); treating everyone loses 89,869 (bar truncated). The oracle rows use true effects and are upper bounds. " +
-      "Right, paper Table 4: the risk-lift correlation, which Ascarza (2018, Web Appendix A3.4) varied in a simulation, " +
-      "measured here from fitted models on four settings from three public randomised experiments. Where the two " +
-      "rankings agree, the simpler outcome model does as well or better because it estimates an easier quantity; the " +
-      "order among those four settings is within noise. The SubSim row is not like-for-like: it uses true effects and an " +
-      "oracle policy, on a simulator configured to have a negative correlation, so it is a ceiling. Bottom: at n = 500 " +
+      "Right, from make correlation-checks (D-074): the risk-lift correlation, which Ascarza (2018, Web Appendix A3.4) " +
+      "varied in a simulation, measured here from fitted models over thirty random splits of four settings from three " +
+      "public randomised experiments, and of a randomised trial of 60,000 simulated customers. Brackets are the 2.5th " +
+      "and 97.5th percentiles across splits. On the four real settings the uplift model's gain cannot be told from zero " +
+      "and the settings cannot be ordered. An earlier version of this table showed one split per row; the Hillstrom " +
+      "men's figure, +0.69, was the highest of the thirty. On the log-odds scale the real correlations are -0.46, +0.06, " +
+      "-0.22 and -0.05, so most of the positive correlation is the probability scale. In the simulated trial the uplift " +
+      "model wins on 30 of 30 splits; the simulator is configured to have a negative correlation. Bottom: at n = 500 " +
       "on the real Hillstrom experiment the best of five methods beats random on 72.5% of 200 draws (exact 95% interval 66% to 79%; 84.5% at 1,000 and 95.5% at 2,000; the weakest method 62.5%), which is why win rate is " +
       "reported instead of the mean. The abstention rule beats ranking on 93% of draws but does not beat doing nothing, " +
-      "because the break-even effect is four times the delivered effect. The per-customer optimiser wins 58% of draws, " +
+      "because the break-even effect is four times the delivered effect. Against a re-implementation of Lemmens and " +
+      "Gupta's (2020) rule on 500 simulated pilots (make baseline, D-075) it is ahead on 78% of the draws that differ " +
+      "from 1,000 customers, on 26% at 250 and 47% at 500; it made money on 25 of the 139 draws on which it acted. " +
+      "The per-customer optimiser wins 58% of draws, " +
       "CI [0.42, 0.72], which is chance. The holdout estimator is unbiased (88–98% interval coverage), but detecting the " +
       "delivered lift of 0.0108 at 80% power needs about 119,500 customers with a 10% holdout (make holdout).");
   }
@@ -590,8 +597,8 @@ async function main() {
     const num = { color: C.SOFT, bullet: { type: "number" }, indentLevel: 0 };
     T(s, [
       para("A churn model can be accurate and still lose money: AUC 0.700, yet targeting its top 20% returns −22,823.", num),
-      para("Causal targeting does not always pay: where risk and responsiveness line up, a plain model did as well " +
-           "on public experiments, and at n = 500 the best method beats random on 72.5% of draws.", num),
+      para("Causal targeting does not always pay: on four public experiments a plain model did as well, " +
+           "and at n = 500 the best method beats random on 72.5% of draws.", num),
       { text: "For small businesses, reliability and measurability limit results more than the choice of model.", options: num },
     ], { x: 0.85, y: 2.08, w: 3.45, h: 3.2, fontSize: 12.5, paraSpaceAfter: 10 });
 
@@ -616,7 +623,7 @@ async function main() {
       para("A first paying Churn Autopsy client (the Phase 2 gate)", bul),
       para("A live pilot with a permanent randomised holdout", bul),
       para("Pool evidence across businesses to get past the measurement floor", bul),
-      para("Add Lemmens & Gupta (2020) as a baseline; re-measure the correlation with intervals", bul),
+      para("Explain why abstention loses on most of the draws where it acts (114 of 139)", bul),
       { text: "Models for non-contractual (e-commerce) churn", options: bul },
     ], { x: 9.19, y: 2.08, w: 3.35, h: 3.2, fontSize: 12.5, paraSpaceAfter: 8 });
 
@@ -639,7 +646,7 @@ async function main() {
     footer(s, 8, true);
     s.addNotes(
       "Takeaways: prediction quality and decision quality are different things; modelling the effect is not always " +
-      "worth its extra variance, because where risk and responsiveness line up a plain model does as well (the " +
+      "worth its extra variance: on four public experiments, over thirty splits each, a plain model did as well (the " +
       "correlation is Ascarza's, 2018; the measurement on public experiments is ours); and at small-business scale, reliability and " +
       "measurability are the binding limits. Readiness is stated precisely because the evidence differs by component. " +
       "Ready: the delivery path from a billing export to a report, the dashboard, and the engineering around them " +

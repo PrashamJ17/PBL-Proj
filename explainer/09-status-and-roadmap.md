@@ -7,7 +7,10 @@ relatively stable; this is the living record.**
 results with a held-back group was built, and it showed that a small business cannot detect
 its own results that way; the paper, the software and the data were published; and a full
 reading of earlier research showed that three things we had described as our own findings
-were already known. Still nothing sold.
+were already known. Most recently, the two checks we said we owed were run: one of our
+headline measurements turned out to be the highest of thirty, and against the nearest
+published method ours is ahead only for businesses of about 1,000 customers or more.
+Still nothing sold.
 
 ---
 
@@ -34,18 +37,19 @@ be already published. Nothing has been sold to a real customer yet.**
 | **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts — see [below](#what-phase-2-found-about-failed-payments) |
 | **A report a business can actually receive** | ✅ Built | Two spreadsheet exports in, one web page out — tested against real Stripe and Razorpay formats |
 | **Predicting when a customer leaves, and what they are worth** | ✅ Done | Matches or beats established methods on public data — see below |
-| **Quality controls** | ✅ Done | 590 automated tests, all passing |
+| **Quality controls** | ✅ Done | 721 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
 | **The practical version of our method** | 🟨 Built | Beats the standard approach on 93% of runs; does **not** yet beat doing nothing — [see below](#what-phase-4-was-about-and-what-it-honestly-found) |
 | **Customer-facing product** | 🟨 Built | Decision engine, plain-language reasons, and a dashboard an owner can act from — not yet in anyone's hands |
 | **A way to prove results with a held-back group** | 🟨 Built | The calculation is honest, and it shows that one small business cannot detect an effect this small — [see below](#what-phase-6-found-a-small-business-cannot-measure-its-own-campaign) |
 | **Published** | ✅ Done | Paper, software and data are public, each with a permanent identifier |
 | **Checked against earlier research** | 🟨 Done late | Three things we called ours were already published — [see below](#what-we-had-wrongly-called-ours) |
+| **Our own evidence re-checked, and tested against the nearest published method** | 🟨 Done, with losses | One headline figure was the highest of thirty measurements; our method is ahead only from about 1,000 customers — [see below](#what-we-had-wrongly-called-ours) |
 | Proof with a real business | ⬜ Not started | — |
 | Paying customers | ⬜ **None** | — |
 
-**Fourteen rows of sixteen.** But note *which* fourteen: all of it is groundwork, evidence
-or machinery, and four of those rows are complete only in a limited sense — built, tested
+**Fifteen rows of seventeen.** But note *which* fifteen: all of it is groundwork, evidence
+or machinery, and five of those rows are complete only in a limited sense — built, tested
 and found wanting, or done later than they should have been. **Nothing yet has earned
 anyone money**, and the two rows that would prove the idea works outside our own machinery
 are both still empty. Those two are now the entire remaining risk.
@@ -409,8 +413,9 @@ findings were already in them.
   found that with 500 customers the best method beats picking at random only about seven
   times in ten.
 - The measurement finding in the section above.
-- Measuring that pattern on real public experiments, including cases where the
-  sophisticated method does no better than the simple one.
+- Measuring that pattern on real public experiments, thirty times over, including cases
+  where the sophisticated method does no better than the simple one, and finding that the
+  pattern depends on how it is measured.
 
 **We also found a flaw in one of our own pictures.** A chart in
 [05](05-the-evidence.md) showed five results as if they had been measured the same way.
@@ -418,9 +423,35 @@ Four were real experiments. The fifth was our simulator, using perfect knowledge
 real method has, which made it look far better than the others. The chart has been redrawn
 to show that point differently, and the text beside it now explains why.
 
-**One comparison we still owe.** The 2020 study includes its own way of deciding how many
-customers to contact. We have not yet tested our method against it. Until we do, we cannot
-say that ours is better.
+**Then we found a second flaw in the same picture.** Each real experiment had been
+measured once. When we measured each thirty times, dividing the customers differently
+every time, one of the four gave a very different answer: the figure we had printed for it
+was the highest of the thirty. We had also described the four experiments as falling into
+two groups, and with thirty measurements each they do not. The chart has been replaced by
+one that shows the average of the thirty and how far they spread, and
+[05](05-the-evidence.md) explains it.
+
+**The comparison we owed, now run.** The 2020 study includes its own way of deciding how
+many customers to contact: keep some of your trial customers aside, try every possible
+campaign size on them, and pick the size that looks most profitable. We rebuilt that
+method from its published description and gave it and ours the same 500 simulated
+businesses, of 250 to 4,000 customers. Before running it we wrote down six predictions.
+
+- **With 1,000 customers or more, our method lost less money.** In the cases where the
+  two methods made different choices, ours came out ahead about four times in five.
+  Theirs decided to contact customers far more often, and far more of them.
+- **With 250 or 500 customers, ours was not ahead.** At 250, the way we had set up their
+  method left it too few customers to choose any campaign at all, so it contacted
+  nobody, and contacting nobody did better than our method did. That is a limit of our
+  set-up, not a verdict on their method, and we say so wherever the result appears.
+- **Neither method made money on average, at any size.** Doing nothing beat both.
+- **When our method did decide to contact customers, it usually lost.** It chose to act
+  in 139 of the 500 businesses and made money in 25 of them. What it does well is decide
+  *not* to act.
+
+Two of the six predictions were wrong, and two more were right only when the smaller
+businesses were lumped together. So we cannot say our method beats the published one for
+small businesses. We can say that from about 1,000 customers it loses less.
 
 ---
 
@@ -464,8 +495,8 @@ have no data to fit it with.
 | 3 | Choosing interventions under a budget, with real client results | A real client | ⬜ |
 
 The first paper is public and can be cited. It is not finished: its claims have to be
-narrowed to what survives, the comparison we owe has to be run, and it has not been
-accepted by a journal.
+narrowed to what survives, the two results described above have to go into it, and it has
+not been accepted by a journal.
 
 ---
 
@@ -474,9 +505,10 @@ accepted by a journal.
 1. **Get the failed-payment work in front of real businesses.** This is not a coding
    task and no further code completes it. The report described above needs to be run
    against real billing exports and shown to the people who own them.
-2. **Run the checks we owe on our own evidence.** Re-measure the pattern across the real
-   experiments in more than one way, and test our method against the published 2020 one.
-   None of this needs a client.
+2. **Put the two new results into the paper.** The checks we owed on our own evidence have
+   been run (see [above](#what-we-had-wrongly-called-ours)). The paper still describes the
+   old figures. One smaller check remains, and so does the question of why our method
+   loses money on most of the occasions when it acts. None of this needs a client.
 3. **Nothing further to build for clients until somebody uses it.** The measuring
    machinery of Phase 6 is built and tested on simulated businesses. Finishing it, and all
    of Phase 7 (learning across businesses), needs a real client by definition. Every
@@ -523,6 +555,31 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### Two checks we owed, and what they cost us
+
+We had said two pieces of work were owed before the paper could make its claims. Both are
+done. For each we wrote down what we expected before running anything, eleven predictions
+in all, and published that list first so the order could not be disputed later.
+
+**The first check** re-measured the pattern across the real experiments thirty times
+each. One of the four figures we had been quoting was the highest of its thirty. The two
+"groups" of experiments we had described do not exist. And much of the pattern depends on
+how it is counted, as an earlier researcher had warned. One thing held up: in our
+simulator, ordinary models learning from a simulated experiment do find the customers an
+offer harms, without the perfect knowledge our earlier chart relied on. That was on
+60,000 customers.
+
+**The second check** put our method beside the nearest published one. Ours lost less
+money for businesses of 1,000 customers or more, and was not ahead for smaller ones.
+Neither made money. When ours decided to act, it lost money on 114 occasions out of 139.
+
+Of the eleven predictions, four held, three failed, and four were right only in part. We
+also found that one of our own safeguards had stopped the rival method from acting at all
+in the smallest businesses, which we should have worked out beforehand and did not. That
+is reported next to the result everywhere it appears.
+
+131 new automated tests (721 total).
 
 ### Our headline small-business figure, measured properly
 

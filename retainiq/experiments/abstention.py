@@ -111,6 +111,60 @@ def _experiment_frame(
     return po.merge(snap, on="customer_id", how="inner")
 
 
+@dataclass
+class Pilot:
+    """One simulated business, cut into what a policy may learn from and what it is scored on.
+
+    `train` is the randomised pilot: `treated` says who got the offer and `churned` is the
+    outcome observed for the arm each customer was in. `test` carries both potential
+    outcomes and is only ever used to score a decision.
+    """
+
+    train: pd.DataFrame
+    test: pd.DataFrame
+    treated: np.ndarray
+    churned: np.ndarray
+    rng: np.random.Generator
+    """The draw's generator, positioned after the split and the assignment, so that a
+    caller continuing the draw uses the same random numbers as before this was factored
+    out of `run_once`."""
+
+
+def draw_pilot(
+    n_customers: int,
+    seed: int,
+    decision_month: int = 6,
+    horizon: int = 6,
+    train_fraction: float = 0.5,
+    config: SimConfig | None = None,
+    offer: Offer = REFERENCE_OFFER,
+) -> Pilot | None:
+    """Simulate one business and run its pilot. None when the draw is unusable.
+
+    Shared by every experiment that compares decision rules, so that they are compared
+    on the same customers, the same assignment and the same outcomes (D-075).
+    """
+    cfg = config or SimConfig()
+    sim = simulate(replace(cfg, n_customers=n_customers, n_months=24, seed=seed))
+    frame = _experiment_frame(sim, decision_month, horizon, offer)
+    if len(frame) < 60:
+        return None
+
+    rng = np.random.default_rng(seed + 7717)
+    is_train = rng.random(len(frame)) < train_fraction
+    train, test = frame[is_train], frame[~is_train]
+    if len(train) < 30 or len(test) < 30 or train.empty:
+        return None
+
+    # The pilot: half the training customers were treated at random. Their observed
+    # outcome is y1 if treated and y0 if not -- exactly what a real holdout yields.
+    t_train = (rng.random(len(train)) < 0.5).astype(int)
+    y_train = np.where(t_train == 1, train["y1"].to_numpy(), train["y0"].to_numpy())
+    if len(np.unique(y_train)) < 2:
+        return None
+    return Pilot(train=train, test=test, treated=t_train, churned=y_train, rng=rng)
+
+
 def run_once(
     n_customers: int,
     seed: int,
@@ -132,24 +186,12 @@ def run_once(
     calibrated simulator and the reference discount, so the Phase 4 headline numbers
     are reproduced exactly by calling this with neither.
     """
-    cfg = config or SimConfig()
-    sim = simulate(replace(cfg, n_customers=n_customers, n_months=24, seed=seed))
-    frame = _experiment_frame(sim, decision_month, horizon, offer)
-    if len(frame) < 60:
+    pilot = draw_pilot(n_customers, seed, decision_month, horizon, train_fraction,
+                       config, offer)
+    if pilot is None:
         return {}
-
-    rng = np.random.default_rng(seed + 7717)
-    is_train = rng.random(len(frame)) < train_fraction
-    train, test = frame[is_train], frame[~is_train]
-    if len(train) < 30 or len(test) < 30 or train.empty:
-        return {}
-
-    # The pilot: half the training customers were treated at random. Their observed
-    # outcome is y1 if treated and y0 if not -- exactly what a real holdout yields.
-    t_train = (rng.random(len(train)) < 0.5).astype(int)
-    y_train = np.where(t_train == 1, train["y1"].to_numpy(), train["y0"].to_numpy())
-    if len(np.unique(y_train)) < 2:
-        return {}
+    train, test, rng = pilot.train, pilot.test, pilot.rng
+    t_train, y_train = pilot.treated, pilot.churned
 
     Xtr, Xte = train[FEATURES], test[FEATURES]
     value = test["clv"].to_numpy()

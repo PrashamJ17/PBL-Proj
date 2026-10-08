@@ -76,6 +76,12 @@ ai-channels:  ## Does a nearly-free AI actuator change the answer? (D-064)
 small-n:  ## How often does each method beat random at small n? 200 draws, ~20 min (D-072)
 	@python -m retainiq.benchmarks.small_n
 
+correlation-checks:  ## Is the risk-lift correlation the coefficient, scale, risk or split? 30 splits, ~30 min (D-074)
+	@python -m retainiq.benchmarks.spectrum_checks
+
+baseline:  ## Abstention against Lemmens & Gupta (2020) on the same pilots, 500 draws (D-075)
+	@python -m retainiq.experiments.baseline --jobs 6
+
 holdout:  ## Phase 6 — does the holdout estimator recover a known effect? (D-065)
 	@python -m retainiq.experiments.holdout_validation
 

@@ -2563,3 +2563,277 @@ method with random on the same draw; a failed fit; that a win rate cannot be pri
 without its interval; that the command's default is what the documents quote; that the
 figure is drawn from the run that was printed; and that re-read draws say so.
 
+
+## D-074 — The correlation checks: the Hillstrom-men figure was the highest of thirty splits, most of the positive correlation belongs to the probability scale, and the simulator's result does not need an oracle
+
+D-068 listed the checks the risk-lift correlation owed. They were designed and five
+predictions written down before any code existed (`docs/PREREG-checks-and-baseline.md`,
+commit `9504f91`), then run: thirty splits of each public experiment and of a randomised
+trial of 60,000 customers drawn from the simulator. `make correlation-checks` prints it.
+
+**What the thirty splits give.** Mean, with the 2.5th and 97.5th percentiles across splits.
+
+| Setting | Pearson, probability | Pearson, log-odds | Risk on control, independent | Advantage of uplift, % | Extra outcomes per 1,000 |
+|---|---|---|---|---|---|
+| Hillstrom (mens) | +0.28 [−0.21, +0.66] | −0.46 [−0.73, +0.06] | +0.17 [+0.00, +0.31] | −0.1 [−10.3, +11.6] | −0.1 [−3.0, +2.8] |
+| Criteo | +0.58 [+0.51, +0.65] | +0.06 [−0.13, +0.33] | +0.48 [+0.35, +0.60] | +0.7 [−1.5, +3.8] | +0.1 [−0.1, +0.3] |
+| Hillstrom (womens) | +0.18 [−0.07, +0.49] | −0.22 [−0.44, +0.11] | −0.01 [−0.20, +0.17] | +14.0 [−7.7, +35.3] | +2.6 [−1.9, +6.2] |
+| Lenta | +0.13 [+0.05, +0.22] | −0.05 [−0.18, +0.06] | +0.11 [−0.02, +0.28] | +24.7 [−4.3, +109.1] | +0.6 [−0.1, +1.5] |
+| SubSim (fitted) | −0.21 [−0.33, −0.07] | −0.26 [−0.40, −0.10] | −0.14 [−0.30, +0.00] | see below | +9.7 [+5.0, +14.4] |
+
+**The five predictions.**
+
+| # | Prediction | Result |
+|---|---|---|
+| A1 | Pearson and Spearman agree in sign in every real setting | **Held.** Same sign on 119 of 120 real splits. The coefficient is not the issue. |
+| A2 | Risk from the T-learner's own control model gives a lower correlation; fitted independently it returns to within 0.10 of the pooled figure | **Half failed.** Lower on all 120 real splits. But independent risk stays 0.11 away in Hillstrom (mens) and 0.19 away in Hillstrom (womens), where it is −0.01. |
+| A3 | On the log-odds scale the correlation is lower in all four real settings | **Held, on every one of the 120 splits.** This is the one that hurts. |
+| A4 | Two high-correlation settings stay separated from two low ones | **Failed.** Hillstrom (mens) runs from −0.21 to +0.66 and overlaps all three other real settings. |
+| A5 | In the simulator the fitted correlation is negative, and the fitted advantage is well below the oracle's +106.9% | **Half failed, and the half that failed was badly posed.** The correlation is negative on 30 of 30 splits. The fitted advantage is +424%, not below +106.9%. See below for why that percentage should not be quoted. |
+
+**1. The figure quoted for Hillstrom (mens) was the highest of thirty splits.** Every
+document says +0.69 and −5.6%. That is seed 0. Across thirty splits the correlation
+averages +0.28, and seed 0 ranks first of the thirty. The advantage averages −0.1% and is
+positive on 15 of 30 splits: nothing. In the other four settings seed 0 ranks 16th, 15th,
+11th and 11th, so the single split was unrepresentative in exactly the setting that
+anchored one end of the figure. Nobody chose seed 0 for its result; it is the default. But
+a number from one split was quoted without knowing how much splits differ, and here they
+differ by more than the differences between settings. This is D-072 again in another
+place: a figure nobody had put an interval on.
+
+The spread has a cause. Across splits the standard deviation of the pooled figure is 0.23
+in Hillstrom (mens), against 0.04 in Criteo. With risk fitted on different customers from
+the effect it is 0.09. Most of the instability is estimation noise that the effect model
+and the risk model share when they are fitted to the same customers.
+
+**2. Most of the positive correlation is the probability scale.** On the log-odds scale
+the four real correlations are −0.46, +0.06, −0.22 and −0.05. An offer that multiplies
+everyone's odds by the same factor moves the probability most where the baseline is
+highest, and that alone makes effect and risk correlate on the probability scale. Ascarza
+(2018) warns of it. Criteo's +0.58 falls to +0.06.
+
+What this does and does not mean. The gain from a campaign is a sum of probability
+differences, so the probability scale is the one that bears on who to target, and the
+figure is not wrong to use it. But a positive figure on that scale cannot be read as
+"customers likelier to respond are more persuadable". And on the log-odds scale the
+simulator (−0.26) is not set apart from Hillstrom (mens) (−0.46) or Hillstrom (womens)
+(−0.22). **The contrast between retention and the other settings exists on one scale
+only.**
+
+**3. The definition of risk moves the answer, and the design cannot fully say why.**
+Fitting risk on control customers with the same model the effect subtracts lowers the
+correlation by 0.14 to 0.43 in the real settings, because the two share noise with
+opposite sign. In the simulator it *raises* it, from −0.21 to +0.03, on all 30 splits:
+there the outcome is churn, the benefit is the control model's prediction *minus* the
+treated one's, and the shared noise has the same sign. The prediction said "lower in every
+setting" and did not except the simulator. It should have: a unit test now shows the
+reversal with no model at all. **Ascarza's own definition of risk, applied with a
+T-learner to a churn outcome, biases the correlation upward**, which is against what this
+project would like to find, and anyone using it should know.
+
+Fitting risk on different customers removes the shared noise, and it also halves the data
+each model sees, which pulls every correlation toward zero. The design does not separate
+the two, so "the independent figure is the true one" is not established. A pooled risk
+fitted on the same independent half would separate them. It was not pre-registered and
+was not run. It is owed.
+
+**4. There are no two groups.** Criteo's interval, +0.51 to +0.65, lies above Lenta's
+and, by two hundredths, above Hillstrom (womens)'s. Hillstrom (mens) is wide enough to
+contain it. With risk fitted on different customers Criteo does stand apart from all
+three (+0.35 to +0.60, against upper ends of +0.31, +0.17 and +0.28), and those three
+cannot be told from one another on either definition. The advantage cannot be told apart
+across any of the four, as predicted.
+
+In fairness to the uplift models: the advantage is positive on 27 of 30 splits in
+Hillstrom (womens) and in Lenta, on 20 in Criteo and on 15 in Hillstrom (mens). Thirty
+splits of one dataset share most of their customers, so 27 of 30 is not a test and no
+p-value belongs on it. What the table supports is "small, and positive more often than
+not in two settings", and not "zero".
+
+**5. In the simulator, fitted models get the direction on every split.** A T-learner on a
+60,000-customer trial gives a correlation of −0.21 and the best uplift model beats the
+best outcome model on 30 of 30 splits. Among about 18,000 test customers, treating the
+top 30% by uplift prevents 122 churns [43, 187]. Treating the top 30% by the best outcome
+model prevents −55 [−145, +33]: it adds churn on 26 of 30 splits. The difference is +9.7
+outcomes per 1,000 customers [+5.0, +14.4], against at most +2.6 [−1.9, +6.2] in any real
+setting. **So the simulator's result does not depend on an oracle**, which D-068 had left
+open.
+
+As a percentage the gain is +424% [+149%, +1,221%]. A5 predicted it would be well below
+the oracle's +106.9%, and it is not. But the comparison was badly posed, and that was my
+error in writing the prediction: the oracle's figure is money net of the offer's cost on
+6,000 customers, the fitted one is outcomes with no cost on 60,000, and a percentage of a
+base that is negative on 26 of 30 splits has no stable meaning. Neither percentage is to
+be quoted beside the other. **Extra outcomes per 1,000 customers** is reported instead. It
+was not in the pre-registration. It was added while the module was being written, when
+two trial splits of the simulator showed the base to be negative, and before the
+thirty-split run was made. Those two splits and one of Hillstrom (mens) were the only
+output seen before the run.
+
+In the simulator's truth the correlation between benefit and untreated risk is −0.10
+(Pearson) and +0.04 (Spearman) on the probability scale, and −0.30 and −0.27 on log-odds.
+A rank correlation of about zero means the negative figure is carried by a minority of
+customers, the ones the offer harms, and not by the ordering as a whole.
+
+**What this result is not.** It is a trial of 60,000. D-075 shows that at 250 to 4,000
+customers no policy beats doing nothing. And the simulator's correlation is configured: a
+fitted model recovering it is evidence about the estimator, not about retention.
+
+**Does the correlation track the gain?** Between settings on the probability scale: the
+two highest correlations go with gains that are zero, the one negative correlation goes
+with the largest gain, and the two in between are not ordered. That is a contrast between
+four real settings and one simulator, as D-068 already said, and it is not a relationship.
+Within a setting, a split's correlation says almost nothing about that split's gain (the
+correlation between the two across splits is +0.06 to +0.39, and −0.21 in the simulator).
+On the log-odds scale there is no ordering at all.
+
+**What changes.**
+
+- `retainiq/benchmarks/spectrum_checks.py` and `make correlation-checks`: thirty splits,
+  every figure with its spread, and a figure (`fig07_correlation_checked.png`) with two
+  panels, one per scale, in which every point is a fitted model with bars on both axes.
+- `spectrum.py` prints what it printed. Its output and docstring now say it is one split,
+  that the split is the highest of thirty for Hillstrom (mens), and to quote the other
+  command. `fig03` is kept for the paper source and is no longer used elsewhere.
+- Every document that quoted "+0.69, −5.6%" quotes the thirty-split figure. "High- and
+  low-correlation settings" is withdrawn. The simulator's row is the fitted one, in
+  outcomes per 1,000; the oracle's percentage stays in the kill test where it belongs.
+- The paper sources are not changed.
+
+**Two things about the run itself.** It took about half an hour of computing; the laptop
+slept during it, so the clock time means nothing. And one line of the module changed
+after the run had started: a near-constant input is now treated as constant when deciding
+whether a correlation exists. Three Hillstrom splits re-run with today's code reproduce
+the saved rows to sixteen decimal places, and the tables printed from the saved splits are
+identical to those the run printed.
+
+**Still owed.** The pooled risk on an independent half (above). A public randomised
+retention experiment, which does not exist among the datasets used here: every real point
+is promotion or advertising. And a derivation of when the correlation is negative, in
+place of measuring it (research plan).
+
+**Tests.** 48, none needing a dataset. Both artefacts are demonstrated with arithmetic and
+no model: a uniform log-odds effect giving a probability-scale correlation above 0.95,
+its sign reversing when the baseline is above a half, and shared noise giving a
+correlation beyond ±0.5 where the truth is zero, with the sign depending on whether the
+outcome is good or bad.
+
+## D-075 — Lemmens & Gupta's rule beside abstention: abstention loses less from 1,000 customers, not below, and two of six predictions failed
+
+D-068 recorded that the nearest published rival, Lemmens & Gupta (2020), had never been
+run beside the abstention rule. It now has, on the abstention experiment's own draws, with
+the design and six predictions fixed in advance (`docs/PREREG-checks-and-baseline.md`).
+`make baseline` prints it: 500 draws, about a minute.
+
+**What was built.** `policy/baseline_lg.py` is a re-implementation from their paper, not
+their code: their rule for choosing the campaign size (rank a validation sample, estimate
+the profit of every size from the randomised outcomes, take the best; their Equations 8
+and 9), their profit-based loss fitted by gradient boosting (Equation 7), and a first
+stage that turns a pilot into expected profit lifts. `experiments/baseline.py` gives both
+rules the same pilot and scores both on customers neither saw.
+
+**Results.** Money relative to doing nothing, mean over 100 draws per size. "Nobody" is
+the share of draws on which the policy contacted no one.
+
+| Customers | Abstention | nobody | L&G primary | nobody | Abstention ahead, of draws that differ | Mean gap |
+|---|---|---|---|---|---|---|
+| 250 | −36 | 66% | 0 | 100% (could not act) | 9 of 34, 26% [13%, 44%] | −36 |
+| 500 | −431 | 65% | −378 | 74% | 23 of 49, 47% [33%, 62%] | −53 |
+| 1,000 | −189 | 74% | −1,282 | 34% | 58 of 74, 78% [67%, 87%] | +1,093 |
+| 2,000 | −396 | 75% | −2,946 | 26% | 61 of 78, 78% [67%, 87%] | +2,550 |
+| 4,000 | −691 | 81% | −3,939 | 24% | 62 of 79, 78% [68%, 87%] | +3,249 |
+
+Over all sizes: ahead on 213, tied on 186, behind on 101; 68% [62%, 73%] of the 314 that
+differ. Against their best case (a 2:1 split, refitted on the whole pilot): 170 ahead, 211
+tied, 119 behind; 59% [53%, 65%].
+
+**The six predictions.**
+
+| # | Prediction | Result |
+|---|---|---|
+| B1 | No policy beats doing nothing on more than half the draws at any size | **Held.** The highest is 20% [13%, 29%]. |
+| B2 | Their cutoff treats nobody less often than abstention, and treats more customers, at n ≤ 1,000 | **Failed at 250 and 500.** Theirs treats nobody on 100% and 74% of draws, against 66% and 65%. It holds from 1,000, where theirs acts on two or three draws in four and treats three to eight times as many customers. |
+| B3 | Abstention's mean is at least theirs at n ≤ 1,000, and it is ahead on more than half of the draws that differ | **Failed in the sense that matters.** Pooled over n ≤ 1,000 it holds, −219 against −554, and overall it is ahead on 68%. Size by size it is behind at 250 and level at 500. The prediction did not say which reading; a reader would take the second. |
+| B4 | The gap closes with size | **Failed.** −53 at 500, +3,249 at 4,000. It widens. Per eligible customer it is −0.35, +3.64, +4.26, +2.70 from 500 to 4,000, so it may be turning at the largest size, and that is not established. |
+| B5 | With the estimator held fixed, the posterior threshold does at least as well as their cutoff at n ≤ 1,000 | **Same shape as B3.** Pooled −219 against −468. Behind at 250 (−36 against 0) and at 500 (−431 against −262); ahead at 1,000 by 952. |
+| B6 | Their profit-based loss and their first stage alone cannot be told apart | **Held.** 140 ahead, 151 behind, 48% [42%, 54%]. |
+
+**1. At 250 customers their rule, as configured here, cannot act, and that is my guard and
+not their method.** The pre-registration added a floor: a campaign size counts only if it
+holds ten treated and ten control customers on the validation sample. It was described as
+being in their favour. With a 30% budget cap, a validation sample of 37 allows a campaign
+of at most 11, and ten of each do not fit in 11. So at 250 every pre-registered
+configuration treats nobody on every draw, and so does their best case at 500. In money
+the floor *is* in their favour, because doing nothing is the best policy available. But
+the row at 250 compares abstention with doing nothing, not with their method, and the
+report now marks such rows "could not act". I did not work this out before running, and
+should have: it is arithmetic on numbers that were all fixed in advance.
+
+So one run was added **after the results were read**, and is labelled as such everywhere:
+their rule with no floor, needing one customer in each arm, which is closer to what they
+published. It treats nobody on 25% of draws at 250 and 10% at 4,000, and loses −81, −559,
+−912, −2,576 and −3,913. Abstention is ahead on 308 of the 438 draws that differ, 70%
+[66%, 75%], and on 107 of 171 at n ≤ 500, 63% [55%, 70%]. That is the mechanism B2
+predicted, a maximum over many noisy estimates acting too often, appearing once the floor
+is removed. It is exploratory, and it is never the figure quoted as theirs.
+
+**2. Abstention is not ahead at the smallest sizes.** At 250 it acts on 34 draws of 100
+and loses money on 25 of them. Doing nothing beats it. At 500 it cannot be told from their
+rule. Its advantage is from 1,000 customers upward, where their validated cutoff acts on
+two or three draws in four and loses about six to seven times as much.
+
+**3. When abstention acts, it usually loses.** It acted on 139 of 500 draws and made money
+on 25 of them: 9 of 34, 3 of 35, 6 of 26, 4 of 25, 3 of 19 by size. Its mean is negative
+at every size. Everything it gains over every rival here comes from acting rarely and on
+few customers: from 1,000 upward, about 15 to 20 against their 45 to 157. That is D-054 and D-057 again, now
+with a count: it is a rule for losing less, and in this simulator the best rule is still
+to do nothing.
+
+**4. The claim this leaves.** Not "abstention beats the published alternative when data
+are scarce". What was measured: **from about 1,000 customers, declining by a posterior
+threshold loses less than choosing a campaign size by validation**, on 78% of the draws
+where the two differ. Below that, the comparison either cannot be made with their rule
+under a 30% budget and a ten-per-arm floor, or shows no difference, and doing nothing
+beats both.
+
+**5. Their loss made no measurable difference here.** B6 held. That is a statement about a
+re-implementation on a simulator at these sizes. Their paper reports it helping on their
+own field data, and nothing here contradicts that.
+
+**Choices made while building it, each of which could have moved the result.**
+
+- *The boosting step.* Their paper does not say how the boosting step is taken (their Web
+  Appendix D was not available). A Newton step ranks, among customers the offer helps, the
+  least-helped first, because the curvature of their loss grows with the cube of the
+  profit lift. A unit test on ranking caught it. The primary configuration uses a gradient
+  step, which ranks by profit lift as their paper says the loss does, and is the better
+  case for them. **Six trial draws had been run with the Newton step before this**, while
+  timing the code, and their output was seen. The Newton variant is kept as a labelled
+  sensitivity run: abstention is ahead of it on 62% [56%, 67%], so the conclusion does not
+  hang on the choice.
+- *The budget.* A test written before the run found that their chosen share could exceed
+  the 30% cap by a rounding step (37 of 122 is 30.3%). It is now capped. One rule being
+  allowed a customer over the budget is not the same budget.
+- *Departures from their paper*, as pre-registered: a T-learner first stage where theirs
+  is an uplift random forest; customer value known where theirs is estimated; profit lifts
+  standardised before the second stage, for numerical stability; a campaign of size zero
+  allowed; and the floor discussed above.
+
+**How it is run.** Every draw is held to one thread, because scikit-learn's sums depend
+on how many threads share them; draws then run side by side. A test pins that running six
+at once gives the same frame as running one. The pre-registered rows were identical, to
+the last digit, between the first run and the re-run that added the extra configuration.
+The abstention experiment was refactored so both rules draw the same pilot, and gives
+bit-identical results to the committed version on the draws compared.
+
+**Limits.** A re-implementation, not their code. A simulator in which an oracle treats
+5.8% of customers and one offer was tested. Whether their method was ever meant for a
+pilot of a few hundred customers is not something this comparison can say. None of this is
+evidence about real customers.
+
+**Tests.** 83 in two files: their profit curve against a hand calculation on six
+customers; that their decision never changes when the test customers' outcomes are
+scrambled, nor when the arm a pilot customer was *not* in is altered; that the budget is
+respected; that ties are counted apart from wins; that a rule which could not act is
+marked differently from one that chose not to; and that the design is the one
+pre-registered.

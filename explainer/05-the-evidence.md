@@ -255,42 +255,91 @@ difference between two, and with limited data that reliability advantage decides
 Sometimes the two orderings *conflict*. That is when the conventional approach stops
 being merely wasteful and starts actively selecting the customers you will harm.
 
-![When does this approach pay off?](figures/fig03_when_uplift_pays.png)
+![What the effect-based approach gains, against how far the two orderings agree](figures/fig07_correlation_checked.png)
 
-Each point is one setting. The horizontal axis measures how closely the two orderings
-agree. The vertical axis is how much better the effect-based approach does.
+**How to read it.** Each coloured point is one experiment.
 
-The four filled points are real experiments: an advertising campaign, two promotional
-emails and a retail promotion. In each one we fitted both kinds of model and compared
-them. Where the two orderings agree closely, on the right, the sophisticated approach
-buys nothing or does slightly worse. Where they agree less, it does somewhat better.
+- **Up and down** is how much the effect-based approach gains over the conventional one:
+  the number of extra good results (a visit, a purchase, a customer kept) for every 1,000
+  customers. On the dark line there is no difference. Above it, the effect-based approach
+  did better.
+- **Left and right** is how closely the two orderings agree. To the right they agree. To
+  the left they conflict.
+- **The lines through each point** show how much the answer moves. We made every
+  measurement thirty times, each time dividing the customers differently into a group for
+  the model to learn from and a group to test it on. The point is the average of the
+  thirty and the lines run across nearly all of them. A long line means the answer
+  depends heavily on the luck of the division.
+- **The two panels** show the same results. They differ only in how "agreement" is
+  measured. Suppose an offer lifts one customer's chance of buying from 2% to 4% and
+  another's from 40% to 42%. Counted one way, both rose by two points and the offer did
+  the same for each. Counted the other way, the first customer's chance doubled and the
+  second's barely moved. Neither way of counting is wrong, and they can give different
+  answers about which customers an offer helps most. The left panel counts the first way
+  and the right panel the second.
 
-The hollow point is different and should be read differently. It is our simulator, not a
-real business. We built the simulator so that the two orderings conflict, and the point
-shows the best that *any* targeting could do there, because it uses the true effect of
-the offer on each customer, which only a simulator can know. It is a ceiling on the gain,
-not a gain anyone has achieved.
+**What it shows.**
+
+1. **In the four real experiments, the effect-based approach gained little or nothing.**
+   Their lines all cross the dark line. In two of them it came out slightly ahead in 27 of
+   the 30 measurements; in the other two it was ahead about as often as behind. They
+   cannot be put in any order.
+2. **In our simulated subscription business, it gained clearly**, on every one of the
+   thirty measurements. This point is measured the same way as the others: ordinary
+   models, learning from a simulated experiment on 60,000 customers. It does not use the
+   simulator's perfect knowledge.
+3. **The left-to-right pattern depends on how agreement is counted.** In the left panel
+   the real experiments sit to the right and the simulator to the left. In the right
+   panel that separation is gone: two of the real experiments sit further left than the
+   simulator.
+
+### Two corrections to an earlier version of this page
+
+**The old chart showed each experiment measured once.** For one of them, a promotional
+e-mail for men's clothing, the single measurement we printed was +0.69, far to the right.
+Measured thirty times it averages +0.28, the measurement we had printed is the highest of
+the thirty, and some come out negative. We had described the four experiments as falling
+into a group where the orderings agree closely and a group where they agree less. With
+thirty measurements each, there are no such groups. The fault was showing one measurement
+without knowing how much it could vary.
+
+**The old chart showed the simulator using perfect knowledge**, as a hollow point marked
+as a ceiling. That point has been replaced by one measured like the others.
 
 ### What this does and does not show
 
-It replaced *"this approach is better"* — which is **false in advertising, and we can
-show it** — with something narrower: **how much the effect-based approach gains depends
-on how far the two orderings disagree.**
+It replaced *"this approach is better"*, which is **false in advertising, and we can
+show it**, with something narrower: **in four real marketing experiments the effect-based
+approach gained little or nothing over the simpler one, and in a simulated subscription
+business, built so that an offer harms some of the customers most likely to leave, it
+gained clearly.**
 
-That idea is not ours. A 2018 study by Eva Ascarza varied this same quantity in a
-simulation and reported two field experiments; in one of them, targeting the customers
-most likely to cancel made cancellations rise. What we add is the measurement on public
-experiments, and what happens when there is little data to learn from.
+That is a contrast between four real settings and one simulation. It is not a rule that
+says how much the approach gains for a given amount of disagreement, and we no longer
+describe it as one.
+
+The underlying idea is not ours. A 2018 study by Eva Ascarza varied this same quantity in
+a simulation and reported two field experiments; in one of them, targeting the customers
+most likely to cancel made cancellations rise. She also warned that the two ways of
+counting can disagree, which is what the right-hand panel shows. What we add is the
+measurement on public experiments, and what happens when there is little data to learn
+from.
 
 It also produced a prediction we could get wrong. Before downloading Lenta, we wrote down
-that retail promotion should land *between* advertising and subscription retention. It
-landed at +0.17, between +0.58 and −0.19, as predicted.
+that retail promotion should land *between* advertising and subscription retention. On
+the left-hand way of counting it averages +0.13, between +0.58 and −0.21, as predicted.
 
-Two caveats we state plainly, and the figure states on its face. With five settings this
-is a contrast, not a curve: the ordering among the four filled points is within noise.
-And none of the four real experiments is about cancellations, so the claim that
-subscription retention sits on the left rests on our simulator and on other researchers'
-field experiments, not on data of our own.
+Three caveats, stated plainly.
+
+- None of the four real experiments is about cancellations. The claim that subscription
+  retention sits on the left rests on our simulator, which we built that way, and on
+  other researchers' field experiments. It does not rest on data of our own.
+- The simulator's result is for an experiment on 60,000 customers. With a few hundred to
+  a few thousand, no method we tested beat doing nothing
+  ([09](09-status-and-roadmap.md)).
+- Before making these thirty measurements we wrote down five predictions about what they
+  would show. One was right. One was right and counts against us (the two ways of
+  counting disagree). One was wrong (the two groups). Two were partly wrong.
 
 ---
 
@@ -345,7 +394,7 @@ data rather than our own simulation.
 
 ## How thoroughly this is checked
 
-**590 automated tests**, all passing, run on every change. Beyond ordinary correctness:
+**721 automated tests**, all passing, run on every change. Beyond ordinary correctness:
 
 - **Fairness tests** — no hidden fact may leak into what models can see.
 - **Direction tests** — with the harm mechanism switched off, sleeping dogs must be
@@ -371,9 +420,9 @@ the two kinds of churn.
 - In a benchmark-calibrated simulation, under settings chosen to make our claim harder
   rather than easier, the standard approach to retention targeting loses money and
   performs worse than random — **given a population containing sleeping dogs**.
-- On **one real randomised experiment** (Hillstrom), targeting by effect beat the standard
-  kind of targeting. On another (Criteo) it did no better. Which happens depends on how
-  far the two orderings described above disagree.
+- On **four real randomised experiments**, each measured thirty times, targeting by effect
+  did not reliably beat the standard kind of targeting. In two it came out slightly ahead
+  on most measurements; in the other two it was level.
 - On **real randomised data**, conventional uplift methods are **unreliable below about
   2,000 customers** — beating random on only 72.5% of attempts at n=500. This does not come
   from our own simulation.
@@ -426,7 +475,7 @@ Everything is open and runs in under a minute on a laptop:
 
 ```bash
 pip install -e .
-python -m pytest tests/ -q            # 590 tests
+python -m pytest tests/ -q            # 721 tests
 python -m retainiq.experiments.figures    # regenerates the figure above
 ```
 

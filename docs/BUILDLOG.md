@@ -1749,3 +1749,86 @@ larger number.
 two and a half minutes on mains power and about four on battery; the runbook and the speech
 now say so.
 
+
+## The correlation checks and the Lemmens & Gupta baseline (D-074, D-075)
+
+**Order of work.** The design and eleven predictions were committed first, alone
+(`docs/PREREG-checks-and-baseline.md`, commit `9504f91`). Then the code, then the runs.
+
+**Built.**
+
+- `benchmarks/spectrum_checks.py`: per split, Pearson and Spearman on the probability and
+  log-odds scales against three definitions of risk (pooled; control, same data; control,
+  independent), the uplift model's advantage, and the same gap per 1,000 customers. A
+  randomised trial drawn from the simulator (`subsim_trial`, 60,000 customers) put through
+  the same pipeline. A two-panel figure, `fig07_correlation_checked.png`. `--save`,
+  `--from-splits` (output headed "RE-READ … not re-run"), `--only`, `--no-figure`.
+- `policy/baseline_lg.py`: their target-size rule (`profit_curve`, `choose_fraction`),
+  their profit-based loss (`ProfitLossBoosting`), and a T-learner first stage.
+- `experiments/baseline.py`: both rules on the same pilot; four pre-registered
+  configurations of theirs and two labelled sensitivity runs; wins, ties and losses
+  counted apart; `can_act`, so a rule that had no campaign size open to it is marked
+  differently from one that chose to do nothing. `--jobs`, `--resume`, `--from-draws`.
+- `experiments/abstention.py`: `draw_pilot` split out of `run_once` so that both rules
+  draw the same pilot. Checked bit-identical to the committed version on five draws, 45
+  policy results.
+- `Makefile`: `make correlation-checks`, `make baseline`.
+
+**Run.**
+
+- `make correlation-checks`: 30 splits × 5 settings, about half an hour of computing (the
+  laptop slept during the run, so clock time was 3 h 44 min and means nothing). Results in
+  D-074.
+- `make baseline`: 500 draws in about a minute with six processes, each draw held to one
+  thread. Run twice; the pre-registered rows were identical to the last digit. Results in
+  D-075.
+- `python -m retainiq.benchmarks.spectrum`: re-run so its figure carries the new caption.
+  Prints what it printed: +0.69, +0.58, +0.19, +0.17, −0.19.
+
+**Found.**
+
+- The quoted Hillstrom-men figure, +0.69 → −5.6%, is seed 0 and ranks first of thirty
+  splits. Mean +0.28 [−0.21, +0.66] → −0.1% [−10.3, +11.6].
+- On the log-odds scale the four real correlations are −0.46, +0.06, −0.22, −0.05.
+- A fitted uplift model on the simulated trial beats the outcome model on 30 of 30 splits,
+  +9.7 outcomes per 1,000 [+5.0, +14.4].
+- Abstention is ahead of their primary configuration on 78% of differing draws at 1,000,
+  2,000 and 4,000 customers, on 26% at 250 and 47% at 500. It made money on 25 of the 139
+  draws on which it acted.
+- Predictions: of five on the correlation, two held, one failed and two failed in part. Of
+  six on the baseline, two held, two failed and two hold only pooled.
+
+**Three things caught by tests before they reached a result.**
+
+- A Newton step in the boosting ranks the least-helped customers first among those the
+  offer helps. Found by a test on ranking; the default is now a gradient step and the
+  Newton variant is a labelled sensitivity run. Six trial draws had already been run with
+  the Newton step while timing the code.
+- Their chosen share of customers could exceed the 30% budget by a rounding step (37 of
+  122). Found by a budget test; capped.
+- A correlation of a constant with anything returned noise instead of "not available" when
+  the constant came from a difference of logits. Found while writing the scale-artefact
+  test; near-constant inputs are now treated as constant. Three Hillstrom splits re-run
+  afterwards reproduce the saved rows to sixteen decimal places.
+
+**One thing not caught beforehand.** The ten-per-arm floor, pre-registered as a guard in
+their favour, leaves their rule no admissible campaign size at 250 customers under a 30%
+budget (and their best case none at 500). It was arithmetic on fixed numbers and was not
+done until the results showed "treats nobody, 100%". The report marks such rows, and one
+run without the floor was added afterwards and is labelled as added afterwards.
+
+**Documents.** README (result 1 rewritten, prior-work section, what did not work,
+commands), project report (second addendum, §4C, §5.3 rewritten with a new Figure 2,
+§5.8, §12, §13, §14), explainer 05 (the chart section rewritten, two corrections stated)
+and 09 (status, what we had wrongly called ours, change log), research plan, deck
+(slide 6 table, card and notes; slide 8), speech (slide 6 narration, four answers changed,
+three questions added, both reference tables), `spectrum.py` (says it is one split and
+points to the other command). The paper sources are not changed.
+
+**Tested.** 131 new tests in three files (721 in 30 files); lint and both calibration
+gates pass.
+
+**Timing.** `make correlation-checks` about 30 minutes on mains power. `make baseline`
+about one minute. `make check` now takes 3 minutes 18 seconds on mains power with 721
+tests (it was about two and a half with 590). It was not timed on battery; the runbook and
+the speech now say "a little over three minutes on mains power, and longer on battery".

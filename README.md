@@ -21,7 +21,7 @@ measurable at all*.
 
 ## The three results
 
-**1. Where the risk–lift correlation is high, an uplift model does not beat a plain outcome model.**
+**1. On four public experiments an uplift model gains little or nothing over a plain outcome model. On a simulated retention trial it gains on every split.**
 
 The quantity is not ours. Ascarza (2018, Web Appendix A3.4) sets the correlation between a
 customer's churn risk and their response to an offer in a simulation, shows how the two
@@ -29,40 +29,61 @@ rankings and the effect by risk decile change with it, and places her two field 
 about +0.2 and −0.2. What this repository does is **measure** it from fitted models:
 `corr(τ̂, π̂)`, the correlation across customers between estimated treatment effect and
 estimated outcome propensity, on four settings from three public randomised experiments
-and on one calibrated simulator.
+and on a randomised trial drawn from one calibrated simulator, over thirty random splits
+of each (`make correlation-checks`, D-074).
 
-| Setting | corr(τ̂, π̂) | Advantage of uplift |
-|---|---:|---:|
-| Hillstrom — mens arm | +0.69 | **−5.6%** |
-| Criteo-UPLIFT v2.1 | +0.58 | +0.6% |
-| Hillstrom — womens arm | +0.19 | +12.7% |
-| Lenta | +0.17 | +20.3% |
-| SubSim — subscription churn | −0.19 | **+106.9%** |
+| Setting | corr(τ̂, π̂), probability scale | Same, log-odds scale | Advantage of uplift | Extra outcomes per 1,000 |
+|---|---:|---:|---:|---:|
+| Criteo-UPLIFT v2.1 | +0.58 [+0.51, +0.65] | +0.06 [−0.13, +0.33] | +0.7% [−1.5, +3.8] | +0.1 [−0.1, +0.3] |
+| Hillstrom — mens arm | +0.28 [−0.21, +0.66] | −0.46 [−0.73, +0.06] | −0.1% [−10.3, +11.6] | −0.1 [−3.0, +2.8] |
+| Hillstrom — womens arm | +0.18 [−0.07, +0.49] | −0.22 [−0.44, +0.11] | +14.0% [−7.7, +35.3] | +2.6 [−1.9, +6.2] |
+| Lenta | +0.13 [+0.05, +0.22] | −0.05 [−0.18, +0.06] | +24.7% [−4.3, +109.1] | +0.6 [−0.1, +1.5] |
+| SubSim — simulated retention trial | −0.21 [−0.33, −0.07] | −0.26 [−0.40, −0.10] | not quoted | **+9.7 [+5.0, +14.4]** |
 
-Read the table with three cautions (D-068):
+*Mean over 30 splits; brackets are the 2.5th and 97.5th percentiles across splits. The
+advantage is the best fitted uplift model against the best fitted outcome model, treating
+the top 30%. The last column is the same gap as a count.*
+
+Read the table with these cautions (D-068, D-074):
 
 - **The four real rows are not retention data.** They are an email promotion, an
-  advertising campaign and a retail promotion. Where the correlation is high the uplift
-  model gains nothing (Criteo) or loses (Hillstrom men), because the outcome model ranks
-  nearly the same customers from an easier estimate. The ordering among these four rows
-  is within noise.
-- **The SubSim row is not measured the same way.** It uses the simulator's *true* effects
-  and compares the *oracle* with a churn score. The real rows compare an estimated uplift
-  model with an estimated outcome model, on one seed and one split. Part of the gap
-  between the last row and the rest is that difference.
+  advertising campaign and a retail promotion. In none of them does the range of the
+  uplift model's advantage across splits exclude zero. It is positive on 27 of 30 splits
+  in Hillstrom women and in Lenta, on 20 in Criteo and on 15 in Hillstrom men. Splits of
+  one dataset overlap, so those counts are not a significance test. The four cannot be
+  ordered.
+- **An earlier version of this table gave Hillstrom men as +0.69 and −5.6%.** That was one
+  split, and of the thirty it is the highest. Splits of that experiment run from −0.21 to
+  +0.66, and the advantage is positive on 15 of 30. The other rows were close to their
+  thirty-split means.
+- **Most of the positive correlation belongs to the probability scale.** An offer that
+  multiplies everyone's odds by the same factor moves the probability most where the
+  baseline is highest, which by itself makes effect and risk correlate. On the log-odds
+  scale no real row is clearly positive, and the simulator is not set apart from the two
+  Hillstrom arms. A positive figure in the first column is not evidence that likelier
+  responders are more persuadable.
+- **The SubSim row is a simulation, now measured like the others.** Fitted models on a
+  randomised trial of 60,000 simulated customers: the uplift model beat the outcome model
+  on 30 of 30 splits, and targeting by the outcome model added churn on 26. Its percentage
+  is not quoted because the base it divides by is negative. An *oracle* on true effects
+  gains +106.9% in money (`python -m retainiq.benchmarks.spectrum`); that figure is in
+  other units and is not comparable.
 - **SubSim's negative correlation is an assumption.** The simulator is configured so that
   the customers a churn model ranks highest include dormant payers for whom *being
   contacted is itself the reminder to cancel*. Field evidence that a retention contact
   can raise churn exists (Ascarza, Iyengar & Schleicher 2016; Ascarza 2018, Study 2).
   This repository adds none.
+- **60,000 customers is not a small business.** At 250 to 4,000 customers no policy
+  tested beats doing nothing (see *What did not work*).
 
 Lenta was an out-of-sample prediction, registered before the data was obtained, and it
 landed, though the test is underpowered (D-031).
 
-![When uplift pays](papers/figures/fig03_when_uplift_pays.png)
+![The correlation, checked](papers/figures/fig07_correlation_checked.png)
 
-*Filled points are fitted models on real experiments. The hollow point is the simulator's
-oracle on true effects: an upper bound, not a like-for-like measurement.*
+*Every point is a fitted model on a randomised trial, with the spread across thirty splits
+drawn on both axes. The two panels show the same gains; only the scale the correlation is
+taken on differs.*
 
 **2. At the scale of the businesses this most concerns, neither method is reliable.**
 
@@ -140,12 +161,21 @@ harm, the risk–lift correlation as the explanation, and scoring a policy in mo
 
 **What this repository adds:** how the methods behave on a pilot of a few hundred
 customers (result 2); the gap between the effect a small business can deliver and the
-effect it can detect (result 3); the correlation measured on public experiments,
-including settings where uplift loses (result 1); and an uncertainty threshold that was
-implemented and did not beat doing nothing (D-054; see *What did not work*).
+effect it can detect (result 3); the correlation measured on public experiments over
+thirty splits and on two scales, with the finding that most of it is the scale (result
+1); and an uncertainty threshold that was implemented and did not beat doing nothing
+(D-054; see *What did not work*).
 
-**Not yet done:** Lemmens & Gupta's cutoff rule is not a baseline in any experiment here,
-and the correlation table has the measurement gaps listed under result 1.
+**Against the nearest rival (D-075).** Lemmens & Gupta's rule for choosing the campaign
+size was re-implemented from their paper and run on the same simulated pilots as the
+abstention rule, with the design and six predictions fixed in advance (`make baseline`).
+From 1,000 customers abstention loses less: it is ahead on 78% of the draws where the two
+differ. At 250 and 500 it is not ahead, and doing nothing beats both at every size. Two of
+the six predictions failed. It is a re-implementation on a simulator, not their code on
+their data.
+
+**Still owed:** one further check on the correlation (D-074), and a randomised
+*retention* experiment, which none of the public datasets used here is.
 
 ---
 
@@ -170,9 +200,16 @@ supports, and three of these are the most useful things the project learned.
   beats choosing the customer.**
 - **Two of five pre-registered predictions failed** after the D-057 fix. Recorded as
   failures rather than quietly dropped.
+- **The figure that anchored the correlation table was the highest of thirty splits
+  (D-074).** Hillstrom men was quoted as +0.69. Its thirty-split mean is +0.28, and the
+  "high" and "low" groups the table was read as showing do not exist.
+- **Abstention does not beat the published alternative at the smallest sizes (D-075).**
+  At 250 customers it acts on 34 draws of 100 and loses money on 25 of them. Across all
+  sizes it made money on 25 of the 139 draws on which it acted. It is a rule for losing
+  less, and here the best rule is still to do nothing.
 
 Every design decision, including the adverse ones, is in
-[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-068). It is append-only.
+[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-075). It is append-only.
 
 ---
 
@@ -182,7 +219,7 @@ Every design decision, including the adverse ones, is in
 git clone https://github.com/PrashamJ17/PBL-Proj.git
 cd PBL-Proj
 make install     # or: pip install -e ".[dev,viz]"
-make check       # lint + 590 tests + calibration gates
+make check       # lint + 721 tests + calibration gates
 ```
 
 ```python
@@ -216,7 +253,9 @@ Every number in the paper comes from one of these commands.
 | `make ai-channels` | Break-even salience for automated outreach (D-064) |
 | `make holdout` | The measurement floor (D-065) |
 | `make small-n` | Win rates against random at small *n*, with intervals, and Figure 2 (D-072; about 20 minutes) |
-| `make figures` | Regenerate all six figures |
+| `make correlation-checks` | The risk–lift correlation over 30 splits, on two scales and three definitions of risk, and Figure 7 (D-074; about 30 minutes) |
+| `make baseline` | Abstention against Lemmens & Gupta (2020) on the same pilots, 500 draws (D-075; about a minute) |
+| `make figures` | Regenerate Figures 1 to 6 (Figure 7 is drawn by `make correlation-checks`) |
 | `make zenodo` | Rebuild the archived data record byte-for-byte |
 | `make help` | Everything else |
 
@@ -282,7 +321,7 @@ retainiq/
 ├── experiments/  Every experiment in the paper, one module each.
 └── cli.py        preflight and autopsy — argparse only, no runtime dependency.
 
-tests/            590 tests — fairness, realism, edge cases, leakage gates
+tests/            721 tests — fairness, realism, edge cases, leakage gates
 docs/
 ├── BUILDLOG.md   what was built, what was tested, what happened
 └── DECISIONS.md  why each choice was made (D-001 … D-065), append-only

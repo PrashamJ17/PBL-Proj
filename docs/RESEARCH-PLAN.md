@@ -199,14 +199,17 @@ Four things, in order:
 
 - **The strongest claim rests on one dataset that is not retention data.** The 72.5% figure
   is Hillstrom, an email promotion.
-- **The correlation table cannot yet carry weight.** The five points are not measured
-  alike: the real ones are estimate against estimate, with a risk model fitted on both
-  arms, one seed and no interval; the simulator one uses true effects and an oracle
-  (D-068). The negative-correlation regime — the interesting one — is carried entirely by
-  a simulator configured to have it. A reviewer will say this, and they will be right.
-- **The nearest rival is not a baseline.** Lemmens & Gupta (2020) choose the campaign
-  size on held-out data. Until their rule runs on the same pilots, abstention has not
-  been compared with the method a referee will name first.
+- **The correlation result is weaker than the paper says, and now measured (D-074).** Over
+  thirty splits the four real settings cannot be ordered, the figure quoted for Hillstrom
+  men was the highest split of thirty, and most of the positive correlation is absent on
+  the log-odds scale. What survives: fitted models recover the simulator's result on a
+  simulated trial of 60,000, with no oracle. The negative-correlation regime is still
+  carried entirely by a simulator configured to have it. A reviewer will say this, and
+  they will be right.
+- **Against the nearest rival, abstention is ahead only from about 1,000 customers
+  (D-075).** Lemmens & Gupta's rule was re-implemented and run on the same pilots. At 250
+  and 500 abstention is not ahead, and doing nothing beats both at every size. The
+  paper's claim about abstention at small sizes has to be rewritten to this.
 - **The small-sample result is measured, not derived.** There is no theory saying *when*
   an outcome model overtakes an uplift model, only evidence that it does.
 - **The abstention contribution is a partial negative.** Defensible, but it is not the
@@ -214,16 +217,20 @@ Four things, in order:
 
 ## The highest-value additions, in order
 
-**1. Run the checks in D-068 before anything else.** Rank correlation beside Pearson, on
-the probability and the log-odds scale. Risk fitted on control customers only. Many
-splits per dataset, with an interval. The simulator point recomputed like for like. They
-come first because the correlation result may not survive them, and what the paper can
-say depends on whether it does. A result that shrinks under its own checks is still
-reportable. One that was never checked is not.
+**1. The checks in D-068. DONE, 8 October 2026 (D-074).** `make correlation-checks`. Five
+predictions were written first; one held, one held against the project, one failed and
+two failed in part. The result shrank under its own checks and is still reportable. One
+check is left: risk fitted on both arms of customers the effect model never saw, which
+would say whether the drop under an independent risk model is shared noise or only less
+data.
 
-**2. Add the baseline.** Give Lemmens & Gupta's cutoff rule and the abstention rule the
-same pilot, score both on fresh customers, and cross estimator with stopping rule so that
-a difference can be attributed to one of them.
+**2. The baseline. DONE, 8 October 2026 (D-075).** `make baseline`. Six predictions were
+written first; two failed and two hold only pooled. Estimator and stopping rule were
+crossed as planned: with the estimator held fixed the threshold beats their cutoff from
+1,000 customers and not below, and their loss cannot be told from their first stage
+alone. Read both entries before restating any claim. **What they leave open is a better
+question than either answered:** the abstention rule made money on 25 of the 139 draws on
+which it acted. Why it is wrong so often when it does act is now the thing to explain.
 
 **3. Derive the finite-sample condition, do not only measure it.**
 
@@ -261,7 +268,8 @@ obtained, following the Lenta pattern exactly.
 ## Order of work
 
 1. Finish §1, the four papers included. Do not write about what you cannot explain.
-2. Run the checks in D-068 and add the baseline. Record what moved and what did not.
+2. ~~Run the checks in D-068 and add the baseline.~~ Done (D-074, D-075). Read what moved:
+   most of it did.
 3. Restate the claims around what survived. Write the related-work section from your own
    notes on the papers, not from this repository's summaries of them.
 4. Attempt the derivation. Time-box it — four weeks. If it does not come, say so in
@@ -385,7 +393,7 @@ protection then, with a lawyer and a budget.
 |---|---|---|
 | 1–4 | §1: prerequisites, reading order, the four papers, exercises | Answer the six questions without notes |
 | 3–5 | Write the counter-argument; re-read the paper against DECISIONS | You can state the weakest claim in your own paper |
-| 4–6 | The checks in D-068 and the Lemmens & Gupta baseline (§2) | Each check has a number, and a sentence on what moved |
+| done | The checks in D-068 and the Lemmens & Gupta baseline (§2) | Met: D-074 and D-075 give each check a number and say what moved |
 | 6–10 | Attempt the derivation (§2). Time-boxed | Either a toy-model result, or an honest Limitations paragraph |
 | done | The IP question (§3) and the preprint | Settled by publication (D-066) |
 | after | Revised paper to a journal; workshop in parallel | Referee feedback |

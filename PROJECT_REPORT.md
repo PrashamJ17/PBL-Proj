@@ -54,6 +54,19 @@ its figures corrected (D-072); Figure 3 was redrawn from that run. The counts in
 §11 are updated:
 590 tests in 27 files, 73 decisions. Nothing else in the report changed.
 
+**Second addendum, 8 October 2026.** The two pieces of work the revision note listed as
+owed were done, each with its predictions written down beforehand
+(`docs/PREREG-checks-and-baseline.md`). **The correlation result was re-measured over
+thirty splits (D-074), and §5.3 is rewritten:** the figure quoted for the Hillstrom men's
+e-mail, +0.69, was one split and the highest of the thirty; most of the positive
+correlation in the real experiments belongs to the probability scale; and the simulator's
+result holds for fitted models on a simulated trial, without an oracle. Figure 2 is
+replaced. **Lemmens and Gupta's (2020) rule was run beside the abstention rule (D-075),
+and §4C, §5.8, §12 and §14 say what it showed:** abstention loses less from about 1,000
+customers and is not ahead below that. Seven of the eleven predictions failed in whole or
+in part, and they are listed. The counts in §1, §9 and §11 are updated again: 721 tests
+in 30 files, 75 decisions.
+
 ---
 
 ## Table of contents
@@ -96,8 +109,8 @@ with competing risks, a hierarchical Bayesian treatment-effect estimator, an off
 optimiser, a client-facing diagnostic report, a holdout measurement layer, and a research
 paper published as a preprint.
 
-**Scale (8 October 2026):** 14,234 lines of Python in `retainiq/`, 6,379 lines of tests,
-590 automated tests in 27 files, 73 documented design decisions, 8,423 lines of
+**Scale (8 October 2026):** 15,441 lines of Python in `retainiq/`, 7,579 lines of tests,
+721 automated tests in 30 files, 75 documented design decisions, 9,046 lines of
 documentation in `docs/` and `explainer/`, continuous integration across Python 3.11, 3.12
 and 3.13 with four gates. At submission: 12,551 lines of Python, 433 tests, 63 decisions.
 
@@ -281,7 +294,8 @@ Gupta (2020) train and evaluate on it. A threshold that takes uncertainty into a
 suggested, and not implemented, in a footnote of Ascarza (2018). What this project adds is
 an implementation with a posterior and a test of whether it holds up on a few hundred
 customers (§5.8). Lemmens and Gupta's own rule for choosing campaign size is the nearest
-rival and is **not yet a baseline** in these experiments.
+rival. It was re-implemented from their paper and run on the same simulated pilots
+(§5.8, D-075).
 
 ### D. Point-in-time correctness
 
@@ -354,45 +368,84 @@ here. Ascarza (2018, Web Appendix A3.4) varies this correlation in a simulation 
 her two field studies at about +0.2 and −0.2. This project measures it from fitted models
 on three public randomised experiments.
 
-| Setting | `corr(tau, pi)` | Advantage of effect-based targeting |
-|---|---|---|
-| Hillstrom, men's e-mail | +0.69 | −5.6% |
-| Criteo (advertising) | +0.58 | +0.6% |
-| Hillstrom, women's e-mail | +0.19 | +12.7% |
-| Lenta (retail promotion) | +0.17 | +20.3% |
-| Subscription churn (simulator, oracle) | −0.19 | +106.9% |
+| Setting | `corr(tau, pi)`, probability scale | Same, log-odds scale | Advantage of effect-based targeting | Extra outcomes per 1,000 customers |
+|---|---|---|---|---|
+| Criteo (advertising) | +0.58 [+0.51, +0.65] | +0.06 [−0.13, +0.33] | +0.7% [−1.5, +3.8] | +0.1 [−0.1, +0.3] |
+| Hillstrom, men's e-mail | +0.28 [−0.21, +0.66] | −0.46 [−0.73, +0.06] | −0.1% [−10.3, +11.6] | −0.1 [−3.0, +2.8] |
+| Hillstrom, women's e-mail | +0.18 [−0.07, +0.49] | −0.22 [−0.44, +0.11] | +14.0% [−7.7, +35.3] | +2.6 [−1.9, +6.2] |
+| Lenta (retail promotion) | +0.13 [+0.05, +0.22] | −0.05 [−0.18, +0.06] | +24.7% [−4.3, +109.1] | +0.6 [−0.1, +1.5] |
+| Subscription churn (simulated trial, fitted models) | −0.21 [−0.33, −0.07] | −0.26 [−0.40, −0.10] | not quoted | +9.7 [+5.0, +14.4] |
 
-*Measured on 15 August 2026 and reproduced on 5 October. The table submitted on 11 August
-showed an earlier run, with Hillstrom as a single row.*
+*Measured on 8 October 2026 (D-074): the mean over thirty random splits of each
+experiment, with the 2.5th and 97.5th percentiles across splits. The table this replaces
+showed one split per row: +0.69 and −5.6% for the Hillstrom men's e-mail, +0.58 and +0.6%
+for Criteo, +0.19 and +12.7% for the women's e-mail, +0.17 and +20.3% for Lenta, and an
+oracle's +106.9% for the simulator.*
 
-**Interpretation.** When effect-ordering and propensity-ordering coincide, the outcome
-model does as well or better — not because it estimates the right quantity, but because it
-solves an easier one. That is a statement about estimates from a finite sample.
+**What the thirty splits changed.**
+
+- **The Hillstrom men's figure was the highest of thirty splits.** The mean is +0.28 and
+  splits run from −0.21 to +0.66. The advantage quoted beside it, −5.6%, averages −0.1%
+  and is positive on 15 splits of 30. The other three experiments were close to their
+  means. The split was not chosen for its result, it is the default, but it was quoted
+  with no idea of how far splits differ.
+- **Most of the positive correlation belongs to the probability scale.** An offer that
+  multiplies every customer's odds by the same factor moves the probability most where
+  the baseline is highest, and that alone produces a positive correlation. On the
+  log-odds scale none of the four real figures is clearly positive. Ascarza (2018) warns
+  of this.
+- **How risk is defined changes the figure.** With risk fitted on control customers by the
+  same model the effect subtracts, the correlation falls by 0.14 to 0.43 in the real
+  experiments, and *rises* in the simulator, where the outcome is churn. Both are shared
+  estimation noise. Fitted on different customers, the figure for the two Hillstrom
+  e-mails does not return to the value in the table.
+- **In the simulator, fitted models find the direction on every split.** On a randomised
+  trial of 60,000 simulated customers, the effect-based model beat the outcome model on
+  30 of 30 splits, and targeting by the outcome model added churn on 26. The earlier
+  table showed an oracle here; this row is measured like the others.
+
+**Interpretation.** In the four real experiments the range of the effect-based model's
+advantage across splits includes zero, and the four cannot be ordered. The advantage is
+positive on 27 of 30 splits for the women's e-mail and for Lenta, on 20 for Criteo and on
+15 for the men's e-mail; the splits overlap, so those counts are not a significance test. When effect-ordering and
+propensity-ordering largely coincide, the outcome model does as well, because it solves an
+easier estimation problem. That is a statement about estimates from a finite sample.
 
 **An out-of-sample prediction that landed.** Before obtaining the Lenta dataset, it was
-predicted that retail promotion would fall *between* advertising and retention. It came in
-at +0.17, as predicted — though underpowered to test the downstream consequence.
+predicted that retail promotion would fall *between* advertising and retention. On the
+split then run it came in at +0.17, and over thirty splits at +0.13, as predicted, though
+underpowered to test the downstream consequence.
 
 **What is not claimed.**
 
-- The *ordering among the four real settings is within noise*. Each is one seed and one
-  split with no interval, and the table should not be read as a monotone curve.
-- **The simulator row is not comparable with the others.** It uses the simulator's true
-  effects and compares an oracle with a churn score; the real rows compare two fitted
-  models. It is the most that could be gained there, not what a fitted model gains.
-- **The simulator's negative correlation is configured, not found.** None of the three
-  real experiments is a retention experiment. That retention has this structure rests on
-  the simulator's assumptions and on the field experiments cited in §2.
+- **That the four real settings form two groups, or any order.** An earlier reading of
+  this table as "high-correlation" and "low-correlation" settings is withdrawn.
+- **That a positive correlation means likelier responders are more persuadable.** On the
+  log-odds scale it is not there.
+- **That the contrast with the simulator holds on every scale.** On the log-odds scale
+  the simulator is not set apart from the two Hillstrom e-mails.
+- **That the simulator's negative correlation was found.** It is configured. None of the
+  three real experiments is a retention experiment.
+- **That the simulator row says anything about a small business.** It is a trial of
+  60,000. At 250 to 4,000 customers no policy tested beats doing nothing (§5.8).
+- **A percentage for the simulator row.** The base it would be divided by is negative on
+  26 splits of 30. The oracle's +106.9% is money net of the offer on true effects, and is
+  not comparable with any row here.
 
-![The advantage of effect-based targeting against corr(treatment effect, outcome propensity) across five settings](papers/figures/fig03_when_uplift_pays.png)
+Five predictions were written down before the run. One held (the two correlation
+coefficients agree), one held and counts against the project (the log-odds scale), one
+failed outright (the two groups), and two failed in part (D-074).
 
-***Figure 2.*** *Redrawn 5 October 2026. Each point is one setting. The x-axis is the
-correlation across customers between treatment effect and outcome propensity; the y-axis
-is how much effect-based targeting adds over outcome-based targeting. Filled points are
-fitted models on public randomised experiments and are not reliably distinguishable from
-one another. The hollow point is the simulator: true effects, an oracle policy and a
-configured negative correlation, so it is an upper bound. Five settings, not a fitted
-curve.*
+![What an uplift model gains over an outcome model, against the risk-lift correlation, on the probability scale and on the log-odds scale](papers/figures/fig07_correlation_checked.png)
+
+***Figure 2.*** *Replaced 8 October 2026. Each point is one setting: the mean over thirty
+splits, with bars from the 2.5th to the 97.5th percentile across splits on both axes. The
+x-axis is the correlation across customers between estimated benefit and estimated
+outcome propensity, on the probability scale in the left panel and on the log-odds scale
+in the right. The y-axis, shared, is the number of extra good outcomes per 1,000
+customers from ranking by effect instead of by outcome propensity. Every point is a
+fitted model on a randomised trial. The simulator's point comes from a simulated trial
+whose negative correlation is configured. Five settings, not a fitted curve.*
 
 ### 5.4 Reliability at small *n*
 
@@ -502,6 +555,49 @@ nobody and scores exactly zero.
 
 *Re-run on 5 October 2026 and unchanged. `make abstention` prints this table first, and
 beneath it the same draws under the rule as it stood before the D-057 correction (§10.2).*
+
+**Against the nearest published rule** *(added 8 October 2026, D-075)*. Lemmens and Gupta
+(2020) choose how many customers to target from held-out data: rank a validation sample,
+estimate the profit of every campaign size from the randomised outcomes, take the best.
+Their rule was re-implemented from their paper and given the same simulated pilots as the
+abstention rule, 100 draws per size, with the design and six predictions fixed beforehand.
+It must hold back half the pilot to choose the size on; the abstention rule fits on all
+of it.
+
+| n | Abstention, mean | Treats nobody | Their rule, mean | Treats nobody | Abstention ahead, of the draws that differ |
+|---|---|---|---|---|---|
+| 250 | −36 | 66% | 0 | 100% (could not act) | 9 of 34 — 26% [13%, 44%] |
+| 500 | −431 | 65% | −378 | 74% | 23 of 49 — 47% [33%, 62%] |
+| 1,000 | −189 | 74% | −1,282 | 34% | 58 of 74 — 78% [67%, 87%] |
+| 2,000 | −396 | 75% | −2,946 | 26% | 61 of 78 — 78% [67%, 87%] |
+| 4,000 | −691 | 81% | −3,939 | 24% | 62 of 79 — 78% [68%, 87%] |
+
+*Money relative to doing nothing. Brackets are exact 95% intervals. A draw on which both
+rules treat nobody is a tie and is left out of the last column.*
+
+- **From 1,000 customers the abstention rule loses less.** Their rule acts on two or
+  three draws in four there, on three to eight times as many customers, and loses about
+  six to seven times as much.
+- **At 250 and 500 it is not ahead.** At 250 it acts on 34 draws of 100 and loses money on
+  25 of them, so doing nothing beats it. At 500 the two cannot be told apart.
+- **At 250 their rule could not act at all, and that is this project's guard, not their
+  method.** The comparison required ten treated and ten control customers inside any
+  campaign size considered. A 30% budget on a validation sample of 37 allows 11. With that
+  guard removed, a run added after the results were seen and labelled as such, their rule
+  acts on three draws in four at 250 and the abstention rule is ahead on 70% [66%, 75%]
+  of the draws that differ across all sizes.
+- **When the abstention rule acts, it usually loses.** It acted on 139 of 500 draws and
+  made money on 25. Its mean is negative at every size. What it gains over every rival
+  comes from acting rarely and on few customers.
+- **Their profit-based loss made no measurable difference** against their first stage
+  alone at these sizes: ahead on 48% [42%, 54%] of the draws that differ.
+
+Of the six predictions, two held, two failed (that their rule would treat nobody less
+often at small sizes, and that the gap would close with size: it widens), and two hold
+only when the three smallest sizes are pooled. **The claim this supports is narrower than
+the one the project hoped to make:** from about 1,000 customers, declining by a posterior
+threshold loses less than choosing a campaign size by validation. It is not "abstention
+beats the published alternative when data are scarce".
 
 **The offer-ladder optimiser** (choosing *which* intervention per customer, learned from a
 randomised multi-arm pilot):
@@ -694,7 +790,7 @@ retainiq/
 
 ## 9. Testing and engineering discipline
 
-**590 automated tests in 27 files, 6,379 lines of test code**, run on every push across Python 3.11,
+**721 automated tests in 30 files, 7,579 lines of test code**, run on every push across Python 3.11,
 3.12 and 3.13.
 
 Tests fall into five categories:
@@ -840,10 +936,10 @@ non-contractual to a later phase behind a model router.
 | SHAP per-customer explanations | Exact closed-form attribution (no dependency) |
 | RFM segmentation, CRM activation layer | Neither |
 | Docker orchestration, hosted deployment | Local CLI only |
-| 0 automated tests, no CI | 590 tests, CI on 3 Python versions, 4 gates |
+| 0 automated tests, no CI | 721 tests, CI on 3 Python versions, 4 gates |
 | Correlational churn prediction | Causal effect estimation with ground truth |
 | Binary classifier (ignores censoring) | Survival model with competing risks |
-| 2 documentation files | 73 decision entries, 8,423 documentation lines |
+| 2 documentation files | 75 decision entries, 9,046 documentation lines |
 
 **Both directions are recorded.** RetainIQ-PBL's gate — "somebody can use it" — is met, and
 RetainIQ's is not.
@@ -857,14 +953,16 @@ Stated plainly, because the alternative is having a reviewer state them.
 1. **No paying client and no live deployment.** Every result is from simulation or public
    datasets. The commercial claim is untested.
 2. **The negative-correlation regime is carried by a simulator configured to have it.**
-   None of the three real experiments is a retention experiment, and the simulator row in
-   §5.3 is an oracle upper bound, not a like-for-like measurement.
-3. **The correlation table cannot yet carry weight.** One seed and one split per real
-   setting, no intervals, Pearson correlation only, and a risk model fitted on both arms
-   where Ascarza's is fitted on control customers. The decision log (D-068) lists the
-   checks owed.
-4. **The nearest published method is not a baseline.** Lemmens and Gupta's (2020) rule for
-   choosing campaign size has not been run on the same pilots as the abstention rule.
+   None of the three real experiments is a retention experiment. Fitted models recover
+   the simulator's result on a simulated trial of 60,000 (§5.3), which shows the
+   estimator works there and nothing about real customers.
+3. **The correlation depends on the scale and on how risk is defined.** Over thirty
+   splits, most of the positive correlation in the real experiments is absent on the
+   log-odds scale, and the figure moves by up to 0.43 with the definition of risk. One
+   check that would separate two explanations for that movement has not been run (D-074).
+4. **Against the nearest published method, the abstention rule is ahead only from about
+   1,000 customers.** Lemmens and Gupta's (2020) rule was re-implemented from their paper,
+   not run from their code, and the comparison is on a simulator (§5.8, D-075).
 5. **The small-sample result rests on one dataset that is not retention data.** The
    figures in §5.4 are from an e-mail promotion.
 6. **The decision layer does not beat doing nothing.** It reliably avoids the damage that
@@ -893,11 +991,12 @@ Stated plainly, because the alternative is having a reviewer state them.
 | **6** | Holdout assignment and incrementality reporting are built and validated on simulation (§5.9). Remaining: a real client; a cancel-flow widget | A real client's verified return |
 | **7** | Cross-tenant hierarchical priors at scale; BTYD/Pareto-NBD router for non-contractual businesses | Tenant #10 outperforms tenant #1 on day one |
 
-**Research priority.** In order. First, the checks the correlation result still owes: rank
-correlation beside Pearson, on the probability and the log-odds scale; risk fitted on
-control customers only; many splits with an interval; a like-for-like simulator row.
-Second, Lemmens and Gupta's (2020) method as a baseline against the abstention rule. Third,
-a derivation of when an effect-based model *estimated from n customers* beats a propensity
+**Research priority.** In order. The first two items of the earlier list are done: the
+checks on the correlation (D-074) and Lemmens and Gupta's (2020) method as a baseline
+(D-075). What they leave: one further check on the correlation, with risk fitted on both
+arms of customers the effect model never saw; and the question of why the abstention rule
+loses money on most of the occasions it acts. Then a derivation of when an effect-based
+model *estimated from n customers* beats a propensity
 model. The population version of that question is settled: with the true effect known,
 ranking by it cannot lose. The open part is the finite-sample one.
 
@@ -946,8 +1045,9 @@ below what a holdout can detect (simulation).
 That the regime the project is about — retention, where risk and response pull apart — is
 carried entirely by the simulator, which is configured to have it. The three real
 experiments are from e-mail, advertising and retail. A real retention experiment would be
-worth more than any further engineering. The second weakness is that the closest published
-method, Lemmens and Gupta (2020), is not yet a baseline.
+worth more than any further engineering. The second weakness is that against the closest
+published method, Lemmens and Gupta (2020), the abstention rule is ahead only from about
+1,000 customers, and when it does act it loses money more often than not (§5.8).
 
 **Q: What did you get wrong?**
 A units error that ran for an entire phase: multiplying a log-odds effect by money as
