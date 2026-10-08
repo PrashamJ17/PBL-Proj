@@ -24,6 +24,18 @@ score. What does a *fitted* uplift model gain there?
 The design and five predictions were committed before this module existed, in
 `docs/PREREG-checks-and-baseline.md`. The answers are in D-074.
 
+**A follow-up (D-076).** Check 3 moved the figure and could not say why: the independent
+version changed who the risk model was fitted on, how much data each model saw, and which
+arms the risk model used, all at once. `pooled_half` and `pooled_indep` change those one
+at a time. Their design and predictions are in `docs/PREREG-pooled-independent-risk.md`.
+
+**And a diagnostic that nobody planned (D-076).** The follow-up's second prediction failed,
+and the reason turned out to be in the instrument: scikit-learn's gradient boosting stops
+early by default once it is given more than 10,000 rows. In Hillstrom each arm of the
+training half has about 10,650, so the T-learner's two models each stop when a random tenth of
+their own data says so, at different rounds, and the correlation follows the difference.
+`--stopping-diagnostic` measures that. It is exploratory and says so in its output.
+
 Nothing here changes what `spectrum.py` prints. That command still shows one split, and
 this one shows how far one split can sit from the other twenty-nine. The figure drawn
 here (`fig07`) is the one to use: every point on it is a fitted model on a randomised
@@ -32,6 +44,7 @@ trial, measured the same way, with the spread across splits drawn on both axes.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -57,6 +70,21 @@ SIM_CUSTOMERS = 60_000
 
 SCALES = ("prob", "logodds")
 RISKS = ("pooled", "control_same", "control_indep")
+
+#: Added by the second pre-registration (D-076), and kept apart from the first three so
+#: that it stays visible which figures were designed when.
+#:   pooled_half   effect and both-arm risk fitted on the SAME half of the training data
+#:   pooled_indep  effect on one half, both-arm risk on the OTHER half
+FOLLOW_UP = ("pooled_half", "pooled_indep")
+ALL_RISKS = (*RISKS, *FOLLOW_UP)
+
+#: The gap between the table's figure and the independent control-only one, taken one
+#: change at a time. Each is a difference between two correlations on the same split.
+STEPS = {
+    "step_data": ("pooled_half", "pooled"),              # half the data, customers shared
+    "step_sharing": ("pooled_indep", "pooled_half"),     # same data, customers not shared
+    "step_definition": ("control_indep", "pooled_indep"),  # both arms -> control only
+}
 COEFFICIENTS = ("pearson", "spearman")
 
 
@@ -169,9 +197,20 @@ def one_split(rct: RCT, seed: int, benefit_sign: int = 1,
         risk_b = (_clf(seed + 2).fit(X.iloc[control_b], y[control_b].astype(int))
                   .predict_proba(test.X)[:, 1])
         found = all_correlations(benefit_a, risk_b)
+
+        # The follow-up (D-076). Both use the effect fitted on part A, so that each
+        # differs from its neighbour in one respect only. Risk on both arms of part A
+        # shares its customers with the effect; risk on both arms of part B does not.
+        pooled_a = _clf(seed).fit(X.iloc[a], y[a].astype(int)).predict_proba(test.X)[:, 1]
+        pooled_b = _clf(seed + 2).fit(X.iloc[b], y[b].astype(int)).predict_proba(test.X)[:, 1]
+        half, indep = (all_correlations(benefit_a, pooled_a),
+                       all_correlations(benefit_a, pooled_b))
     else:
         found = dict.fromkeys(all_correlations(benefit, p0), float("nan"))
+        half, indep = dict(found), dict(found)
     row |= {f"control_indep_{k}": v for k, v in found.items()}
+    row |= {f"pooled_half_{k}": v for k, v in half.items()}
+    row |= {f"pooled_indep_{k}": v for k, v in indep.items()}
 
     # The advantage of the best uplift model over the best outcome model, as
     # `spectrum.measure` computes it, without the bootstrap.
@@ -241,16 +280,37 @@ def interval(values: pd.Series) -> tuple[float, float, float]:
     return float(v.mean()), float(np.percentile(v, 2.5)), float(np.percentile(v, 97.5))
 
 
+def has_follow_up(frame: pd.DataFrame) -> bool:
+    """False for splits saved before the follow-up existed."""
+    return all(f"{risk}_pearson_prob" in frame for risk in FOLLOW_UP)
+
+
+def with_steps(frame: pd.DataFrame, suffix: str = "pearson_prob") -> pd.DataFrame:
+    """Add the three steps as columns, each a paired difference on the same split.
+
+    They sum, split by split, to `control_indep - pooled`: the movement D-074 reported
+    and could not attribute. Returned unchanged when the follow-up was not measured.
+    """
+    if not has_follow_up(frame):
+        return frame
+    out = frame.copy()
+    for step, (after, before) in STEPS.items():
+        out[step] = out[f"{after}_{suffix}"] - out[f"{before}_{suffix}"]
+    return out
+
+
 def summarise(frame: pd.DataFrame) -> pd.DataFrame:
-    """One row per setting and measure: mean and split-to-split interval."""
+    """One row per setting and measure: mean, split-to-split interval, and spread."""
     measures = [c for c in frame.columns
                 if c not in {"seed", "n_test", "setting", "domain"}]
     rows = []
     for name, g in frame.groupby("setting", sort=False):
         for m in measures:
             mean, low, high = interval(g[m])
+            seen = g[m].dropna()
             rows.append({"setting": name, "measure": m, "mean": mean, "low": low,
-                         "high": high, "splits": int(g[m].notna().sum())})
+                         "high": high, "splits": int(len(seen)),
+                         "sd": float(seen.std()) if len(seen) > 1 else float("nan")})
     return pd.DataFrame(rows)
 
 
@@ -265,7 +325,7 @@ def _cell(summary: pd.DataFrame, setting: str, measure: str, fmt: str = "+.2f") 
 def report(frame: pd.DataFrame, truth: dict[str, float] | None = None,
            oracle_note: str | None = None, source: str | None = None) -> str:
     """The tables. `source` names a saved file when the splits were re-read, not re-run."""
-    s = summarise(frame)
+    s = summarise(with_steps(frame))
     settings = list(dict.fromkeys(frame["setting"]))
     splits = int(frame.groupby("setting").size().max())
     width = 118
@@ -279,12 +339,17 @@ def report(frame: pd.DataFrame, truth: dict[str, float] | None = None,
         out.append(f"RE-READ from {source}, not re-run")
     out.append("=" * width)
 
-    def table(title: str, columns: list[tuple[str, str]], fmt: str = "+.2f") -> None:
+    def table(title: str, columns: list[tuple[str, str]], fmt: str = "+.2f",
+              col: int = 31) -> None:
         out.extend(["", title, "-" * width,
-                    f"{'setting':<24}" + "".join(f"{h:>31}" for h, _ in columns)])
+                    f"{'setting':<24}" + "".join(f"{h:>{col}}" for h, _ in columns)])
         for name in settings:
-            out.append(f"{name:<24}" + "".join(f"{_cell(s, name, m, fmt):>31}"
+            out.append(f"{name:<24}" + "".join(f"{_cell(s, name, m, fmt):>{col}}"
                                                for _, m in columns))
+
+    def spread(name: str, measure: str) -> str:
+        r = s[(s["setting"] == name) & (s["measure"] == measure)]
+        return "n/a" if r.empty or np.isnan(r["sd"].iloc[0]) else f"{r['sd'].iloc[0]:.3f}"
 
     table("1. THE COEFFICIENT (probability scale, pooled risk)",
           [("Pearson", "pooled_pearson_prob"), ("Spearman", "pooled_spearman_prob")])
@@ -295,6 +360,21 @@ def report(frame: pd.DataFrame, truth: dict[str, float] | None = None,
     table("3. THE DEFINITION OF RISK (Pearson, probability scale)",
           [("pooled", "pooled_pearson_prob"), ("control, same data", "control_same_pearson_prob"),
            ("control, independent", "control_indep_pearson_prob")])
+    if has_follow_up(frame):
+        four = [("pooled", "pooled_pearson_prob"), ("pooled, half", "pooled_half_pearson_prob"),
+                ("pooled, indep.", "pooled_indep_pearson_prob"),
+                ("control, indep.", "control_indep_pearson_prob")]
+        table("3b. WHY IT MOVES: one change at a time (Pearson, probability scale; D-076)",
+              four, col=23)
+        table("    THE THREE STEPS, each a difference on the same split",
+              [("half the data", "step_data"), ("customers not shared", "step_sharing"),
+               ("control only", "step_definition")])
+        out.extend(["", "    SPREAD ACROSS SPLITS (standard deviation of the correlation)",
+                    "-" * width,
+                    f"{'setting':<24}" + "".join(f"{h:>23}" for h, _ in four)])
+        for name in settings:
+            out.append(f"{name:<24}" + "".join(f"{spread(name, m):>23}" for _, m in four))
+
     table("4. WHAT THE UPLIFT MODEL GAINS over the best outcome model",
           [("advantage, %", "advantage_pct"), ("per 1,000 customers", "gain_per_1000")],
           fmt="+.1f")
@@ -311,6 +391,170 @@ def report(frame: pd.DataFrame, truth: dict[str, float] | None = None,
         "naive policy targets: likeliest to respond, or likeliest to churn.",
         "control, same data  = risk from the model the effect subtracts: shares its noise.",
         "control, independent = risk and effect fitted on different customers.",
+    ]
+    if has_follow_up(frame):
+        out += [
+            "pooled, half   = effect and both-arm risk fitted on the same half of the data.",
+            "pooled, indep. = effect on one half, both-arm risk on the other.",
+            "The three steps add up to (control, independent) minus (pooled).",
+        ]
+    return "\n".join(out)
+
+
+# --- a diagnostic: the classifier's early stopping ---------------------------------------
+
+#: The two ways the benchmark classifier is fitted in the diagnostic. "automatic" is the
+#: library default, and so what every other figure in this module was made with: on when
+#: a model is given more than 10,000 rows, off otherwise.
+STOPPING = {"automatic": "auto", "off": False}
+
+#: Settings in which some model crosses the 10,000-row line somewhere in the design, so
+#: that the fitting changes along with whatever else was meant to change. In Criteo and
+#: Lenta every model is far above the line at every step, and fitting them without early
+#: stopping thirty times over would take hours.
+STOPPING_SETTINGS = ("Hillstrom (mens)", "Hillstrom (womens)", "SubSim (fitted)")
+
+
+@contextmanager
+def fitting(early_stopping):
+    """Fit every benchmark classifier with early stopping forced to one setting.
+
+    The classifier is built in one place, `models._clf`, and used by every model in the
+    benchmark. Swapping that factory for the duration reaches all of them without
+    copying a single hyperparameter. `"auto"` reproduces the default exactly.
+    """
+    from retainiq.benchmarks import models
+
+    original = models._clf
+
+    def factory(seed: int):
+        return original(seed).set_params(early_stopping=early_stopping)
+
+    here = globals()
+    models._clf, here["_clf"] = factory, factory
+    try:
+        yield
+    finally:
+        models._clf, here["_clf"] = original, original
+
+
+def boosting_rounds(rct: RCT, seed: int) -> dict[str, int]:
+    """How many boosting rounds each of the three models behind the table's figure ran,
+    and how many customers each arm gave its model."""
+    train, _ = split(rct, seed=seed)
+    X, t, y = train.X, train.treatment, train.outcome
+    learner = TLearner(seed=seed).fit(X, t, y)
+    pooled = _clf(seed).fit(X, y.astype(int))
+    return {
+        "train_treated": int((t == 1).sum()), "train_control": int((t == 0).sum()),
+        "rounds_treated": int(learner.treated.n_iter_),
+        "rounds_control": int(learner.control.n_iter_),
+        "rounds_pooled": int(pooled.n_iter_),
+    }
+
+
+def stopping_diagnostic(rct: RCT, setting: Setting, splits: int = SPLITS) -> pd.DataFrame:
+    """Every split measured twice: with the default stopping, and with it switched off."""
+    rows = []
+    for label, value in STOPPING.items():
+        with fitting(value):
+            for seed in range(splits):
+                rows.append(one_split(rct, seed, setting.benefit_sign)
+                            | boosting_rounds(rct, seed) | {"stopping": label})
+    return pd.DataFrame(rows).assign(setting=setting.name, domain=setting.domain)
+
+
+def report_stopping(frame: pd.DataFrame) -> str:
+    settings = list(dict.fromkeys(frame["setting"]))
+    splits = int(frame.groupby(["setting", "stopping"]).size().max())
+    width = 118
+    auto = frame[frame["stopping"] == "automatic"]
+    part = {label: summarise(with_steps(frame[frame["stopping"] == label]
+                                        .drop(columns="stopping")))
+            for label in STOPPING}
+
+    def cell(label: str, name: str, measure: str, fmt: str = "+.2f") -> str:
+        s = part[label]
+        r = s[(s["setting"] == name) & (s["measure"] == measure)]
+        if r.empty or np.isnan(r["mean"].iloc[0]):
+            return "n/a"
+        mean, low, high, sd = (r[c].iloc[0] for c in ("mean", "low", "high", "sd"))
+        return f"{mean:{fmt}} [{low:{fmt}}, {high:{fmt}}] sd {sd:.3f}"
+
+    out = [
+        "THE CLASSIFIER'S EARLY STOPPING, AND WHAT IT DOES TO THE CORRELATION (D-076)",
+        "EXPLORATORY: not pre-registered. Added after a pre-registered prediction failed.",
+        f"mean over {splits} splits, with the 2.5th and 97.5th percentiles and the standard "
+        "deviation",
+        "=" * width,
+        "",
+        "A. HOW LONG EACH MODEL WAS FITTED under automatic stopping",
+        "   boosting rounds, fewest / median / most, of a possible 150",
+        "-" * width,
+        f"{'setting':<22}{'customers per arm':>20}{'treated model':>17}{'control model':>17}"
+        f"{'both-arm model':>17}{'corr. with round gap':>23}",
+    ]
+    for name in settings:
+        g = auto[auto["setting"] == name]
+
+        def spell(column: str, g=g) -> str:
+            v = g[column]
+            return f"{int(v.min())} / {int(v.median())} / {int(v.max())}"
+
+        gap = g["rounds_treated"] - g["rounds_control"]
+        link = correlation(g["pooled_pearson_prob"].to_numpy(), gap.to_numpy(), "pearson")
+        arms = f"{int(g['train_treated'].median()):,} / {int(g['train_control'].median()):,}"
+        out.append(f"{name:<22}{arms:>20}{spell('rounds_treated'):>17}"
+                   f"{spell('rounds_control'):>17}{spell('rounds_pooled'):>17}"
+                   f"{'n/a' if np.isnan(link) else f'{link:+.2f}':>23}")
+    out += ["   round gap = rounds the treated model ran minus rounds the control model ran;",
+            "   the last column is its correlation, across splits, with that split's figure."]
+
+    def block(title: str, columns: list[tuple[str, str]], label: str, fmt: str = "+.2f",
+              col: int = 31) -> None:
+        out.extend(["", title, "-" * width,
+                    f"{'setting':<22}" + "".join(f"{h:>{col}}" for h, _ in columns)])
+        for name in settings:
+            out.append(f"{name:<22}" + "".join(f"{cell(label, name, m, fmt):>{col}}"
+                                               for _, m in columns))
+
+    two = f"{'setting':<22}{'automatic stopping':>40}{'stopping off':>40}"
+    out.extend(["", "B. THE TABLE'S FIGURE (both-arm risk, same customers; Pearson, probability "
+                "scale)", "-" * width, two])
+    for name in settings:
+        out.append(f"{name:<22}{cell('automatic', name, 'pooled_pearson_prob'):>40}"
+                   f"{cell('off', name, 'pooled_pearson_prob'):>40}")
+
+    four = [("pooled", "pooled_pearson_prob"), ("pooled, half", "pooled_half_pearson_prob"),
+            ("pooled, indep.", "pooled_indep_pearson_prob"),
+            ("control, indep.", "control_indep_pearson_prob")]
+    steps = [("half the data", "step_data"), ("customers not shared", "step_sharing"),
+             ("control only", "step_definition")]
+
+    def plain(label: str, name: str, measure: str) -> str:
+        return cell(label, name, measure).split(" sd ")[0]
+
+    for label in ("off", "automatic"):
+        out.extend(["", f"C. ONE CHANGE AT A TIME, stopping {label}" if label == "off" else
+                    "   THE SAME, automatic stopping (as in the main tables)", "-" * width,
+                    f"{'setting':<22}" + "".join(f"{h:>24}" for h, _ in four)])
+        for name in settings:
+            out.append(f"{name:<22}" + "".join(f"{plain(label, name, m):>24}" for _, m in four))
+        out.append(f"{'  steps':<22}" + "".join(f"{h:>32}" for h, _ in steps))
+        for name in settings:
+            out.append(f"{'  ' + name:<22}"
+                       + "".join(f"{plain(label, name, m):>32}" for _, m in steps))
+
+    out.extend(["", "D. WHAT THE UPLIFT MODEL GAINS, extra outcomes per 1,000 customers",
+                "-" * width, two])
+    for name in settings:
+        out.append(f"{name:<22}{cell('automatic', name, 'gain_per_1000', '+.1f'):>40}"
+                   f"{cell('off', name, 'gain_per_1000', '+.1f'):>40}")
+    out += [
+        "", "-" * width,
+        "The library stops a model early, by default, when it has more than 10,000 rows: it holds",
+        "back a random tenth and stops when that tenth stops improving. Each arm's model stops at",
+        "its own round. Below 10,000 rows nothing stops early and the two columns must agree.",
     ]
     return "\n".join(out)
 
@@ -383,10 +627,12 @@ def figure(frame: pd.DataFrame, out: Path | None = None) -> Path:
         "so a pattern on one side and not the other belongs to the scale. SubSim is a trial "
         f"of {SIM_CUSTOMERS:,} simulated customers whose negative\n"
         "correlation is configured, not observed. The correlation is the one varied in "
-        "Ascarza (2018, Web Appendix A3.4).",
+        "Ascarza (2018, Web Appendix A3.4).\n"
+        "The wide horizontal bars on the two Hillstrom points are largely the classifier's "
+        "default early stopping, not the data (D-076).",
         ha="center", va="bottom", fontsize=8.8, color="#455A64", linespacing=1.45,
     )
-    fig.tight_layout(rect=(0, 0.13, 1, 0.9))
+    fig.tight_layout(rect=(0, 0.155, 1, 0.9))
     out = out or (FIG_DIR / "fig07_correlation_checked.png")
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=170, bbox_inches="tight", facecolor="white")
@@ -404,17 +650,21 @@ ORACLE_NOTE = (
 )
 
 
-def collect(splits: int = SPLITS, include: tuple[str, ...] = ()) -> tuple[pd.DataFrame, dict]:
-    """Every setting. Loads the public datasets; the simulator needs none."""
+def _loaders() -> list:
+    """Each public experiment and how to load it. The simulator is handled apart."""
     from retainiq.benchmarks.datasets import load_criteo, load_hillstrom, load_lenta
 
-    loaders = [
+    return [
         (Setting("Hillstrom (mens)", "promotional email"), lambda: load_hillstrom("mens")),
         (Setting("Criteo", "advertising"), lambda: load_criteo(sample_rows=1_500_000, seed=0)),
         (Setting("Hillstrom (womens)", "promotional email"), lambda: load_hillstrom("womens")),
         (Setting("Lenta", "retail promotion"), load_lenta),
     ]
-    frames = [run(load(), setting, splits) for setting, load in loaders
+
+
+def collect(splits: int = SPLITS, include: tuple[str, ...] = ()) -> tuple[pd.DataFrame, dict]:
+    """Every setting. Loads the public datasets; the simulator needs none."""
+    frames = [run(load(), setting, splits) for setting, load in _loaders()
               if not include or setting.name in include]
 
     truth: dict[str, float] = {}
@@ -423,6 +673,16 @@ def collect(splits: int = SPLITS, include: tuple[str, ...] = ()) -> tuple[pd.Dat
         frames.append(run(rct, SIM, splits))
         truth = true_correlations(facts)
     return pd.concat(frames, ignore_index=True), truth
+
+
+def collect_stopping(splits: int = SPLITS,
+                     include: tuple[str, ...] = STOPPING_SETTINGS) -> pd.DataFrame:
+    """The diagnostic, on the settings where a model crosses the 10,000-row line."""
+    frames = [stopping_diagnostic(load(), setting, splits) for setting, load in _loaders()
+              if setting.name in include]
+    if SIM.name in include:
+        frames.append(stopping_diagnostic(subsim_trial()[0], SIM, splits))
+    return pd.concat(frames, ignore_index=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -438,7 +698,19 @@ def main(argv: list[str] | None = None) -> int:
                          "The output says it was re-read, not re-run.")
     ap.add_argument("--no-figure", action="store_true",
                     help="print the tables only; do not redraw the figure")
+    ap.add_argument("--stopping-diagnostic", action="store_true",
+                    help="exploratory (D-076): measure each split with the classifier's "
+                         "early stopping automatic and off, on the settings where a model "
+                         "crosses 10,000 rows. About ten minutes. Draws no figure.")
     args = ap.parse_args(argv)
+
+    if args.stopping_diagnostic:
+        frame = collect_stopping(args.splits, tuple(args.only) or STOPPING_SETTINGS)
+        if args.save:
+            args.save.parent.mkdir(parents=True, exist_ok=True)
+            frame.to_csv(args.save, index=False)
+        print(report_stopping(frame))
+        return 0
 
     source = None
     if args.from_splits:

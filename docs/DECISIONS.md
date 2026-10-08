@@ -2837,3 +2837,151 @@ scrambled, nor when the arm a pilot customer was *not* in is altered; that the b
 respected; that ties are counted apart from wins; that a rule which could not act is
 marked differently from one that chose not to; and that the design is the one
 pre-registered.
+
+## D-076 — The follow-up check: sharing customers inflates the correlation only a little, and the unstable Hillstrom figure was the classifier stopping early
+
+D-074 left one check owed. Fitting risk on customers the effect model never saw moved the
+correlation, and three things had changed at once: who the risk model was fitted on, how
+much data each model saw, and which arms the risk model used. Two new quantities change
+those one at a time. The design and five predictions were committed first
+(`docs/PREREG-pooled-independent-risk.md`, commit `c882ab1`), with D-074's results already
+seen, which that document says. Then the whole thirty-split command was run again.
+
+**The re-run reproduces D-074 exactly.** All 19 columns D-074 reported, on all 150 splits,
+are identical to the saved run to the last digit.
+
+**The four figures.** Pearson, probability scale; mean with the 2.5th and 97.5th
+percentiles across splits. Each column differs from the one before it in one respect.
+
+| Setting | `pooled` (the table's figure) | half the data, same customers | half the data, other customers | other customers, control only |
+|---|---|---|---|---|
+| Hillstrom (mens) | +0.28 [−0.21, +0.66] | +0.24 [+0.06, +0.40] | +0.19 [+0.01, +0.39] | +0.17 [+0.00, +0.31] |
+| Criteo | +0.58 [+0.51, +0.65] | +0.56 [+0.44, +0.68] | +0.56 [+0.43, +0.68] | +0.48 [+0.35, +0.60] |
+| Hillstrom (womens) | +0.18 [−0.07, +0.49] | +0.15 [−0.04, +0.34] | +0.11 [−0.09, +0.32] | −0.01 [−0.20, +0.17] |
+| Lenta | +0.13 [+0.05, +0.22] | +0.15 [+0.02, +0.34] | +0.13 [−0.00, +0.31] | +0.11 [−0.02, +0.28] |
+| SubSim (fitted) | −0.21 [−0.33, −0.07] | −0.17 [−0.30, −0.00] | −0.17 [−0.31, −0.01] | −0.14 [−0.30, +0.00] |
+
+**The three steps**, each taken on the same split and then averaged. They sum to the
+movement D-074 reported.
+
+| Setting | Half the data | Customers not shared | Control only | Sum |
+|---|---|---|---|---|
+| Hillstrom (mens) | −0.04 [−0.42, +0.42] | −0.05 [−0.17, +0.07] | −0.02 [−0.13, +0.06] | −0.11 |
+| Criteo | −0.01 [−0.14, +0.10] | −0.01 [−0.02, +0.01] | −0.08 [−0.09, −0.06] | −0.10 |
+| Hillstrom (womens) | −0.03 [−0.32, +0.15] | −0.04 [−0.13, +0.04] | −0.12 [−0.21, +0.00] | −0.19 |
+| Lenta | +0.01 [−0.11, +0.16] | −0.02 [−0.03, +0.00] | −0.01 [−0.04, +0.00] | −0.02 |
+| SubSim (fitted) | +0.04 [−0.10, +0.22] | +0.00 [−0.06, +0.06] | +0.03 [−0.02, +0.08] | +0.07 |
+
+**The five predictions.**
+
+| # | Prediction | Result |
+|---|---|---|
+| C1 | Sharing customers inflates the figure in all four real settings, most in Hillstrom (mens) | **Held.** Higher with shared customers on 25, 27, 24 and 29 of 30 splits; the gap is +0.05, +0.01, +0.04, +0.02, largest in Hillstrom (mens). |
+| C2 | The instability of the Hillstrom figures comes from sharing: the spread across splits falls by a quarter or more when customers are not shared | **Failed.** The spread is the same either way: 0.088 against 0.094, and 0.107 against 0.109. |
+| C3 | With different customers, both-arm risk and control-only risk agree within 0.10 everywhere | **Failed in one of five.** Hillstrom (womens) differs by 0.12. The others by 0.02, 0.08, 0.02 and 0.03. |
+| C4 | The simulator's correlation stays negative, on at least 25 of 30 splits | **Held.** −0.17, negative on 29 of 30. |
+| C5 | Criteo stays apart from the other three real settings | **Held, narrowly.** Its lower end is +0.43; the highest upper end among the others is +0.39. |
+
+**1. What D-074 asked: shared noise, or less data?** Mostly neither.
+
+- **Sharing is real and small.** It pushes the figure up in every real setting, in the
+  direction the mechanism in the pre-registration gives, and by at most 0.05. In the
+  simulator it does nothing. On the log-odds scale it does nothing anywhere (about 0.01).
+- **Halving the data has no consistent effect**: between −0.04 and +0.04, with ranges that
+  run far either side of zero.
+- **The largest single piece is the definition of risk** where the movement was largest:
+  0.08 of Criteo's 0.10 and 0.12 of Hillstrom (womens)' 0.19. Fitting risk on control
+  customers only gives a lower figure than fitting it on both arms, and that is not noise:
+  in Criteo the step is −0.08 with a range of −0.09 to −0.06. Ascarza's RISK is the
+  control-only one. **The table's figure uses both arms, and is higher for it.**
+
+**2. C2 failed, and the reason was in the instrument.** If shared noise made the Hillstrom
+figures unstable, removing the sharing should have steadied them. It did not. What steadied
+them was halving the data, which should have made them worse: the spread falls from 0.234
+to 0.088. The cause is scikit-learn's gradient boosting, which **stops early by default
+when it is given more than 10,000 rows**. It holds back a random tenth and stops when that
+tenth stops improving. In Hillstrom each arm of the training half has about 10,650 customers (10,653 to 10,693). So
+on the full training half both of the T-learner's models stop early, each at its own
+round, and on half the data neither does.
+
+This was checked. It was not pre-registered and the command's output says so
+(`python -m retainiq.benchmarks.spectrum_checks --stopping-diagnostic`, thirty splits with
+the default stopping and thirty with it off):
+
+| | Hillstrom (mens) | Hillstrom (womens) |
+|---|---|---|
+| Rounds the treated model ran, of 150 | 25 to 150, median 68 | 33 to 150, median 76 |
+| Rounds the control model ran | 26 to 150, median 77 | 38 to 118, median 74 |
+| Splits on which the two stopped at the same round | 1 of 30 | 1 of 30 |
+| Correlation, across splits, of the figure with (treated rounds − control rounds) | +0.74 | +0.78 |
+| The table's figure, default stopping | +0.28 [−0.21, +0.66], sd 0.234 | +0.18 [−0.07, +0.49], sd 0.138 |
+| The table's figure, stopping off | **+0.30 [+0.17, +0.42], sd 0.076** | **+0.16 [+0.04, +0.31], sd 0.073** |
+
+A treated model fitted for 70 rounds and a control model fitted for 26 is an effect
+estimate made of one detailed prediction minus one nearly flat one. It tracks the treated
+model, and so it correlates with any risk score. That is the published split: **seed 0 ran
+70 rounds against 26 and gave +0.69. With both run to 150 the same split gives +0.35,
+eighth of thirty.**
+
+**3. What this does to D-074.**
+
+- **Its first finding stands and its explanation does not.** "+0.69 was the highest of
+  thirty splits" is true. "Most of the instability is estimation noise that the effect
+  model and the risk model share" is wrong. It was the two arm models stopping at
+  different rounds.
+- **Hillstrom (mens) is more clearly positive than D-074's range said.** With stopping
+  off it is never negative: +0.09 to +0.47 across the thirty.
+- **"No two groups" stands, as one against three.** With stopping off Criteo (+0.51 to
+  +0.65) is above Hillstrom (mens) (+0.17 to +0.42), which still overlaps Hillstrom
+  (womens) (+0.04 to +0.31) and Lenta (+0.05 to +0.22).
+- **The means barely move**, so nothing that rested on a mean changes: +0.28 to +0.30 and
+  +0.18 to +0.16.
+- **The scale finding is untouched.** On the log-odds scale Hillstrom (mens) is −0.46 with
+  the default and −0.45 with stopping off; Hillstrom (womens) −0.22 and −0.24.
+- **What the uplift model gains is untouched**: −0.1 and +0.1 per 1,000 for Hillstrom
+  (mens), +2.6 and +2.9 for Hillstrom (womens), +9.7 and +9.1 for the simulator.
+- **The simulator's correlation is untouched**: −0.21 and −0.22. Its arms hold about 9,000
+  customers, under the line, so its two arm models never stopped early.
+
+**4. The steps, with the stopping held fixed.** In Hillstrom the first step changed two
+things, the amount of data and whether the arm models stopped early, which the design did
+not anticipate. With stopping off throughout: Hillstrom (mens) −0.04, −0.07, −0.02;
+Hillstrom (womens) −0.01, −0.05, −0.11. The reading in point 1 holds. Sharing is a little
+larger (0.07 and 0.05) and is still the smaller part in Hillstrom (womens).
+
+**5. What else this default touches.**
+
+- **Nothing fitted on 10,000 rows or fewer.** A test pins it: below the line the two ways
+  of fitting give identical results. The small-sample results at 500 to 10,000 customers
+  (D-072), the abstention experiments and the Lemmens & Gupta comparison are all below it.
+- **Criteo and Lenta: every model is far above the line**, at every step, so nothing
+  switches within the design. Whether their figures would move with stopping off was not
+  measured: thirty splits without early stopping on 750,000 rows is hours.
+- **The kill test's churn model and the survival model's learner use the same default.**
+  Neither subtracts one early-stopped model from another, which is what makes the artefact
+  here, and neither was examined.
+
+**6. Not changed here: the classifier.** The clean fix is to give the benchmark's
+classifier a fixed stopping rule, so that a T-learner's two models are always fitted the
+same way. That is a modelling choice which changes every benchmark figure fitted on more
+than 10,000 rows, and needs Criteo and Lenta re-run. It is left as a decision, with a
+recommendation to make it. Until then the documents quote the command as it stands and
+carry the stopping-off figures for the two Hillstrom rows beside it.
+
+**What was done with the result, as fixed in advance.** Sharing moved Hillstrom (mens) by
+0.052, over the 0.05 line the pre-registration set. So the figure with risk fitted on
+other customers is now reported beside the table's figure wherever the table appears,
+with a note that it is free of shared noise and rests on half the data.
+
+**Disclosures.** The diagnostic was first run as a scratch script on the two Hillstrom
+arms before it was written into the module; the command reproduces what the script
+showed. I estimated ten minutes for it and it took fifteen and a half. And the "one change
+at a time" design changed two things at once in Hillstrom, which was found only because a
+prediction failed.
+
+**Tests.** 29 new. The follow-up's design is pinned as registered; the steps are shown to
+add up to the movement they explain; the mechanism behind C1 is demonstrated with no model
+(a both-arm risk on the same customers inherits the noisier arm's error, with the sign
+depending on whether the outcome is good or bad, and nothing when the arms are equally
+noisy); the diagnostic's "automatic" column is the main tables' figure exactly; and below
+10,000 rows the stopping rule makes no difference.

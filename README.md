@@ -32,19 +32,27 @@ estimated outcome propensity, on four settings from three public randomised expe
 and on a randomised trial drawn from one calibrated simulator, over thirty random splits
 of each (`make correlation-checks`, D-074).
 
-| Setting | corr(τ̂, π̂), probability scale | Same, log-odds scale | Advantage of uplift | Extra outcomes per 1,000 |
-|---|---:|---:|---:|---:|
-| Criteo-UPLIFT v2.1 | +0.58 [+0.51, +0.65] | +0.06 [−0.13, +0.33] | +0.7% [−1.5, +3.8] | +0.1 [−0.1, +0.3] |
-| Hillstrom — mens arm | +0.28 [−0.21, +0.66] | −0.46 [−0.73, +0.06] | −0.1% [−10.3, +11.6] | −0.1 [−3.0, +2.8] |
-| Hillstrom — womens arm | +0.18 [−0.07, +0.49] | −0.22 [−0.44, +0.11] | +14.0% [−7.7, +35.3] | +2.6 [−1.9, +6.2] |
-| Lenta | +0.13 [+0.05, +0.22] | −0.05 [−0.18, +0.06] | +24.7% [−4.3, +109.1] | +0.6 [−0.1, +1.5] |
-| SubSim — simulated retention trial | −0.21 [−0.33, −0.07] | −0.26 [−0.40, −0.10] | not quoted | **+9.7 [+5.0, +14.4]** |
+| Setting | corr(τ̂, π̂), probability scale | Same, risk fitted on other customers | Same, log-odds scale | Advantage of uplift | Extra outcomes per 1,000 |
+|---|---:|---:|---:|---:|---:|
+| Criteo-UPLIFT v2.1 | +0.58 [+0.51, +0.65] | +0.56 [+0.43, +0.68] | +0.06 [−0.13, +0.33] | +0.7% [−1.5, +3.8] | +0.1 [−0.1, +0.3] |
+| Hillstrom — mens arm | +0.28 [−0.21, +0.66] † | +0.19 [+0.01, +0.39] | −0.46 [−0.73, +0.06] | −0.1% [−10.3, +11.6] | −0.1 [−3.0, +2.8] |
+| Hillstrom — womens arm | +0.18 [−0.07, +0.49] † | +0.11 [−0.09, +0.32] | −0.22 [−0.44, +0.11] | +14.0% [−7.7, +35.3] | +2.6 [−1.9, +6.2] |
+| Lenta | +0.13 [+0.05, +0.22] | +0.13 [−0.00, +0.31] | −0.05 [−0.18, +0.06] | +24.7% [−4.3, +109.1] | +0.6 [−0.1, +1.5] |
+| SubSim — simulated retention trial | −0.21 [−0.33, −0.07] | −0.17 [−0.31, −0.01] | −0.26 [−0.40, −0.10] | not quoted | **+9.7 [+5.0, +14.4]** |
 
 *Mean over 30 splits; brackets are the 2.5th and 97.5th percentiles across splits. The
 advantage is the best fitted uplift model against the best fitted outcome model, treating
-the top 30%. The last column is the same gap as a count.*
+the top 30%. The last column is the same gap as a count. The second column of figures
+fits the risk model on customers the effect model never saw, so it is free of the noise
+the two share; it rests on half the data (D-076).*
 
-Read the table with these cautions (D-068, D-074):
+*† Most of the width of these two ranges is produced by the classifier, not the data. It
+stops early by default above 10,000 rows, and Hillstrom's arms hold about 10,650 customers each,
+so the two models whose difference is the effect stop at different rounds. With early
+stopping off the figures are +0.30 [+0.17, +0.42] and +0.16 [+0.04, +0.31]
+(`python -m retainiq.benchmarks.spectrum_checks --stopping-diagnostic`, D-076).*
+
+Read the table with these cautions (D-068, D-074, D-076):
 
 - **The four real rows are not retention data.** They are an email promotion, an
   advertising campaign and a retail promotion. In none of them does the range of the
@@ -53,9 +61,15 @@ Read the table with these cautions (D-068, D-074):
   one dataset overlap, so those counts are not a significance test. The four cannot be
   ordered.
 - **An earlier version of this table gave Hillstrom men as +0.69 and −5.6%.** That was one
-  split, and of the thirty it is the highest. Splits of that experiment run from −0.21 to
-  +0.66, and the advantage is positive on 15 of 30. The other rows were close to their
-  thirty-split means.
+  split, and of the thirty it is the highest. The advantage is positive on 15 of 30. The
+  other rows were close to their thirty-split means. The cause was found afterwards
+  (D-076): on that split the treated arm's model had been fitted for 70 rounds and the
+  control arm's for 26, because each stops early by itself. Fitted alike, the same split
+  gives +0.35.
+- **How risk is defined moves the figure, and the table uses the higher definition.** Risk
+  here is fitted on both arms. Fitted on control customers only, which is Ascarza's
+  definition, the figure is lower: by 0.08 in Criteo and 0.12 in Hillstrom women, with the
+  customers kept separate (D-076).
 - **Most of the positive correlation belongs to the probability scale.** An offer that
   multiplies everyone's odds by the same factor moves the probability most where the
   baseline is highest, which by itself makes effect and risk correlate. On the log-odds
@@ -174,8 +188,9 @@ differ. At 250 and 500 it is not ahead, and doing nothing beats both at every si
 the six predictions failed. It is a re-implementation on a simulator, not their code on
 their data.
 
-**Still owed:** one further check on the correlation (D-074), and a randomised
-*retention* experiment, which none of the public datasets used here is.
+**Still owed:** a decision on the benchmark classifier's stopping rule, with a re-run of
+the two large experiments if it changes (D-076), and a randomised *retention* experiment,
+which none of the public datasets used here is.
 
 ---
 
@@ -203,13 +218,17 @@ supports, and three of these are the most useful things the project learned.
 - **The figure that anchored the correlation table was the highest of thirty splits
   (D-074).** Hillstrom men was quoted as +0.69. Its thirty-split mean is +0.28, and the
   "high" and "low" groups the table was read as showing do not exist.
+- **The first explanation of that was wrong too (D-076).** The spread between splits was
+  put down to noise shared between two models. A check designed to confirm it failed, and
+  the cause turned out to be a library default: the classifier stops early above 10,000
+  rows, and Hillstrom's arms hold about 10,650.
 - **Abstention does not beat the published alternative at the smallest sizes (D-075).**
   At 250 customers it acts on 34 draws of 100 and loses money on 25 of them. Across all
   sizes it made money on 25 of the 139 draws on which it acted. It is a rule for losing
   less, and here the best rule is still to do nothing.
 
 Every design decision, including the adverse ones, is in
-[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-075). It is append-only.
+[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-076). It is append-only.
 
 ---
 
@@ -219,7 +238,7 @@ Every design decision, including the adverse ones, is in
 git clone https://github.com/PrashamJ17/PBL-Proj.git
 cd PBL-Proj
 make install     # or: pip install -e ".[dev,viz]"
-make check       # lint + 721 tests + calibration gates
+make check       # lint + 750 tests + calibration gates
 ```
 
 ```python
@@ -253,7 +272,8 @@ Every number in the paper comes from one of these commands.
 | `make ai-channels` | Break-even salience for automated outreach (D-064) |
 | `make holdout` | The measurement floor (D-065) |
 | `make small-n` | Win rates against random at small *n*, with intervals, and Figure 2 (D-072; about 20 minutes) |
-| `make correlation-checks` | The risk–lift correlation over 30 splits, on two scales and three definitions of risk, and Figure 7 (D-074; about 30 minutes) |
+| `make correlation-checks` | The risk–lift correlation over 30 splits, on two scales and five definitions of risk, and Figure 7 (D-074, D-076; about 30 minutes) |
+| `python -m retainiq.benchmarks.spectrum_checks --stopping-diagnostic` | The same splits with the classifier's early stopping automatic and off, on Hillstrom and the simulated trial (D-076, exploratory; about 15 minutes) |
 | `make baseline` | Abstention against Lemmens & Gupta (2020) on the same pilots, 500 draws (D-075; about a minute) |
 | `make figures` | Regenerate Figures 1 to 6 (Figure 7 is drawn by `make correlation-checks`) |
 | `make zenodo` | Rebuild the archived data record byte-for-byte |
@@ -321,7 +341,7 @@ retainiq/
 ├── experiments/  Every experiment in the paper, one module each.
 └── cli.py        preflight and autopsy — argparse only, no runtime dependency.
 
-tests/            721 tests — fairness, realism, edge cases, leakage gates
+tests/            750 tests — fairness, realism, edge cases, leakage gates
 docs/
 ├── BUILDLOG.md   what was built, what was tested, what happened
 └── DECISIONS.md  why each choice was made (D-001 … D-065), append-only

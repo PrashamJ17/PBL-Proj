@@ -11,7 +11,7 @@ const path = require("path");
 
 const A = path.join(__dirname, "build", "assets");
 const VIDEO_URL = (process.env.VIDEO_URL || "").trim();
-const TESTS = process.env.TESTS || "721";
+const TESTS = process.env.TESTS || "750";
 const OUT = process.env.OUT || path.join(__dirname, "RetainIQ_Presentation.pptx");
 
 const C = {
@@ -457,25 +457,30 @@ async function main() {
     ], { x: 7.55, y: 1.45, w: 5.2, h: 0.6 });
     const Hd = (t) => ({ text: t, options: { bold: true, color: "FFFFFF", fill: { color: C.INK } } });
     // Mean of 30 splits [2.5th, 97.5th percentile], from `make correlation-checks` (D-074).
+    // "indep." is the same correlation with risk fitted on other customers (D-076).
     const cr = [
-      ["Criteo · advertising", "+0.58 [+0.51, +0.65]", "+0.1 [−0.1, +0.3]", C.TEXT],
-      ["Hillstrom · men's e-mail", "+0.28 [−0.21, +0.66]", "−0.1 [−3.0, +2.8]", C.TEXT],
-      ["Hillstrom · women's e-mail", "+0.18 [−0.07, +0.49]", "+2.6 [−1.9, +6.2]", C.TEXT],
-      ["Lenta · retail promotion", "+0.13 [+0.05, +0.22]", "+0.6 [−0.1, +1.5]", C.TEXT],
-      ["SubSim · simulated trial*", "−0.21 [−0.33, −0.07]", "+9.7 [+5.0, +14.4]", C.TEAL_D],
+      ["Criteo · advertising", "+0.58 [+0.51, +0.65]", "+0.56", "+0.1 [−0.1, +0.3]", C.TEXT],
+      ["Hillstrom · men's e-mail †", "+0.28 [−0.21, +0.66]", "+0.19", "−0.1 [−3.0, +2.8]", C.TEXT],
+      ["Hillstrom · women's e-mail †", "+0.18 [−0.07, +0.49]", "+0.11", "+2.6 [−1.9, +6.2]", C.TEXT],
+      ["Lenta · retail promotion", "+0.13 [+0.05, +0.22]", "+0.13", "+0.6 [−0.1, +1.5]", C.TEXT],
+      ["SubSim · simulated trial*", "−0.21 [−0.33, −0.07]", "−0.17", "+9.7 [+5.0, +14.4]", C.TEAL_D],
     ];
-    const crows = [[Hd("Setting"), Hd("corr(τ, π)"), Hd("Uplift gain per 1,000")]].concat(cr.map(([a, b, c, col], i) => [
-      { text: a, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, italic: i === 4 } },
-      { text: b, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", italic: i === 4 } },
-      { text: c, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", bold: i === 4,
-        italic: i === 4, color: col } },
-    ]));
-    s.addTable(crows, { x: 7.55, y: 2.1, w: 5.2, colW: [1.9, 1.65, 1.65], fontFace: BODY, fontSize: 10, color: C.TEXT,
-      rowH: 0.38, valign: "middle", border: { type: "solid", pt: 0.5, color: C.LINE }, margin: [2, 4, 2, 4] });
+    const crows = [[Hd("Setting"), Hd("corr(τ, π)"), Hd("indep."), Hd("Uplift gain / 1,000")]].concat(
+      cr.map(([a, b, ind, c, col], i) => [
+        { text: a, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, italic: i === 4 } },
+        { text: b, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", italic: i === 4 } },
+        { text: ind, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", italic: i === 4 } },
+        { text: c, options: { fill: { color: i % 2 ? C.MIST : "FFFFFF" }, align: "center", bold: i === 4,
+          italic: i === 4, color: col } },
+      ]));
+    s.addTable(crows, { x: 7.55, y: 2.1, w: 5.2, colW: [1.8, 1.42, 0.58, 1.4], fontFace: BODY, fontSize: 9.5,
+      color: C.TEXT, rowH: 0.38, valign: "middle", border: { type: "solid", pt: 0.5, color: C.LINE },
+      margin: [2, 3, 2, 3] });
     T(s, "Fitted models; mean of 30 splits [2.5th–97.5th percentile]. Rows 1–4 are public experiments: no gain is " +
-         "clear of zero and they cannot be ordered. On the log-odds scale their correlations are −0.46 to +0.06. " +
-         "* 60,000 simulated customers; the negative correlation is configured.",
-      { x: 7.55, y: 4.45, w: 5.2, h: 0.95, fontSize: 10.5, color: C.MUTED });
+         "clear of zero; on the log-odds scale their correlations are −0.46 to +0.06. indep. = risk fitted on " +
+         "other customers. † Range widened by the classifier's early stopping; with it off, +0.30 [+0.17, +0.42] " +
+         "and +0.16 [+0.04, +0.31]. * 60,000 simulated customers; the negative correlation is configured.",
+      { x: 7.55, y: 4.45, w: 5.2, h: 0.95, fontSize: 9.5, color: C.MUTED });
 
     const stats = [
       ["72.5%", "of 200 draws where the best method beats random at n = 500 (real Hillstrom RCT; 95% interval 66–79%)"],
@@ -501,7 +506,12 @@ async function main() {
       "and the settings cannot be ordered. An earlier version of this table showed one split per row; the Hillstrom " +
       "men's figure, +0.69, was the highest of the thirty. On the log-odds scale the real correlations are -0.46, +0.06, " +
       "-0.22 and -0.05, so most of the positive correlation is the probability scale. In the simulated trial the uplift " +
-      "model wins on 30 of 30 splits; the simulator is configured to have a negative correlation. Bottom: at n = 500 " +
+      "model wins on 30 of 30 splits; the simulator is configured to have a negative correlation. The indep. column " +
+      "(D-076) fits the risk model on customers the effect model never saw: sharing customers inflates the figure by at " +
+      "most 0.05. The dagger: the library's classifier stops early by default above 10,000 rows and each Hillstrom arm " +
+      "has about 10,650, so the treated and control models stopped at different rounds (70 against 26 on the split that gave " +
+      "+0.69; fitted alike it gives +0.35). With early stopping off the means hardly move and the ranges tighten to " +
+      "+0.17 to +0.42 and +0.04 to +0.31. Results fitted on 10,000 rows or fewer are unaffected. Bottom: at n = 500 " +
       "on the real Hillstrom experiment the best of five methods beats random on 72.5% of 200 draws (exact 95% interval 66% to 79%; 84.5% at 1,000 and 95.5% at 2,000; the weakest method 62.5%), which is why win rate is " +
       "reported instead of the mean. The abstention rule beats ranking on 93% of draws but does not beat doing nothing, " +
       "because the break-even effect is four times the delivered effect. Against a re-implementation of Lemmens and " +

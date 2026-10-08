@@ -1833,3 +1833,66 @@ gates pass.
 about one minute. `make check` now takes 3 minutes 18 seconds on mains power with 721
 tests (it was about two and a half with 590). It was not timed on battery; the runbook and
 the speech now say "a little over three minutes on mains power, and longer on battery".
+
+## The follow-up correlation check, and the classifier's early stopping (D-076)
+
+**Order of work.** Design and five predictions committed alone (`c882ab1`), then the code,
+then the run. The pre-registration says D-074's results had been seen.
+
+**Built.** In `benchmarks/spectrum_checks.py`:
+
+- `pooled_half` and `pooled_indep`, measured on every split from the effect model fitted
+  on part A: both-arm risk on part A, and both-arm risk on part B. `FOLLOW_UP` keeps them
+  apart from the three definitions of the first pre-registration.
+- `STEPS` and `with_steps`: the movement D-074 reported, as three paired differences that
+  add up to it. `summarise` now gives the standard deviation across splits.
+- Report sections 3b (the four figures, the three steps, the spread). Printed only when the
+  splits carry the new columns, so a file saved earlier is not given a follow-up it never
+  had.
+- `fitting`, `boosting_rounds`, `stopping_diagnostic`, `report_stopping` and the flag
+  `--stopping-diagnostic`: every split measured with the classifier's early stopping
+  automatic and off. Not pre-registered, and its output says so on its second line.
+- One line added to the caption of `fig07` about the two Hillstrom bars. The figure was
+  redrawn from the saved splits.
+
+**Run.**
+
+- `python -m retainiq.benchmarks.spectrum_checks --save …`, the full thirty splits again:
+  31 minutes on mains power. All 19 columns of the D-074 run reproduced exactly on all 150
+  rows.
+- `python -m retainiq.benchmarks.spectrum_checks --stopping-diagnostic`: 15.5 minutes, on
+  battery. Its "automatic" rows equal the main run's rows exactly.
+
+**Found.**
+
+- Sharing customers between the effect model and a both-arm risk model inflates the
+  correlation in all four real settings, by 0.05, 0.01, 0.04 and 0.02.
+- Control-only risk reads lower than both-arm risk with customers kept separate: −0.08 in
+  Criteo, −0.12 in Hillstrom (womens).
+- The classifier stops early by default above 10,000 rows. Hillstrom's arms hold about 10,650.
+  The T-learner's two models stopped at the same round on 1 split of 30, and the
+  correlation tracks the difference in rounds (+0.74 and +0.78). With stopping off:
+  Hillstrom (mens) +0.30 [+0.17, +0.42], sd 0.076 from 0.234; Hillstrom (womens) +0.16
+  [+0.04, +0.31], sd 0.073 from 0.138. Seed 0 of Hillstrom (mens): 70 rounds against 26
+  gave +0.69; fitted alike, +0.35.
+- Predictions: three held, one failed (C2), one failed in one setting of five (C3).
+
+**Wrong, and now recorded as wrong.** D-074 said the instability of the Hillstrom figures
+was estimation noise shared between the effect model and the risk model. It was not.
+
+**Not changed.** `benchmarks/models._clf`. Fixing its stopping rule changes every benchmark
+figure fitted on more than 10,000 rows. Left as a decision, recommended.
+
+**Documents.** README (a column for risk fitted on other customers, a footnote on the two
+Hillstrom rows, two cautions, "what did not work"), project report (third addendum,
+§5.3, §12, §13), explainer 05 and 09, research plan, deck (slide 6 table and notes),
+speech (three answers added and the session's answers reworded so that they state what
+was done without saying who did it), state file. The paper sources are not changed.
+
+**Tested.** 29 new tests (750 in 30 files); lint and both calibration gates pass.
+
+**Timing.** The diagnostic was estimated at ten minutes and took fifteen and a half. `make
+check` with 750 tests took 5 minutes 32 seconds on battery. It has not been timed on mains
+power since the last 29 tests were added; with 721 it took 3 minutes 18 seconds there. The
+runbook and the speech now say "about five and a half minutes on battery, less on mains
+power".

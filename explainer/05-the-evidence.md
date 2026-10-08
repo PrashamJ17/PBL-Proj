@@ -269,7 +269,8 @@ being merely wasteful and starts actively selecting the customers you will harm.
   measurement thirty times, each time dividing the customers differently into a group for
   the model to learn from and a group to test it on. The point is the average of the
   thirty and the lines run across nearly all of them. A long line means the answer
-  depends heavily on the luck of the division.
+  depends heavily on the luck of the division. (For the two orange points there is a
+  second reason, explained under the corrections below.)
 - **The two panels** show the same results. They differ only in how "agreement" is
   measured. Suppose an offer lifts one customer's chance of buying from 2% to 4% and
   another's from 40% to 42%. Counted one way, both rose by two points and the offer did
@@ -302,6 +303,21 @@ the thirty, and some come out negative. We had described the four experiments as
 into a group where the orderings agree closely and a group where they agree less. With
 thirty measurements each, there are no such groups. The fault was showing one measurement
 without knowing how much it could vary.
+
+**Why that one measurement was so far out.** We found the reason later, and it was in our
+tools, not in the customers. To estimate what an offer does, the method builds two
+separate predictions, one from customers who were sent the offer and one from customers
+who were not, and subtracts one from the other. The software that builds each prediction
+improves it step by step, and once it has more than 10,000 customers to learn from it
+decides for itself when to stop. This experiment has just over 10,000 customers in each
+group. So the two predictions were stopped at different points, one sometimes after three
+times as many steps as the other, and the answer swung with the difference. In the
+measurement we had printed, one prediction had been given 70 steps and the other 26. When
+both are given the full 150, that same measurement comes out at +0.35 instead of +0.69,
+and all thirty land between +0.09 and +0.47. The long horizontal lines through the two
+orange points in the chart are mostly this. We have not yet changed the setting, because
+doing so alters other results and they would need re-running; the chart shows the
+measurements as the tools produced them and says so underneath.
 
 **The old chart showed the simulator using perfect knowledge**, as a hollow point marked
 as a ceiling. That point has been replaced by one measured like the others.
@@ -337,9 +353,15 @@ Three caveats, stated plainly.
 - The simulator's result is for an experiment on 60,000 customers. With a few hundred to
   a few thousand, no method we tested beat doing nothing
   ([09](09-status-and-roadmap.md)).
+- "How likely a customer is to respond" can itself be estimated in more than one way. The
+  chart estimates it from all customers. Estimating it only from customers who were not
+  sent the offer, which is how the 2018 study does it, gives lower agreement in every real
+  experiment.
 - Before making these thirty measurements we wrote down five predictions about what they
   would show. One was right. One was right and counts against us (the two ways of
-  counting disagree). One was wrong (the two groups). Two were partly wrong.
+  counting disagree). One was wrong (the two groups). Two were partly wrong. A further
+  check came with five more predictions: three right, one wrong, one wrong in a single
+  experiment. The wrong one is what led us to the fault described above.
 
 ---
 
@@ -394,7 +416,7 @@ data rather than our own simulation.
 
 ## How thoroughly this is checked
 
-**721 automated tests**, all passing, run on every change. Beyond ordinary correctness:
+**750 automated tests**, all passing, run on every change. Beyond ordinary correctness:
 
 - **Fairness tests** — no hidden fact may leak into what models can see.
 - **Direction tests** — with the harm mechanism switched off, sleeping dogs must be
@@ -475,7 +497,7 @@ Everything is open and runs in under a minute on a laptop:
 
 ```bash
 pip install -e .
-python -m pytest tests/ -q            # 721 tests
+python -m pytest tests/ -q            # 750 tests
 python -m retainiq.experiments.figures    # regenerates the figure above
 ```
 

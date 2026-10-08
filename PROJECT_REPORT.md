@@ -67,6 +67,16 @@ customers and is not ahead below that. Seven of the eleven predictions failed in
 in part, and they are listed. The counts in §1, §9 and §11 are updated again: 721 tests
 in 30 files, 75 decisions.
 
+**Third addendum, 8 October 2026.** The one further check the second addendum left owed
+was run, again with its predictions written down first
+(`docs/PREREG-pooled-independent-risk.md`, D-076). It was meant to say why the correlation
+moves when the risk model is fitted on different customers. It answered that, and a
+prediction that failed led to something not looked for: **the wide range reported for the
+two Hillstrom rows in §5.3 was produced by the classifier, which stops fitting early by
+default once it has more than 10,000 rows.** §5.3 says so, gives the figures with that
+default switched off, and corrects the explanation the decision log had given (D-074).
+Three of the five new predictions held. Counts: 750 tests in 30 files, 76 decisions.
+
 ---
 
 ## Table of contents
@@ -109,8 +119,8 @@ with competing risks, a hierarchical Bayesian treatment-effect estimator, an off
 optimiser, a client-facing diagnostic report, a holdout measurement layer, and a research
 paper published as a preprint.
 
-**Scale (8 October 2026):** 15,441 lines of Python in `retainiq/`, 7,579 lines of tests,
-721 automated tests in 30 files, 75 documented design decisions, 9,046 lines of
+**Scale (8 October 2026):** 15,719 lines of Python in `retainiq/`, 7,845 lines of tests,
+750 automated tests in 30 files, 76 documented design decisions, 9,416 lines of
 documentation in `docs/` and `explainer/`, continuous integration across Python 3.11, 3.12
 and 3.13 with four gates. At submission: 12,551 lines of Python, 433 tests, 63 decisions.
 
@@ -368,13 +378,17 @@ here. Ascarza (2018, Web Appendix A3.4) varies this correlation in a simulation 
 her two field studies at about +0.2 and −0.2. This project measures it from fitted models
 on three public randomised experiments.
 
-| Setting | `corr(tau, pi)`, probability scale | Same, log-odds scale | Advantage of effect-based targeting | Extra outcomes per 1,000 customers |
-|---|---|---|---|---|
-| Criteo (advertising) | +0.58 [+0.51, +0.65] | +0.06 [−0.13, +0.33] | +0.7% [−1.5, +3.8] | +0.1 [−0.1, +0.3] |
-| Hillstrom, men's e-mail | +0.28 [−0.21, +0.66] | −0.46 [−0.73, +0.06] | −0.1% [−10.3, +11.6] | −0.1 [−3.0, +2.8] |
-| Hillstrom, women's e-mail | +0.18 [−0.07, +0.49] | −0.22 [−0.44, +0.11] | +14.0% [−7.7, +35.3] | +2.6 [−1.9, +6.2] |
-| Lenta (retail promotion) | +0.13 [+0.05, +0.22] | −0.05 [−0.18, +0.06] | +24.7% [−4.3, +109.1] | +0.6 [−0.1, +1.5] |
-| Subscription churn (simulated trial, fitted models) | −0.21 [−0.33, −0.07] | −0.26 [−0.40, −0.10] | not quoted | +9.7 [+5.0, +14.4] |
+| Setting | `corr(tau, pi)`, probability scale | Same, risk fitted on other customers | Same, log-odds scale | Advantage of effect-based targeting | Extra outcomes per 1,000 customers |
+|---|---|---|---|---|---|
+| Criteo (advertising) | +0.58 [+0.51, +0.65] | +0.56 [+0.43, +0.68] | +0.06 [−0.13, +0.33] | +0.7% [−1.5, +3.8] | +0.1 [−0.1, +0.3] |
+| Hillstrom, men's e-mail | +0.28 [−0.21, +0.66] † | +0.19 [+0.01, +0.39] | −0.46 [−0.73, +0.06] | −0.1% [−10.3, +11.6] | −0.1 [−3.0, +2.8] |
+| Hillstrom, women's e-mail | +0.18 [−0.07, +0.49] † | +0.11 [−0.09, +0.32] | −0.22 [−0.44, +0.11] | +14.0% [−7.7, +35.3] | +2.6 [−1.9, +6.2] |
+| Lenta (retail promotion) | +0.13 [+0.05, +0.22] | +0.13 [−0.00, +0.31] | −0.05 [−0.18, +0.06] | +24.7% [−4.3, +109.1] | +0.6 [−0.1, +1.5] |
+| Subscription churn (simulated trial, fitted models) | −0.21 [−0.33, −0.07] | −0.17 [−0.31, −0.01] | −0.26 [−0.40, −0.10] | not quoted | +9.7 [+5.0, +14.4] |
+
+*† With the classifier's early stopping switched off these two are +0.30 [+0.17, +0.42] and
++0.16 [+0.04, +0.31]. See "The Hillstrom ranges" below. The second column of figures fits
+the risk model on customers the effect model never saw; it rests on half the data.*
 
 *Measured on 8 October 2026 (D-074): the mean over thirty random splits of each
 experiment, with the 2.5th and 97.5th percentiles across splits. The table this replaces
@@ -398,7 +412,26 @@ oracle's +106.9% for the simulator.*
   same model the effect subtracts, the correlation falls by 0.14 to 0.43 in the real
   experiments, and *rises* in the simulator, where the outcome is churn. Both are shared
   estimation noise. Fitted on different customers, the figure for the two Hillstrom
-  e-mails does not return to the value in the table.
+  e-mails does not return to the value in the table. A further check (D-076) took that
+  movement apart one change at a time. Sharing customers between the two models inflates
+  the figure in every real experiment, by 0.05 at most. The larger part, where the
+  movement was large, is the definition itself: risk fitted on control customers only,
+  which is Ascarza's definition, gives a lower figure than risk fitted on both arms, which
+  is what the table uses, by 0.08 for Criteo and 0.12 for the women's e-mail.
+- **The Hillstrom ranges.** *(Added in the third addendum.)* The ranges for the two
+  Hillstrom rows are far wider than the others, and the decision log (D-074) put that down
+  to noise shared between two models. A prediction built on that explanation failed. The
+  cause is the classifier: by default it stops fitting early once it has more than 10,000
+  rows, and each arm of the Hillstrom training data has about 10,650. The effect is the
+  difference between a model fitted on the treated arm and one fitted on the control arm,
+  and each stopped at its own point, anywhere from 25 to 150 rounds; they stopped at the
+  same round on one split in thirty. The split that gave +0.69 had 70 rounds against 26.
+  With early stopping off the same split gives +0.35, and the thirty run from +0.09 to
+  +0.47. The means hardly move (+0.28 to +0.30, +0.18 to +0.16), and neither the log-odds
+  figures nor the gains in the last column change. The classifier itself has not been
+  changed: that would alter every figure fitted on more than 10,000 rows, and it is left
+  as a decision (§12). Results fitted on 10,000 rows or fewer, which include §5.4, are
+  not affected.
 - **In the simulator, fitted models find the direction on every split.** On a randomised
   trial of 60,000 simulated customers, the effect-based model beat the outcome model on
   30 of 30 splits, and targeting by the outcome model added churn on 26. The earlier
@@ -434,7 +467,9 @@ underpowered to test the downstream consequence.
 
 Five predictions were written down before the run. One held (the two correlation
 coefficients agree), one held and counts against the project (the log-odds scale), one
-failed outright (the two groups), and two failed in part (D-074).
+failed outright (the two groups), and two failed in part (D-074). Five more were written
+down before the further check: three held, one failed (that sharing customers explains
+the spread between splits), and one failed in a single experiment (D-076).
 
 ![What an uplift model gains over an outcome model, against the risk-lift correlation, on the probability scale and on the log-odds scale](papers/figures/fig07_correlation_checked.png)
 
@@ -790,7 +825,7 @@ retainiq/
 
 ## 9. Testing and engineering discipline
 
-**721 automated tests in 30 files, 7,579 lines of test code**, run on every push across Python 3.11,
+**750 automated tests in 30 files, 7,845 lines of test code**, run on every push across Python 3.11,
 3.12 and 3.13.
 
 Tests fall into five categories:
@@ -936,10 +971,10 @@ non-contractual to a later phase behind a model router.
 | SHAP per-customer explanations | Exact closed-form attribution (no dependency) |
 | RFM segmentation, CRM activation layer | Neither |
 | Docker orchestration, hosted deployment | Local CLI only |
-| 0 automated tests, no CI | 721 tests, CI on 3 Python versions, 4 gates |
+| 0 automated tests, no CI | 750 tests, CI on 3 Python versions, 4 gates |
 | Correlational churn prediction | Causal effect estimation with ground truth |
 | Binary classifier (ignores censoring) | Survival model with competing risks |
-| 2 documentation files | 75 decision entries, 9,046 documentation lines |
+| 2 documentation files | 76 decision entries, 9,416 documentation lines |
 
 **Both directions are recorded.** RetainIQ-PBL's gate — "somebody can use it" — is met, and
 RetainIQ's is not.
@@ -956,10 +991,13 @@ Stated plainly, because the alternative is having a reviewer state them.
    None of the three real experiments is a retention experiment. Fitted models recover
    the simulator's result on a simulated trial of 60,000 (§5.3), which shows the
    estimator works there and nothing about real customers.
-3. **The correlation depends on the scale and on how risk is defined.** Over thirty
-   splits, most of the positive correlation in the real experiments is absent on the
-   log-odds scale, and the figure moves by up to 0.43 with the definition of risk. One
-   check that would separate two explanations for that movement has not been run (D-074).
+3. **The correlation depends on the scale, on how risk is defined, and on how the models
+   are fitted.** Over thirty splits, most of the positive correlation in the real
+   experiments is absent on the log-odds scale, and the figure moves by up to 0.43 with
+   the definition of risk. The benchmark's classifier stops early by default above 10,000
+   rows, which made the two Hillstrom figures unstable (§5.3, D-076). The classifier has
+   not been changed, and whether the Criteo and Lenta figures would move with a fixed
+   stopping rule has not been measured.
 4. **Against the nearest published method, the abstention rule is ahead only from about
    1,000 customers.** Lemmens and Gupta's (2020) rule was re-implemented from their paper,
    not run from their code, and the comparison is on a simulator (§5.8, D-075).
@@ -992,10 +1030,10 @@ Stated plainly, because the alternative is having a reviewer state them.
 | **7** | Cross-tenant hierarchical priors at scale; BTYD/Pareto-NBD router for non-contractual businesses | Tenant #10 outperforms tenant #1 on day one |
 
 **Research priority.** In order. The first two items of the earlier list are done: the
-checks on the correlation (D-074) and Lemmens and Gupta's (2020) method as a baseline
-(D-075). What they leave: one further check on the correlation, with risk fitted on both
-arms of customers the effect model never saw; and the question of why the abstention rule
-loses money on most of the occasions it acts. Then a derivation of when an effect-based
+checks on the correlation (D-074, with a further check in D-076) and Lemmens and Gupta's
+(2020) method as a baseline (D-075). What they leave: a fixed stopping rule for the
+benchmark's classifier, with the correlation table re-run under it; and the question of
+why the abstention rule loses money on most of the occasions it acts. Then a derivation of when an effect-based
 model *estimated from n customers* beats a propensity
 model. The population version of that question is settled: with the true effect known,
 ranking by it cannot lose. The open part is the finite-sample one.

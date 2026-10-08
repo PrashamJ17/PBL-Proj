@@ -24,7 +24,8 @@ claim SCOPED (D-020). **corr(τ, propensity)** (NOT ours, D-068) over **30 split
 [.51,.65]→+0.1 · Hillstrom-mens +0.28 [−.21,.66]→−0.1 · Hillstrom-womens +0.18→+2.6 ·
 Lenta +0.13→+0.6 · SubSim FITTED trial (60k) −0.21 [−.33,−.07]→**+9.7 [5.0,14.4]**, 30/30.
 **NEVER quote one split:** the old "+0.69→−5.6%" was the HIGHEST of 30. Real four cannot be
-ordered; on log-odds none is clearly positive (−0.46…+0.06). Lenta's prediction **landed**
+ordered; on log-odds none is clearly positive (−0.46…+0.06). **Hillstrom's wide ranges are an
+EARLY-STOPPING artefact (D-076)**: stopping off → +0.30 [.17,.42], +0.16 [.04,.31]. Lenta's prediction **landed**
 (D-031), underpowered. Small-n: best method beats random on **72.5% of 200 draws [.66,.79] at n=500** (D-072).
 
 ---
@@ -32,7 +33,7 @@ ordered; on log-odds none is clearly positive (−0.46…+0.06). Lenta's predict
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-721 tests. CI green.
+750 tests. CI green.
 **Phase 5 COMPLETE**; gate met on its own terms, evidence did NOT improve (58% [.42,.72]).
 **Phase 2's delivery path is BUILT (D-062)** — `make preflight` then `make autopsy` on real
 CSVs — but its gate is a sales task and **nobody has paid anything**. Next action is
@@ -132,7 +133,7 @@ retainiq/experiments/  kill_test · leakage_penalty · dunning · survival_bench
                    ai_channels (D-064) · holdout_validation (D-065) · figures
 retainiq/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum (ONE split) · spectrum_checks (D-074) · figures
-tests/           721 — fairness, realism, edge cases, leakage gate
+tests/           750 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -140,7 +141,7 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 721 tests + calibration gates — run before every commit
+make check      # lint + 750 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
@@ -148,7 +149,7 @@ make sensitivity # why the Phase 4 gate failed — effect size and offer cost
 make ai-channels # can AI outreach drive this? break-even salience (D-064)
 make holdout    # Phase 6 — can a small business even measure a campaign? (D-065)
 make small-n    # win rates vs random at small n, with intervals + fig02 (~20 min, D-072/073)
-make correlation-checks  # corr over 30 splits, 2 scales, 3 risks + fig07 (~30 min, D-074)
+make correlation-checks  # corr, 30 splits, 2 scales, 5 risks + fig07 (~30 min, D-074/076)
 make baseline   # abstention vs Lemmens & Gupta, 500 draws (~1 min, D-075)
 make ladder     # Phase 5 gate — rung-matching vs one good offer
 make dashboard  # build the retention dashboard (self-contained HTML)
@@ -195,24 +196,26 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   D-024/026 · Lenta D-031), Phase 2 dunning + Autopsy (D-033/036), CI fixes (D-028/030).
   **Phase 2's gate is a sales task: run the Autopsy against 10 real businesses.**
 - **CP-08/10** — **Phase 3 done** (Telco: beats Cox/RSF 10/10 on integrated Brier, **ties
-  DeepSurv**; loses GBSG2 as predicted, D-021/049; n<250 KM wins) + paper drafted.
-  **Phase 4 built, gate PARTIAL (D-054):** beats ranking 65-80% spending 1/3 as much,
-  do-nothing 0-10%. Laplace validated vs NUTS (D-053); under-coverage runs AGAINST us.
+  DeepSurv**; loses GBSG2 as predicted, D-021/049) + paper drafted. **Phase 4 built, gate
+  PARTIAL (D-054).** Laplace validated vs NUTS (D-053); under-coverage runs AGAINST us.
 - **CP-12** — **D-057: a units bug ran for a whole phase.** `decide` multiplied a
   **log-odds** tau by CLV as if it were a probability difference — believed -104.5 where
   truth was +20.5. Overstatement `1/(p0(1-p0))` → **worst for low-risk customers**: the
   Sure Thing error, inside our own rule. Every test passed: all were self-consistency
   checks, and a units error is self-consistent. Fixed in `policy/economics.py`; the new
   rule takes **money only**, so it is unrepresentable. Losses -3,531→-1,070, beats
-  ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
-  spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
-  not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-25** — **Both owed checks run, pre-registered (`docs/PREREG-checks-and-baseline.md`); 4 of 11
-  predictions held (D-074/075).** Corr: see top. Same-data control risk biases corr DOWN for
-  response, UP for churn. **vs Lemmens & Gupta (re-implemented): abstention ahead 78% of differing
-  draws from n=1,000; NOT at 250 (26%) or 500 (47%); do-nothing beats both.** Their rule could not
-  act at 250 (my 10-per-arm guard, marked in output). **Abstention made money on 25 of the 139 draws
-  it acted on** — the open question. Owed: pooled-independent risk check. Paper text NOT changed.
+  ranking 93%. **2 of 5 pre-registered predictions FAILED**; D-056 survives a challenge we
+  raised ourselves. Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-26** — **Follow-up check, pre-registered; 3 of 5 held (D-076).** Sharing customers inflates
+  corr ≤0.05; control-only risk (Ascarza's) reads LOWER than both-arm (ours): −0.08 Criteo, −0.12
+  H-womens. **A failed prediction found the instrument's fault: sklearn HGB early-stops by default
+  above 10,000 rows; Hillstrom arms ≈ 10,650; the T-learner's two models stopped at different
+  rounds (seed 0: 70 vs 26 → +0.69; alike → +0.35).** Means, log-odds, gains unmoved; ≤10,000 rows
+  untouched (tested). **OPEN DECISION: fix `benchmarks/models._clf` stopping, re-run Criteo+Lenta.**
+- **CP-25** — **Both owed checks run, pre-registered; 4 of 11 predictions held (D-074/075).**
+  **vs Lemmens & Gupta (re-implemented): abstention ahead 78% of differing draws from n=1,000; NOT
+  at 250 (26%) or 500 (47%); do-nothing beats both.** Their rule could not act at 250 (my 10-per-arm
+  guard, marked in output). **Abstention made money on 25 of the 139 draws it acted on.**
 - **CP-24** — **Small-n at 200 draws (D-072/073): 72.5% [.66,.79] at n=500, 84.5% at 1,000, 95.5% at
   2,000.** D-023's 75%/55% were 20 draws no command printed; "55%, a coin flip" was WRONG (62.5%).
 - **CP-23** — **The report assumed rupees and printed "not measured" as 0% (D-071); fixed.**
@@ -225,9 +228,8 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% < 96.7% for always
   'stays'** — never a headline. Readiness PER COMPONENT.
-- **CP-18** — **Published; the paper cited itself as its software archive (D-066).** Self-
-  referential citations are locally coherent — D-057's shape. **Rule: resolve every identifier,
-  never recall it.** `make paper` / `make paper-docx` replace manual exports.
+- **CP-18** — **Published; the paper cited itself as its software archive (D-066).** **Rule:
+  resolve every identifier, never recall it.** `make paper` / `make paper-docx` build it.
 - **CP-17** — **AI outreach priced, not argued (D-064).** Salience harms, not cost per contact.
   **Break-even salience = 0.80, BELOW neutral**: a channel as intrusive as a standard offer loses
   money sent to everyone. AI email is the best channel. Holdout BEFORE any sender.
@@ -236,10 +238,8 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   converts. `docs/SALES-RUNBOOK.md` lists FORBIDDEN claims. **Gate still open: nobody has paid.**
 - **CP-15/14/13** — **Phase 5 built, then shipped (D-058/059/061).** Optimizer makes money
   (28% of oracle vs 13%) but beats the achievable rival on only **58% [.42,.72]** — chance;
-  a hindsight uniform rung captures **73%**, so **choosing the offer beats choosing the
-  customer**. Reason codes are EXACT, not SHAP. Dashboard: reliability banner first and
-  undisableable. RetainIQ-PBL's published ROC-AUC 1.000 is pre-fix; its code gives **0.543**.
+  a hindsight uniform rung captures **73%**: **choosing the offer beats choosing the customer**.
+  Reason codes are EXACT, not SHAP. Dashboard: reliability banner first and undisableable.
 - **CP-11** — **The gate was unpassable, and we tested the wrong rung** (D-055/056).
-  Break-even |tau|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**. The two win rates
-  move in OPPOSITE directions while sleeping dogs collapse 27%→3%. A minimax-regret reading
-  was pre-registered and **REFUTED** out-of-sample.
+  Break-even |tau|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**. A minimax-regret
+  reading was pre-registered and **REFUTED** out-of-sample.

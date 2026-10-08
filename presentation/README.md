@@ -31,7 +31,7 @@ Run from the repository root.
 python presentation/prepare_assets.py            # add --skip-check to skip make check
 
 # 2. build the deck
-cd presentation && npm install && TESTS=721 node build_deck.js && cd ..
+cd presentation && npm install && TESTS=750 node build_deck.js && cd ..
 
 # 3. scenes 1 and 10 of the storyboard are slides 2 and 8: render the deck to PDF
 #    (PowerPoint → File → Export → PDF, saved as presentation/build/RetainIQ_Presentation.pdf)
@@ -71,6 +71,8 @@ delivery path (CLI, preflight, report, dashboard, tests, CI) is ready; the decis
 are validated on simulated and public data only; a real-client ROI has not been shown. See
 `docs/DECISIONS.md` D-067. Slide 6's correlation table shows the mean of thirty splits with
 its spread for all five settings, the fifth being fitted models on a simulated trial and no
-longer an oracle (D-074), and credits the correlation to Ascarza (2018); its abstention
-card carries the comparison with Lemmens & Gupta (D-075). Slide 8 no longer says one
+longer an oracle (D-074), and credits the correlation to Ascarza (2018). An "indep." column
+gives the figure with risk fitted on other customers, and a footnote says the two Hillstrom
+ranges are widened by the classifier's early stopping (D-076). Its abstention card carries
+the comparison with Lemmens & Gupta (D-075). Slide 8 no longer says one
 number predicts whether causal targeting pays (D-068).

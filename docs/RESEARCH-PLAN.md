@@ -205,7 +205,8 @@ Four things, in order:
   the log-odds scale. What survives: fitted models recover the simulator's result on a
   simulated trial of 60,000, with no oracle. The negative-correlation regime is still
   carried entirely by a simulator configured to have it. A reviewer will say this, and
-  they will be right.
+  they will be right. The figure also depends on how risk is defined and on how the
+  models are fitted (D-076): say which definition the paper uses and why.
 - **Against the nearest rival, abstention is ahead only from about 1,000 customers
   (D-075).** Lemmens & Gupta's rule was re-implemented and run on the same pilots. At 250
   and 500 abstention is not ahead, and doing nothing beats both at every size. The
@@ -219,10 +220,19 @@ Four things, in order:
 
 **1. The checks in D-068. DONE, 8 October 2026 (D-074).** `make correlation-checks`. Five
 predictions were written first; one held, one held against the project, one failed and
-two failed in part. The result shrank under its own checks and is still reportable. One
-check is left: risk fitted on both arms of customers the effect model never saw, which
-would say whether the drop under an independent risk model is shared noise or only less
-data.
+two failed in part. The result shrank under its own checks and is still reportable.
+
+**1b. The check that left owed. DONE, 8 October 2026 (D-076).** Sharing customers between
+the effect model and the risk model inflates the figure, in every real setting, by 0.05
+at most. The larger part of the movement is the definition of risk: control-only, which is
+Ascarza's, gives a lower figure than both-arm, which is ours. Three of five predictions
+held. **The one that failed found a fault in the instrument:** the benchmark classifier
+stops early by default above 10,000 rows, Hillstrom's arms hold about 10,650, and the two models
+whose difference is the effect stopped at different rounds. That, not shared noise, is
+why the Hillstrom figures were unstable. **Decide before the paper is rewritten** whether
+to give the classifier a fixed stopping rule and re-run the correlation table under it.
+The recommendation is yes: a referee who fits a T-learner with two differently stopped
+models and finds the result unstable will not need long to work out why.
 
 **2. The baseline. DONE, 8 October 2026 (D-075).** `make baseline`. Six predictions were
 written first; two failed and two hold only pooled. Estimator and stopping rule were

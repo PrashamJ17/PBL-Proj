@@ -9,8 +9,9 @@ its own results that way; the paper, the software and the data were published; a
 reading of earlier research showed that three things we had described as our own findings
 were already known. Most recently, the two checks we said we owed were run: one of our
 headline measurements turned out to be the highest of thirty, and against the nearest
-published method ours is ahead only for businesses of about 1,000 customers or more.
-Still nothing sold.
+published method ours is ahead only for businesses of about 1,000 customers or more. A
+further check then found why that measurement had been so far out: a setting in our
+software, not anything about the customers. Still nothing sold.
 
 ---
 
@@ -37,7 +38,7 @@ be already published. Nothing has been sold to a real customer yet.**
 | **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts — see [below](#what-phase-2-found-about-failed-payments) |
 | **A report a business can actually receive** | ✅ Built | Two spreadsheet exports in, one web page out — tested against real Stripe and Razorpay formats |
 | **Predicting when a customer leaves, and what they are worth** | ✅ Done | Matches or beats established methods on public data — see below |
-| **Quality controls** | ✅ Done | 721 automated tests, all passing |
+| **Quality controls** | ✅ Done | 750 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
 | **The practical version of our method** | 🟨 Built | Beats the standard approach on 93% of runs; does **not** yet beat doing nothing — [see below](#what-phase-4-was-about-and-what-it-honestly-found) |
 | **Customer-facing product** | 🟨 Built | Decision engine, plain-language reasons, and a dashboard an owner can act from — not yet in anyone's hands |
@@ -431,6 +432,15 @@ two groups, and with thirty measurements each they do not. The chart has been re
 one that shows the average of the thirty and how far they spread, and
 [05](05-the-evidence.md) explains it.
 
+**And then the reason for it.** We first put that wide spread down to a statistical
+effect, wrote down a prediction that would confirm it, and tested it. The prediction
+failed. The real cause was a setting in the software we use to build predictions: above
+10,000 customers it decides for itself when to stop improving a prediction, and that
+experiment has just over 10,000 in each group. With the setting switched off, the spread
+shrinks to a third of what it was and the figure we had printed drops from +0.69 to
++0.35. The averages we now report barely change. We have recorded the first explanation
+as wrong.
+
 **The comparison we owed, now run.** The 2020 study includes its own way of deciding how
 many customers to contact: keep some of your trial customers aside, try every possible
 campaign size on them, and pick the size that looks most profitable. We rebuilt that
@@ -505,10 +515,11 @@ not been accepted by a journal.
 1. **Get the failed-payment work in front of real businesses.** This is not a coding
    task and no further code completes it. The report described above needs to be run
    against real billing exports and shown to the people who own them.
-2. **Put the two new results into the paper.** The checks we owed on our own evidence have
+2. **Put the new results into the paper.** The checks we owed on our own evidence have
    been run (see [above](#what-we-had-wrongly-called-ours)). The paper still describes the
-   old figures. One smaller check remains, and so does the question of why our method
-   loses money on most of the occasions when it acts. None of this needs a client.
+   old figures. Two things remain: deciding whether to fix the software setting described
+   above and re-run the measurements it affects, and the question of why our method loses
+   money on most of the occasions when it acts. None of this needs a client.
 3. **Nothing further to build for clients until somebody uses it.** The measuring
    machinery of Phase 6 is built and tested on simulated businesses. Finishing it, and all
    of Phase 7 (learning across businesses), needs a real client by definition. Every
@@ -555,6 +566,28 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### One more check, and a fault in our measuring instrument
+
+The entry below this one ends with a smaller check still owed. It has been run, again
+with predictions written down first. It was meant to answer a narrow question: when we
+estimate "how likely is this customer to respond?" from different customers than the ones
+used to estimate "what does the offer do?", the measured agreement between the two drops.
+Is that because the two estimates had been sharing their errors, or only because each had
+less data?
+
+The answer is mostly neither. Sharing errors does inflate the agreement, in every real
+experiment, but only slightly. The bigger part comes from *which* customers the first
+question is asked of: all of them, or only those who were not sent the offer. The second
+is how the 2018 study does it and it gives a lower answer than ours.
+
+One of the five predictions failed, and chasing it found something we had not been
+looking for. The very wide spread in two of our measurements was being produced by a
+setting in our software, described in [05](05-the-evidence.md). Our technical record had
+explained that spread differently. That explanation was wrong and is now recorded as
+wrong.
+
+Three of the five predictions held. 29 new automated tests (750 total).
 
 ### Two checks we owed, and what they cost us
 

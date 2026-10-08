@@ -18,30 +18,42 @@ from retainiq.benchmarks import spectrum_checks
 from retainiq.benchmarks.datasets import RCT
 from retainiq.benchmarks.spectrum import measure
 from retainiq.benchmarks.spectrum_checks import (
+    ALL_RISKS,
     CLIP,
     COEFFICIENTS,
+    FOLLOW_UP,
     RISKS,
     SCALES,
     SIM,
     SIM_CUSTOMERS,
     SPLITS,
+    STEPS,
+    STOPPING,
+    STOPPING_SETTINGS,
     Setting,
     all_correlations,
     benefits,
+    boosting_rounds,
     correlation,
     figure,
+    fitting,
+    has_follow_up,
     incremental,
     interval,
     logit,
     one_split,
     report,
+    report_stopping,
     run,
+    stopping_diagnostic,
     subsim_trial,
     summarise,
     true_correlations,
+    with_steps,
 )
 
 CORRELATION_COLUMNS = [f"{r}_{c}_{s}" for r in RISKS for c in COEFFICIENTS for s in SCALES]
+FOLLOW_UP_COLUMNS = [f"{r}_{c}_{s}" for r in FOLLOW_UP for c in COEFFICIENTS for s in SCALES]
 
 
 def sigmoid(z):
@@ -357,7 +369,8 @@ def test_splits_with_no_measurement_are_left_out_of_the_interval():
 
 def frame_of(values: dict[str, list[float]], setting: str = "A") -> pd.DataFrame:
     n = len(next(iter(values.values())))
-    base = {c: [0.1] * n for c in [*CORRELATION_COLUMNS, "advantage_pct", "gain_per_1000"]}
+    base = {c: [0.1] * n for c in [*CORRELATION_COLUMNS, *FOLLOW_UP_COLUMNS, "advantage_pct",
+                                   "gain_per_1000"]}
     return pd.DataFrame({"seed": range(n), "n_test": 100, **base, **values,
                          "setting": setting, "domain": "test"})
 
@@ -500,3 +513,252 @@ def test_the_oracle_figure_is_never_printed_as_comparable(monkeypatch, capsys):
                         lambda splits, include: (five_settings(), {"pearson_prob": -0.1}))
     spectrum_checks.main(["--no-figure"])
     assert "different units" in capsys.readouterr().out
+
+
+# --- the follow-up: why the definition of risk moves the figure (D-076) -----------------
+
+
+def test_the_first_three_definitions_of_risk_are_as_first_pre_registered():
+    """The follow-up adds two. It must not quietly change what the first three were."""
+    assert RISKS == ("pooled", "control_same", "control_indep")
+    assert FOLLOW_UP == ("pooled_half", "pooled_indep")
+    assert ALL_RISKS == (*RISKS, *FOLLOW_UP)
+
+
+def test_the_follow_up_figures_are_measured_on_every_split(response_split):
+    values = np.array([response_split[c] for c in FOLLOW_UP_COLUMNS])
+    assert len(FOLLOW_UP_COLUMNS) == 8
+    assert np.isfinite(values).all() and (np.abs(values) <= 1.0).all()
+
+
+def test_each_step_changes_one_thing_as_pre_registered():
+    """Half the data with customers shared; then the sharing removed; then control only."""
+    assert STEPS == {
+        "step_data": ("pooled_half", "pooled"),
+        "step_sharing": ("pooled_indep", "pooled_half"),
+        "step_definition": ("control_indep", "pooled_indep"),
+    }
+
+
+def test_the_three_steps_add_up_to_the_movement_they_explain(response_split):
+    """D-074 reported how far the figure moves between pooled risk and independent
+    control-only risk. The steps are a decomposition of exactly that and nothing more."""
+    w = with_steps(pd.DataFrame([response_split]))
+    moved = w["control_indep_pearson_prob"] - w["pooled_pearson_prob"]
+    assert w[list(STEPS)].sum(axis=1).iloc[0] == pytest.approx(moved.iloc[0])
+
+
+def test_a_step_is_a_difference_on_the_same_split_not_a_difference_of_averages():
+    frame = frame_of({"pooled_half_pearson_prob": [0.50, 0.10],
+                      "pooled_indep_pearson_prob": [0.20, 0.30]})
+    assert list(with_steps(frame)["step_sharing"]) == pytest.approx([-0.30, 0.20])
+
+
+def test_the_steps_can_be_taken_on_another_coefficient_or_scale():
+    frame = frame_of({"pooled_half_spearman_logodds": [0.40],
+                      "pooled_indep_spearman_logodds": [0.15]})
+    w = with_steps(frame, suffix="spearman_logodds")
+    assert w["step_sharing"].iloc[0] == pytest.approx(-0.25)
+
+
+def test_splits_saved_before_the_follow_up_are_left_as_they_are():
+    old = frame_of({"pooled_pearson_prob": [0.5, 0.7]}).drop(columns=FOLLOW_UP_COLUMNS)
+    assert not has_follow_up(old)
+    assert with_steps(old) is old
+
+
+def test_the_report_shows_the_follow_up_when_it_was_measured():
+    text = report(frame_of({"pooled_half_pearson_prob": [0.5, 0.7],
+                            "pooled_indep_pearson_prob": [0.2, 0.2]}))
+    for heading in ("3b. WHY IT MOVES", "THE THREE STEPS", "SPREAD ACROSS SPLITS"):
+        assert heading in text
+    # The sharing step is taken split by split: 0.2 - 0.5 and 0.2 - 0.7.
+    mean, low, high = interval(pd.Series([-0.3, -0.5]))
+    assert f"{mean:+.2f} [{low:+.2f}, {high:+.2f}]" in text and mean == pytest.approx(-0.4)
+    assert "add up to (control, independent) minus (pooled)" in text
+
+
+def test_the_report_of_splits_saved_earlier_does_not_invent_a_follow_up():
+    old = frame_of({"pooled_pearson_prob": [0.5, 0.7]}).drop(columns=FOLLOW_UP_COLUMNS)
+    text = report(old)
+    assert "3b." not in text and "THE THREE STEPS" not in text
+    assert "3. THE DEFINITION OF RISK" in text
+
+
+def test_the_summary_gives_the_spread_across_splits():
+    s = summarise(frame_of({"pooled_pearson_prob": [0.2, 0.4, 0.6]}))
+    row = s[s["measure"] == "pooled_pearson_prob"].iloc[0]
+    assert row["sd"] == pytest.approx(0.2)
+
+
+def test_one_split_has_no_spread_to_report():
+    frame = frame_of({"pooled_pearson_prob": [0.3]})
+    assert np.isnan(summarise(frame)["sd"]).all()
+    spread_section = report(frame).split("SPREAD ACROSS SPLITS")[1].split("4. WHAT")[0]
+    assert "n/a" in spread_section
+
+
+@pytest.mark.parametrize("sign, treated_sd, control_sd, direction", [
+    (+1, 0.06, 0.03, +1),     # a response the offer raises: treated arm is the noisier
+    (+1, 0.03, 0.06, -1),
+    (-1, 0.03, 0.06, +1),     # churn the offer lowers: control arm is the noisier
+    (-1, 0.06, 0.03, -1),
+])
+def test_a_both_arm_risk_model_on_the_same_customers_inherits_the_noisier_arm(
+        sign, treated_sd, control_sd, direction):
+    """The follow-up's mechanism, with no model. True effect and true risk are unrelated.
+    A risk model fitted on both arms of the same customers carries the errors of both arm
+    models. They do not cancel: what is left has the sign of (noise in the arm the benefit
+    adds) minus (noise in the arm it subtracts). A risk model fitted on other customers
+    carries neither."""
+    rng = np.random.default_rng(3)
+    n = 20_000
+    p0 = 0.30 + rng.normal(0, 0.01, n)
+    p1 = p0 + sign * 0.05
+    p1_hat = p1 + rng.normal(0, treated_sd, n)
+    p0_hat = p0 + rng.normal(0, control_sd, n)
+    same_customers = 0.5 * (p1_hat + p0_hat)
+    other_customers = 0.5 * (p1 + p0) + rng.normal(0, 0.03, n)
+
+    benefit = benefits(p1_hat, p0_hat, sign)["prob"]
+    assert direction * correlation(benefit, same_customers, "pearson") > 0.4
+    assert abs(correlation(benefit, other_customers, "pearson")) < 0.05
+
+
+def test_the_shared_noise_cancels_when_both_arms_are_equally_noisy():
+    """Why this artefact can be absent in one experiment and large in another."""
+    rng = np.random.default_rng(4)
+    n = 20_000
+    p0 = 0.30 + rng.normal(0, 0.01, n)
+    p1_hat = p0 + 0.05 + rng.normal(0, 0.05, n)
+    p0_hat = p0 + rng.normal(0, 0.05, n)
+    benefit = benefits(p1_hat, p0_hat, +1)["prob"]
+    assert abs(correlation(benefit, 0.5 * (p1_hat + p0_hat), "pearson")) < 0.05
+
+
+# --- the diagnostic: the classifier's early stopping (D-076, exploratory) ---------------
+
+
+def same(a: dict, b: dict) -> bool:
+    """Exactly equal, entry by entry, with a missing figure equal to a missing figure."""
+    return a.keys() == b.keys() and all(
+        a[k] == b[k] or (np.isnan(a[k]) and np.isnan(b[k])) for k in a)
+
+
+@pytest.fixture(scope="module")
+def diagnostic():
+    return stopping_diagnostic(make_rct(n=1500, seed=2), Setting("Synthetic", "test"), splits=2)
+
+
+def test_the_two_ways_of_fitting_are_the_default_and_off():
+    assert STOPPING == {"automatic": "auto", "off": False}
+
+
+def test_the_diagnostic_covers_the_settings_where_a_model_crosses_the_line():
+    """Hillstrom's arms hold about 10,650 customers each and the simulated trial about 9,000,
+    either side of the 10,000 at which the library starts stopping early."""
+    assert STOPPING_SETTINGS == ("Hillstrom (mens)", "Hillstrom (womens)", "SubSim (fitted)")
+
+
+def test_fitting_reaches_every_benchmark_classifier():
+    from retainiq.benchmarks import models
+
+    with fitting(False):
+        assert models._clf(3).early_stopping is False
+        assert spectrum_checks._clf(3).early_stopping is False
+    assert models._clf(3).early_stopping == "auto"
+    assert spectrum_checks._clf(3).early_stopping == "auto"
+
+
+def test_fitting_changes_nothing_about_the_classifier_but_its_stopping():
+    from retainiq.benchmarks import models
+
+    default = models._clf(5).get_params()
+    with fitting(False):
+        changed = models._clf(5).get_params()
+    assert {k for k in default if default[k] != changed[k]} == {"early_stopping"}
+
+
+def test_the_classifier_is_put_back_even_when_a_fit_fails():
+    from retainiq.benchmarks import models
+
+    original = models._clf
+    with pytest.raises(RuntimeError, match="a fit failed"), fitting(False):
+        raise RuntimeError("a fit failed")
+    assert models._clf is original and spectrum_checks._clf is original
+
+
+def test_automatic_stopping_is_exactly_the_default():
+    """The diagnostic's "automatic" column has to be the main tables' figure, to the last
+    digit, or the comparison beside it is with something else."""
+    rct = make_rct(n=1500, seed=2)
+    plain = one_split(rct, seed=1)
+    with fitting("auto"):
+        forced = one_split(rct, seed=1)
+    assert same(plain, forced)
+
+
+def test_below_ten_thousand_rows_stopping_makes_no_difference():
+    """Nothing stops early on a small sample, so every result in this project that was
+    fitted on fewer than 10,000 rows is untouched by what the diagnostic found."""
+    rct = make_rct(n=4000, seed=3)
+    with fitting("auto"):
+        automatic = one_split(rct, seed=0)
+    with fitting(False):
+        off = one_split(rct, seed=0)
+    assert same(automatic, off)
+
+
+def test_above_ten_thousand_rows_the_default_stops_early_and_off_does_not():
+    rct = make_rct(n=44_000, seed=6)
+    with fitting("auto"):
+        automatic = boosting_rounds(rct, seed=0)
+    with fitting(False):
+        off = boosting_rounds(rct, seed=0)
+    assert automatic["train_treated"] > 10_000 and automatic["train_control"] > 10_000
+    assert [off[k] for k in ("rounds_treated", "rounds_control", "rounds_pooled")] == [150] * 3
+    assert min(automatic[k] for k in ("rounds_treated", "rounds_control", "rounds_pooled")) < 150
+
+
+def test_the_diagnostic_measures_every_split_both_ways(diagnostic):
+    assert len(diagnostic) == 4
+    assert sorted(diagnostic["stopping"].unique()) == ["automatic", "off"]
+    assert list(diagnostic[diagnostic["stopping"] == "off"]["seed"]) == [0, 1]
+    assert {"rounds_treated", "rounds_control", "rounds_pooled", "train_treated",
+            "train_control", "pooled_indep_pearson_prob", "gain_per_1000"} <= set(diagnostic)
+
+
+def test_the_diagnostic_report_says_it_was_not_pre_registered(diagnostic):
+    text = report_stopping(diagnostic)
+    assert "EXPLORATORY: not pre-registered" in text.splitlines()[1]
+    for heading in ("A. HOW LONG EACH MODEL WAS FITTED", "B. THE TABLE'S FIGURE",
+                    "C. ONE CHANGE AT A TIME, stopping off", "D. WHAT THE UPLIFT MODEL GAINS"):
+        assert heading in text
+
+
+def test_the_diagnostic_report_shows_the_arm_sizes_that_decide_it(diagnostic):
+    row = next(ln for ln in report_stopping(diagnostic).splitlines()
+               if ln.startswith("Synthetic") and "/" in ln)
+    treated = int(diagnostic["train_treated"].median())
+    assert f"{treated:,}" in row and "150 / 150 / 150" in row
+
+
+def test_the_diagnostic_runs_only_when_asked_for(monkeypatch, capsys, diagnostic):
+    def refuse(*_):
+        raise AssertionError("the thirty-split run was started")
+
+    monkeypatch.setattr(spectrum_checks, "collect", refuse)
+    monkeypatch.setattr(spectrum_checks, "collect_stopping", lambda splits, include: diagnostic)
+    monkeypatch.setattr(spectrum_checks, "figure", refuse)
+    assert spectrum_checks.main(["--stopping-diagnostic"]) == 0
+    assert "EXPLORATORY" in capsys.readouterr().out
+
+
+def test_the_main_command_does_not_run_the_diagnostic(monkeypatch, capsys):
+    def refuse(*_):
+        raise AssertionError("the diagnostic was run")
+
+    monkeypatch.setattr(spectrum_checks, "collect", lambda splits, include: (five_settings(), {}))
+    monkeypatch.setattr(spectrum_checks, "collect_stopping", refuse)
+    assert spectrum_checks.main(["--no-figure"]) == 0
+    assert "EXPLORATORY" not in capsys.readouterr().out
