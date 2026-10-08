@@ -8,6 +8,9 @@ The right panel shows the view that actually matters to a business, and the two 
 different stories. A method can have a good *average* across many hypothetical draws
 while being unreliable on the single draw a real company gets. Reporting only the mean
 hides exactly the risk that makes small-sample deployment dangerous.
+
+The right panel shades each rate's exact 95% interval (D-072). A win rate drawn as a
+bare line invites a reading the number of draws cannot support.
 """
 
 from __future__ import annotations
@@ -18,9 +21,8 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-import pandas as pd
 
-from retainiq.benchmarks.small_n import SmallNResult, run
+from retainiq.benchmarks.small_n import DRAWS, SmallNResult, run, win_rates
 
 FIG_DIR = Path(__file__).resolve().parents[2] / "papers" / "figures"
 
@@ -33,29 +35,8 @@ STYLE = {
 }
 
 
-def win_rates(result: SmallNResult) -> pd.DataFrame:
-    """Probability each method beats random *on the same seed*."""
-    frame = result.frame
-    rand = frame[frame["method"] == "random"].set_index("seed")["incremental"]
-
-    rows = []
-    for n in sorted(frame[frame["train_size"].notna()]["train_size"].unique()):
-        for method in STYLE:
-            sub = frame[(frame["train_size"] == n) & (frame["method"] == method)]
-            sub = sub.set_index("seed")["incremental"]
-            common = sub.index.intersection(rand.index)
-            if len(common) == 0:
-                continue
-            rows.append({
-                "train_size": n,
-                "method": method,
-                "win_rate": float((sub.loc[common] > rand.loc[common]).mean()),
-            })
-    return pd.DataFrame(rows)
-
-
 def figure_2(
-    result: SmallNResult | None = None, n_seeds: int = 20, out: Path | None = None
+    result: SmallNResult | None = None, n_seeds: int = DRAWS, out: Path | None = None
 ) -> Path:
     result = result or run(n_seeds=n_seeds)
     summary = result.summary()
@@ -83,30 +64,34 @@ def figure_2(
     ax1.set_xlabel("Training-set size (customers)")
     ax1.set_ylabel("Incremental visits at 30% budget")
     ax1.set_title(
-        "Mean performance rises with data\n(shaded: ±1 sd across seeds)", fontsize=12, pad=10
+        "Mean performance rises with data\n(shaded: ±1 sd across draws)", fontsize=12, pad=10
     )
     ax1.legend(frameon=False, fontsize=8.5, loc="lower right")
     ax1.grid(alpha=0.25, lw=0.6)
     ax1.set_axisbelow(True)
 
     # --- right: the view that matters ----------------------------------------
+    draws = int(wins["draws"].max())
     for method, (colour, label, ls) in STYLE.items():
         w = wins[wins["method"] == method].sort_values("train_size")
         if w.empty:
             continue
         ax2.plot(w["train_size"], w["win_rate"] * 100, color=colour, lw=2.2, ls=ls,
                  marker="o", ms=4, label=label)
+        ax2.fill_between(w["train_size"], w["low"] * 100, w["high"] * 100,
+                         color=colour, alpha=0.10, lw=0)
 
     ax2.axhline(50, color="#B71C1C", lw=1.4, ls=":", zorder=1)
-    ax2.annotate("coin flip", xy=(520, 50), xytext=(0, 5), textcoords="offset points",
+    ax2.annotate("chance", xy=(16500, 50), xytext=(0, 5), textcoords="offset points",
                  fontsize=9, color="#B71C1C")
     ax2.axhline(100, color="#37474F", lw=1.0, alpha=0.5)
     ax2.set_xscale("log")
-    ax2.set_ylim(35, 105)
+    ax2.set_ylim(40, 105)
     ax2.set_xlabel("Training-set size (customers)")
-    ax2.set_ylabel("% of seeds where the method beats random")
+    ax2.set_ylabel("% of draws where the method beats random")
     ax2.set_title(
-        "But a business gets ONE draw —\nand below ~2,000 customers it is close to a gamble",
+        "A business gets one draw: how often does each method beat random?\n"
+        "(shaded: exact 95% interval)",
         fontsize=12, pad=10,
     )
     ax2.grid(alpha=0.25, lw=0.6)
@@ -116,12 +101,25 @@ def figure_2(
     ax2.axvspan(400, 2000, color="#FFC107", alpha=0.12, lw=0)
     ax2.annotate(
         "the regime small\nbusinesses occupy",
-        xy=(900, 41), fontsize=8.5, color="#8D6E00", ha="center",
+        xy=(900, 43), fontsize=8.5, color="#8D6E00", ha="center",
+    )
+
+    # The one number the documents quote, written on the figure with its interval.
+    smallest = wins[wins["train_size"] == wins["train_size"].min()]
+    best = smallest.loc[smallest["win_rate"].idxmax()]
+    ax2.annotate(
+        f"best at n = {int(best['train_size']):,}: {best['win_rate']:.1%}\n"
+        f"[{best['low']:.0%}, {best['high']:.0%}]",
+        # Placed in the empty corner above the curves, not beside the point, where it
+        # would sit on top of two other methods' lines.
+        xy=(best["train_size"], best["win_rate"] * 100), xytext=(0.035, 0.83),
+        textcoords="axes fraction", ha="left", va="center", fontsize=9, color="#263238",
+        arrowprops={"arrowstyle": "-", "color": "#78909C", "lw": 0.8},
     )
 
     fig.suptitle(
-        "Uplift modelling is unreliable at the scale small businesses actually operate at"
-        "   (Hillstrom, real RCT)",
+        f"How often each targeting method beats random, by training-set size"
+        f"   (Hillstrom, real randomised experiment, {draws} draws)",
         fontsize=13, y=1.02,
     )
     fig.tight_layout()

@@ -180,8 +180,9 @@ const SLIDES = [
       "predicted where it would fall, and it landed there. The last row, **+106.9%**, is our simulator, " +
       "and it is a different kind of number. The simulator is built to have a negative correlation, and " +
       "that row uses its true effects, so it is a **ceiling**, not something we achieved. " +
-      "The four cards are the honest summary. At 500 customers, the best method beats random on **75% of " +
-      "draws** — a business gets one draw, so we report win rate, not the average. Abstention beats risk " +
+      "The four cards are the honest summary. At 500 customers, the best method beats random on **72.5% " +
+      "of 200 draws**, and the true figure lies somewhere between 66 and 79%. A business gets one draw, so " +
+      "we report the win rate, not the average. Abstention beats risk " +
       "ranking on **93% of draws**, but it does **not** beat doing nothing, because the break-even effect " +
       "is four times the effect the offer delivers. The per-customer offer optimiser wins **58% of the " +
       "time, with a confidence interval from 42 to 72%** — indistinguishable from chance, and we report it " +
@@ -207,7 +208,7 @@ const SLIDES = [
       "that it pays, and the reasons behind it — computed exactly from the model, not approximated. The " +
       "first thing on the page is a warning that cannot be switched off, stating that the engine beat one " +
       "well-chosen offer on only 58% of tests. " +
-      "Underneath it: **558 automated tests**, continuous integration on three Python versions with four " +
+      "Underneath it: **590 automated tests**, continuous integration on three Python versions with four " +
       "gates — tests, calibration, leakage, and the founding experiment itself — and the code, data and " +
       "paper archived on Zenodo with DOIs.",
     point: "If the panel wants to see it live, this is the moment to offer: “I can run it now, it takes about a minute.”",
@@ -220,7 +221,7 @@ const SLIDES = [
       "Three takeaways. First, **a churn model can be accurate and still lose money** — ours has an AUC " +
       "of 0.700 and its top slice returns minus 22,823. Second, **causal targeting does not always pay**: " +
       "on public experiments where risk and responsiveness line up, a plain model did as well, and at " +
-      "500 customers the best method beats random on three draws in four. " +
+      "500 customers the best method beats random on about seven draws in ten. " +
       "Third, at the scale of a small business, the binding limits are **reliability and measurability**, " +
       "not the choice of algorithm. " +
       "On readiness I want to be precise, because it differs by component. **Ready**: the delivery path " +
@@ -254,7 +255,7 @@ const mmss = (x) => `${Math.floor(x / 60)}:${String(Math.round(x % 60)).padStart
 const QA = [
   ["A. The questions you will almost certainly be asked", [
     ["What exactly is new here? Ascarza already showed risk targeting is ineffective.",
-      "She showed more than that, and I claim none of it: that targeting by effect beats targeting by risk, that risk targeting raised churn in one of her two field experiments, and, in an appendix, that the correlation between risk and response explains when. Lemmens and Gupta added profit-based targeting in 2020. Three things are mine. First, small samples: she names pilot size as an open question, and on a real experiment I measured that at 500 customers the best method beats random on 75% of draws. Second, the measurement floor: a business needs about 119,500 customers to detect the effect these offers deliver. Third, I measured her correlation on three public experiments, found settings where an uplift model does no better than a plain one, and predicted where the Lenta dataset would fall before obtaining it."],
+      "She showed more than that, and I claim none of it: that targeting by effect beats targeting by risk, that risk targeting raised churn in one of her two field experiments, and, in an appendix, that the correlation between risk and response explains when. Lemmens and Gupta added profit-based targeting in 2020. Three things are mine. First, small samples: she names pilot size as an open question, and on a real experiment I measured that at 500 customers the best method beats random on 72.5% of 200 draws. Second, the measurement floor: a business needs about 119,500 customers to detect the effect these offers deliver. Third, I measured her correlation on three public experiments, found settings where an uplift model does no better than a plain one, and predicted where the Lenta dataset would fall before obtaining it."],
     ["Which published work is closest to yours, and how do you differ?",
       "Four papers. **Ascarza (2018)**: two field experiments, 12,137 and 2,100 customers, with churn of 44% and 62%; targeting by effect beats targeting by risk. **Ascarza, Iyengar and Schleicher (2016)**: a retention call to 64,147 telecom customers raised churn from 6.4% to 10.0%. **Lemmens and Gupta (2020)**: target on expected profit and choose the campaign size on held-out data. **Devriendt, Berrevoets and Verbeke (2021)**: uplift against churn models on 200,903 bank customers. They work with thousands of customers and high churn or large effects. I ask what happens at a few hundred customers, 3% monthly churn and a one-point effect. One gap I state myself: Lemmens and Gupta's method is not yet a baseline in my experiments."],
     ["In one sentence, what does your system do?",
@@ -268,7 +269,7 @@ const QA = [
     ["What is your dataset?",
       "Three public randomised experiments — Hillstrom 64,000 customers, Criteo-UPLIFT 14 million, Lenta 687,000 — two public survival datasets, Telco 7,043 and GBSG2 686, and SubSim, our own calibrated simulator. Only the simulator has individual ground-truth treatment effects, which is why it exists."],
     ["Is this simulated data? Then how is it valid?",
-      "The decision-layer results are simulated, and I label them as such throughout. The simulator's calibration is enforced in continuous integration against published benchmarks. The small-sample result, 75% at 500 customers, comes from a **real randomised experiment**, and so do four of the five rows in the correlation table. The fifth row is the simulator, and it is a ceiling."],
+      "The decision-layer results are simulated, and I label them as such throughout. The simulator's calibration is enforced in continuous integration against published benchmarks. The small-sample result, 72.5% at 500 customers, comes from a **real randomised experiment**, and so do four of the five rows in the correlation table. The fifth row is the simulator, and it is a ceiling."],
     ["How much of this did you build yourself?",
       "**Write this answer yourself before the panel, and say it in your own words.** It has to be accurate about what the AI assistant did and what you did, because the panel can ask you to open any file and explain it. Say plainly which parts an AI tool wrote or drafted, which decisions were yours, and what you can reproduce and explain unaided. Do not use a line you could not back up if asked to demonstrate it."],
     ["Where is it published?",
@@ -304,7 +305,9 @@ const QA = [
   ]],
   ["C. Results and statistics", [
     ["Why report win rate instead of the mean?",
-      "Because a business gets one draw, not the average of twenty. A method with a good mean that fails half the time is not usable. At n = 500 the best method beats random on 75% of draws; one standard estimator manages 55%."],
+      "Because a business gets one draw, not the average of many. A method with a good mean that fails one time in four is a gamble. At n = 500 the best method beats random on 72.5% of 200 draws, with an interval from 66 to 79%; the weakest of the five manages 62.5%. It reaches 95.5% at 2,000 customers and 98.5% at 5,000."],
+    ["An earlier version said 75%, and 55% for the weakest method. Why did they change?",
+      "Because those came from twenty draws, and twenty draws cannot support them: fifteen wins in twenty is compatible with anything from 51 to 91%. I re-ran it with two hundred. The best method moved to 72.5%, interval 66 to 79%, so that claim holds. The other did not: I had called the weakest method a coin flip at 55%, and it is 62.5%, which is clearly better than chance. No command printed those figures before; one does now, with the interval beside every rate."],
     ["Your confidence interval is 42 to 72%. Isn't that just a small sample?",
       "Partly, and more seeds would narrow it. But the honest reading today is that I cannot distinguish the optimiser from chance, so I report it as a gate that was not met rather than as a win."],
     ["Why does abstention not beat doing nothing?",
@@ -330,9 +333,9 @@ const QA = [
     ["What is the technology stack?",
       "Python 3.11 to 3.13, NumPy, pandas, SciPy, scikit-learn for the churn baseline, lifelines and scikit-survival for Cox and Random Survival Forest baselines, PyTorch for DeepSurv, matplotlib for figures, pytest and ruff, GitHub Actions for CI. The Phase 0 result runs on numpy, pandas and scipy alone."],
     ["How is it tested?",
-      "558 automated tests across 26 files, including edge cases, fairness checks and a leakage suite. CI runs four gates on every push: the test suite on three Python versions, the calibration gates, the leakage gate, and the founding experiment. If the founding claim ever stops holding, the build fails."],
+      "590 automated tests across 27 files, including edge cases, fairness checks and a leakage suite. CI runs four gates on every push: the test suite on three Python versions, the calibration gates, the leakage gate, and the founding experiment. If the founding claim ever stops holding, the build fails."],
     ["How long does the whole thing take to run?",
-      "The full check is about two and a half minutes. The founding experiment is a second or two. The dashboard, including a simulated pilot, is about two seconds."],
+      "The full check is about two and a half minutes on mains power, and about four on battery. The founding experiment is a second or two. The dashboard, including a simulated pilot, is about two seconds."],
     ["How would you deploy this for a real client?",
       "Shadow mode first: predict, do not act, for four to eight weeks, and verify calibration on their data. Then a randomised exploration phase. Then policy mode with a permanent 5 to 10% holdout. The holdout ledger is append-only, so nobody can quietly shrink it when results disappoint."],
     ["Does it scale?",
@@ -370,7 +373,7 @@ const QA = [
     ["Isn't the negative result just because your model is weak?",
       "No, and that is why the oracle rows are in the table. Even with the simulator's **true** effects, an ideal targeter would treat only 5.8% of customers, because break-even needs four times the effect the offer delivers. The limit is the economics, not the estimator."],
     ["This looks like a literature survey with code, not original work.",
-      "Three things are original. The small-sample result: on a real experiment, at 500 customers the best method beats random on 75% of draws, and pilot size is a question the literature leaves open. The measurement floor: about 119,500 customers to detect the delivered effect. And the simulator with exact counterfactuals, released as a dataset because no public dataset provides one. The correlation itself is Ascarza's. I measured it; I did not invent it."],
+      "Three things are original. The small-sample result: on a real experiment, at 500 customers the best method beats random on 72.5% of 200 draws, and pilot size is a question the literature leaves open. The measurement floor: about 119,500 customers to detect the delivered effect. And the simulator with exact counterfactuals, released as a dataset because no public dataset provides one. The correlation itself is Ascarza's. I measured it; I did not invent it."],
     ["How much of this did an AI write?",
       "**Write this answer yourself before the panel, and say it in your own words.** It has to be accurate about what the AI assistant did and what you did, because the panel can ask you to open any file and explain it. Say plainly which parts an AI tool wrote or drafted, which decisions were yours, and what you can reproduce and explain unaided. Do not use a line you could not back up if asked to demonstrate it."],
     ["Why should we accept simulated results at all?",
@@ -443,12 +446,12 @@ children.push(table([2500, 3500, 2000, W - 8000], [
   ["Negative control", "GBSG2, fixed covariates", "loses, as predicted", "Met as a control"],
   ["Risk–lift correlation", "Uplift's gain on 4 real settings; simulator ceiling", "−5.6% to +20.3%; ceiling +106.9%", "Measured; prediction landed; idea is Ascarza's"],
   ["Value of money layer", "Realised value vs churn-score targeting", "−22,823 vs −17,035 random", "Met in the simulator: the founding result, 6/6 seeds"],
-  ["Small-sample reliability", "Share of draws beating random at n = 500", "75%", "Reported, not a pass/fail"],
+  ["Small-sample reliability", "Share of 200 draws beating random at n = 500", "72.5% (66–79%)", "Reported, not a pass/fail"],
   ["Abstention", "Draws beating a ranking policy", "93%", "Partial: does not beat doing nothing"],
   ["Offer optimiser", "Draws beating one well-chosen offer", "58%, CI 42–72%", "Not met, reported as such"],
   ["Measurement", "Bias and interval coverage vs known truth", "≈0 bias, 88–98%", "Met"],
   ["Measurement floor", "Customers needed to detect the delivered effect", "≈119,500", "Met as a finding"],
-  ["Engineering", "Tests, CI gates, Python versions", "558, 4 gates, 3.11–3.13", "Met"],
+  ["Engineering", "Tests, CI gates, Python versions", "590, 4 gates, 3.11–3.13", "Met"],
   ["Research output", "Paper, software and data archived", "3 Zenodo DOIs", "Met"],
   ["Commercial", "A paying client", "none yet", "Open"],
 ]));
@@ -483,10 +486,10 @@ children.push(table([3200, W - 3200], [
   ["Risk–lift correlation", "Fitted models, one split, within noise of each other: Hillstrom men +0.69 → −5.6% · Criteo +0.58 → +0.6% · Hillstrom women +0.19 → +12.7% · Lenta +0.17 → +20.3%. Simulator, oracle on true effects, a ceiling: SubSim −0.19 → +106.9%."],
   ["Prior work", "Ascarza 2018: 12,137 and 2,100 customers; at 40% targeted, risk targeting raised churn 4.4 points in one study; appendix simulates the correlation. Ascarza, Iyengar & Schleicher 2016: 64,147 customers, churn 6.4% → 10.0%. Lemmens & Gupta 2020: profit-based targeting. Devriendt et al. 2021: 200,903 bank customers."],
   ["Survival", "Telco IBS: ours 0.0824 · DeepSurv 0.0825 · Cox 0.0914 · RSF 0.0964 · Kaplan–Meier 0.1823. C-index 0.865. GBSG2: ours 0.1867, loses as predicted."],
-  ["Reliability and gates", "75% of draws beat random at n = 500 · abstention beats ranking on 93% · optimiser 58%, CI 42–72% · break-even effect 0.040 vs delivered 0.010 · an oracle treats 5.8%."],
+  ["Reliability and gates", "72.5% of 200 draws beat random at n = 500 (interval 66–79%; weakest method 62.5%; 84.5% at 1,000; 95.5% at 2,000) · abstention beats ranking on 93% · optimiser 58%, CI 42–72% · break-even effect 0.040 vs delivered 0.010 · an oracle treats 5.8%."],
   ["Measurement", "Bias ≈ 0, coverage 88–98% · MDE at 10,000 customers 0.0374 vs delivered 0.0108 · ≈119,500 customers needed · campaigns looked significant on 0–10% of runs."],
   ["Leakage", "≈0.60 honest against 0.954 leaked (the paper reports 0.603 for its configuration). Value-at-risk and churn-risk top deciles overlap by only 21%."],
-  ["Engineering", "558 tests, 26 files · 4 CI gates · Python 3.11–3.13 · 71 logged decisions · Apache 2.0."],
+  ["Engineering", "590 tests, 27 files · 4 CI gates · Python 3.11–3.13 · 73 logged decisions · Apache 2.0."],
   ["Outputs", "Paper: ~7,500 words, 12 tables, 5 figures, 27 references. DOIs: paper 10.5281/zenodo.22009470 · software 10.5281/zenodo.22025879 · data 10.5281/zenodo.22025123."],
   ["Demo figures", "Dashboard: 1,500 customers, 472 assessed, 142 to contact, 330 left alone, 131 downgrades, 10 discounts, 1 pause. Sample report: 900 customers, ₹2.6 lakh a year lost, 31% involuntary."],
 ]));

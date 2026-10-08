@@ -179,7 +179,8 @@ Four things, in order:
 1. **How small a pilot can be.** Ascarza (2018) names pilot size as an open question, and
    none of the four papers in D-068 fits a model on fewer than about 700 customers.
    D-023 holds the evaluation set fixed, shrinks only the training set, and reports the
-   win rate over draws instead of the mean: 75% at *n* = 500. A business gets one draw,
+   win rate over draws instead of the mean: 72.5% of 200 draws at *n* = 500, interval
+   66% to 79% (D-072). A business gets one draw,
    so the win rate is the number it needs.
 2. **The measurement floor at small-business scale.** Break-even effect 0.040 against a
    delivered 0.010 (D-055), and a holdout that cannot detect the delivered effect even at
@@ -196,7 +197,7 @@ Four things, in order:
 
 ## What is weak, stated plainly
 
-- **The strongest claim rests on one dataset that is not retention data.** The 75% figure
+- **The strongest claim rests on one dataset that is not retention data.** The 72.5% figure
   is Hillstrom, an email promotion.
 - **The correlation table cannot yet carry weight.** The five points are not measured
   alike: the real ones are estimate against estimate, with a risk model fitted on both

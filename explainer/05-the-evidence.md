@@ -301,7 +301,7 @@ actually exists to answer: **does any of this work when a business is small?**
 
 We shrank the amount of data the models could learn from — from 20,000 customers down to
 500 — while keeping the evaluation identical, so any difference is caused by scarcity
-alone. We repeated it across twenty different random splits.
+alone. We repeated it across two hundred different random splits.
 
 ![Small-n reliability](figures/fig02_small_n_reliability.png)
 
@@ -312,21 +312,30 @@ data. Unremarkable.
 attempts did the method actually beat random?* A business does not get an average across
 twenty parallel universes. It gets one attempt.
 
-| Customers to learn from | Best method beats random |
-|---|---|
-| 500 | **75% of the time** |
-| 1,000 | 90% |
-| 2,000 | 100% |
-| 5,000+ | 100% |
+| Customers to learn from | Best method beats random | Plausible range |
+|---|---|---|
+| 500 | **72.5% of the time** | 66% to 79% |
+| 1,000 | 84.5% | 79% to 89% |
+| 2,000 | 95.5% | 92% to 98% |
+| 5,000 | 98.5% | 96% to 100% |
+| 10,000+ | 100% | 98% to 100% |
 
-At 500 customers, the best method fails to beat random **one time in four**. One
-estimator managed only 55% — a coin flip. Yet its *average* performance looks perfectly
-respectable, which is exactly how a business ends up deploying something that does
-nothing.
+The last column is there because 200 tries cannot pin the true figure down exactly. It
+gives the range the true figure plausibly lies in.
 
-**Reliability arrives at roughly 2,000 customers.** Below that, deploying a conventional
-uplift model is closer to a gamble than a decision — and below that is precisely where
-the businesses we care about live.
+At 500 customers, the best method fails to beat random **about one time in four**. The
+weakest of the five methods managed 62.5%. Yet the *average* performance of every one of
+them looks perfectly respectable, which is exactly how a business ends up deploying
+something that does nothing.
+
+**Reliability arrives somewhere between 2,000 and 5,000 customers.** Below that, deploying
+a conventional uplift model is closer to a gamble than a decision — and below that is
+precisely where the businesses we care about live.
+
+*A correction.* Until October 2026 this page said 75% for the best method and 55% for the
+weakest, "a coin flip", from only twenty tries. Twenty tries are too few: they cannot tell
+75% apart from a coin toss. With two hundred, the best method's figure barely moved, and
+the weakest turned out to be clearly better than a coin flip.
 
 This is the strongest argument yet for the part of our approach that existing tools
 leave out: **when the evidence is too thin to know whether acting will help, say so and do
@@ -336,7 +345,7 @@ data rather than our own simulation.
 
 ## How thoroughly this is checked
 
-**558 automated tests**, all passing, run on every change. Beyond ordinary correctness:
+**590 automated tests**, all passing, run on every change. Beyond ordinary correctness:
 
 - **Fairness tests** — no hidden fact may leak into what models can see.
 - **Direction tests** — with the harm mechanism switched off, sleeping dogs must be
@@ -366,7 +375,7 @@ the two kinds of churn.
   kind of targeting. On another (Criteo) it did no better. Which happens depends on how
   far the two orderings described above disagree.
 - On **real randomised data**, conventional uplift methods are **unreliable below about
-  2,000 customers** — beating random on only 75% of attempts at n=500. This does not come
+  2,000 customers** — beating random on only 72.5% of attempts at n=500. This does not come
   from our own simulation.
 - In simulation, a business with a few thousand customers **cannot detect** whether a
   campaign with an effect this small worked, even with a held-back group
@@ -417,7 +426,7 @@ Everything is open and runs in under a minute on a laptop:
 
 ```bash
 pip install -e .
-python -m pytest tests/ -q            # 558 tests
+python -m pytest tests/ -q            # 590 tests
 python -m retainiq.experiments.figures    # regenerates the figure above
 ```
 

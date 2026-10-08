@@ -31,7 +31,7 @@ Run from the repository root.
 python presentation/prepare_assets.py            # add --skip-check to skip make check
 
 # 2. build the deck
-cd presentation && npm install && TESTS=558 node build_deck.js && cd ..
+cd presentation && npm install && TESTS=590 node build_deck.js && cd ..
 
 # 3. scenes 1 and 10 of the storyboard are slides 2 and 8: render the deck to PDF
 #    (PowerPoint → File → Export → PDF, saved as presentation/build/RetainIQ_Presentation.pdf)

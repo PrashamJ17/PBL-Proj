@@ -49,8 +49,10 @@ re-checked.
 **Addendum, 8 October 2026.** Two faults in the client report were fixed (D-071): it showed
 every amount in rupees whatever the export's currency, and with no invoice file it showed
 unmeasured quantities as 0% and gave advice built on them. The tests that two earlier fixes
-had folded into existing ones were separated. The counts in §1, §9 and §11 are updated:
-558 tests in 26 files, 71 decisions. Nothing else in the report changed.
+had folded into existing ones were separated. The small-sample result in §5.4 was re-run at 200 draws and
+its figures corrected (D-072); Figure 3 was redrawn from that run. The counts in §1, §9 and
+§11 are updated:
+590 tests in 27 files, 73 decisions. Nothing else in the report changed.
 
 ---
 
@@ -94,8 +96,8 @@ with competing risks, a hierarchical Bayesian treatment-effect estimator, an off
 optimiser, a client-facing diagnostic report, a holdout measurement layer, and a research
 paper published as a preprint.
 
-**Scale (8 October 2026):** 14,103 lines of Python in `retainiq/`, 6,121 lines of tests,
-558 automated tests in 26 files, 71 documented design decisions, 8,270 lines of
+**Scale (8 October 2026):** 14,234 lines of Python in `retainiq/`, 6,379 lines of tests,
+590 automated tests in 27 files, 73 documented design decisions, 8,423 lines of
 documentation in `docs/` and `explainer/`, continuous integration across Python 3.11, 3.12
 and 3.13 with four gates. At submission: 12,551 lines of Python, 433 tests, 63 decisions.
 
@@ -397,8 +399,15 @@ curve.*
 Holding the evaluation set fixed and shrinking **only** the training set on a real
 64,000-customer experiment:
 
-- At n = 500, the best effect-based method beats random targeting on only **75% of draws**.
-- One standard estimator manages **55%** — a coin flip.
+- At n = 500, the best of five methods beats random targeting on **72.5% of 200 draws**
+  (exact 95% interval 66% to 79%).
+- The weakest of the five is at **62.5%** (55% to 69%).
+- The best method reaches 84.5% at 1,000, 95.5% at 2,000 and 98.5% at 5,000.
+- At n = 500 a plain response model (69.5%) is within noise of the best uplift model.
+
+*Corrected on 8 October 2026 (D-072). The submitted version said 75% and "55%, a coin
+flip", from twenty draws and with no interval. Fifteen wins in twenty is compatible with
+anything from 51% to 91%.*
 
 Reported as a **win rate, not a mean**, because a business gets one draw. A method with a
 good average and a wide spread is a gamble.
@@ -409,7 +418,8 @@ good average and a wide spread is a gamble.
 five methods on the Hillstrom randomised experiment. Every method improves with data and
 every one beats random on average — the shaded ±1 standard deviation bands show why that
 is misleading. Right: the proportion of seeds on which each method actually beat random.
-In the shaded region — the scale small businesses occupy — methods range from 55% to 75%.
+The shaded bands are exact 95% intervals. At 500 customers the five methods lie between
+62.5% and 72.5%.
 **The left panel is the number usually reported; the right panel is the one a business
 experiences.***
 
@@ -684,7 +694,7 @@ retainiq/
 
 ## 9. Testing and engineering discipline
 
-**558 automated tests in 26 files, 6,121 lines of test code**, run on every push across Python 3.11,
+**590 automated tests in 27 files, 6,379 lines of test code**, run on every push across Python 3.11,
 3.12 and 3.13.
 
 Tests fall into five categories:
@@ -702,7 +712,7 @@ does not report an optimiser convergence failure; it says the outcome is constan
 effect is identifiable from it. NaN covariates raise rather than being imputed, because
 filling them is a loader's decision, not a model's.
 
-**A documented decision log.** 71 entries recording *why* each modelling choice was made,
+**A documented decision log.** 73 entries recording *why* each modelling choice was made,
 appended and never edited, so a later reader can see what was believed when.
 
 **Roughly half the failing tests in this project turned out to be the test, not the code** —
@@ -830,10 +840,10 @@ non-contractual to a later phase behind a model router.
 | SHAP per-customer explanations | Exact closed-form attribution (no dependency) |
 | RFM segmentation, CRM activation layer | Neither |
 | Docker orchestration, hosted deployment | Local CLI only |
-| 0 automated tests, no CI | 558 tests, CI on 3 Python versions, 4 gates |
+| 0 automated tests, no CI | 590 tests, CI on 3 Python versions, 4 gates |
 | Correlational churn prediction | Causal effect estimation with ground truth |
 | Binary classifier (ignores censoring) | Survival model with competing risks |
-| 2 documentation files | 71 decision entries, 8,270 documentation lines |
+| 2 documentation files | 73 decision entries, 8,423 documentation lines |
 
 **Both directions are recorded.** RetainIQ-PBL's gate — "somebody can use it" — is met, and
 RetainIQ's is not.
@@ -855,8 +865,8 @@ Stated plainly, because the alternative is having a reviewer state them.
    checks owed.
 4. **The nearest published method is not a baseline.** Lemmens and Gupta's (2020) rule for
    choosing campaign size has not been run on the same pilots as the abstention rule.
-5. **The small-sample result rests on one dataset that is not retention data.** The 75%
-   figure in §5.4 is from an e-mail promotion.
+5. **The small-sample result rests on one dataset that is not retention data.** The
+   figures in §5.4 are from an e-mail promotion.
 6. **The decision layer does not beat doing nothing.** It reliably avoids the damage that
    ranking causes; it does not manufacture profit the data cannot support.
 7. **The offer optimiser's advantage is not statistically significant.** 58% on 45 draws,
@@ -928,7 +938,7 @@ of two field experiments, and simulated the correlation that explains when. None
 is this project's. What differs is the regime. Her smallest pilot is about a thousand
 customers, at 44% and 62% churn, and she names pilot size as an open question. This
 project measures what happens at 250 to 4,000 customers, 3% monthly churn and a one-point
-effect: effect-based methods beat random on 75% of draws at n = 500 (real data), an
+effect: the best method beats random on 72.5% of draws at n = 500 (real data), an
 uncertainty threshold beats ranking but not doing nothing (simulation), and the effect is
 below what a holdout can detect (simulation).
 

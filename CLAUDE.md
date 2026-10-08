@@ -33,7 +33,7 @@ underpowered. Small-n: best method beats random on **72.5% of 200 draws [.66,.79
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-558 tests. CI green.
+590 tests. CI green.
 **Phase 5 COMPLETE**; gate met on its own terms, evidence did NOT improve (58% [.42,.72]).
 **Phase 2's delivery path is BUILT (D-062)** — `make preflight` then `make autopsy` on real
 CSVs — but its gate is a sales task and **nobody has paid anything**. Next action is
@@ -133,7 +133,7 @@ retainiq/experiments/  kill_test · leakage_penalty · dunning · survival_bench
                    ai_channels (D-064) · holdout_validation (D-065) · figures
 retainiq/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           558 — fairness, realism, edge cases, leakage gate
+tests/           590 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -141,13 +141,14 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 558 tests + calibration gates — run before every commit
+make check      # lint + 590 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
 make sensitivity # why the Phase 4 gate failed — effect size and offer cost
 make ai-channels # can AI outreach drive this? break-even salience (D-064)
 make holdout    # Phase 6 — can a small business even measure a campaign? (D-065)
+make small-n    # win rates vs random at small n, with intervals + fig02 (~20 min, D-072/073)
 make ladder     # Phase 5 gate — rung-matching vs one good offer
 make dashboard  # build the retention dashboard (self-contained HTML)
 make preflight ARGS="--customers c.csv --subscriptions s.csv"  # CHECK A CLIENT EXPORT FIRST
@@ -205,20 +206,19 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-24** — **Small-n re-run at 200 draws (D-072): 72.5% [.66,.79] at n=500, 84.5% at 1,000,
-  95.5% at 2,000.** D-023's 75%/55% were 20 draws no command prints; "55%, a coin flip" is WRONG
-  (62.5%). **README, report, explainer, deck, speech STILL QUOTE 75%/55% — correction owed.**
+- **CP-24** — **Small-n at 200 draws (D-072/073): 72.5% [.66,.79] at n=500, 84.5% at 1,000, 95.5% at
+  2,000.** D-023's 75%/55% were 20 draws no command printed; "55%, a coin flip" was WRONG (62.5%).
+  `make small-n` now prints every rate WITH its interval; all documents corrected; paper text NOT.
 - **CP-23** — **The report assumed rupees and printed "not measured" as 0% (D-071); fixed.**
   Currency belongs to the `Dataset` (export or `--currency`; NEVER assumed; two currencies BLOCK).
-  Unmeasured shares are `None`, so formatting one raises. **558 tests in 26 files**.
+  Unmeasured shares are `None`, so formatting one raises.
 - **CP-22** — **`make abstention` and `make sensitivity` printed only the PRE-D-057 rule (D-069/070).**
   Both now print corrected first, legacy second; the rule is an argument with NO default. Held, except:
   best cheap rung is checkin_call 20%; the gate does NOT flip in-band once corrected (40% at −5).
 - **CP-21** — **Four papers read in full; novelty narrowed (D-068).** Ascarza 2018 App. A3.4
-  simulates corr(RISK, LIFT) (her studies ≈ ±0.2); her Study 2 has risk targeting RAISING churn.
-  Profit-scored targeting = Lemmens & Gupta 2020, **not yet a baseline**. Left: pilot size,
-  low-churn floor, uplift losing at finite n. **Five points NOT like-for-like** (SubSim = ORACLE
-  on TRUE effects); six checks owed. All repo docs, deck, speech, report, explainer corrected; paper text NOT.
+  simulates corr(RISK, LIFT); her Study 2 has risk targeting RAISING churn. Profit-scored targeting
+  = Lemmens & Gupta 2020, **not yet a baseline**. Left: pilot size, low-churn floor. **Five points
+  NOT like-for-like** (SubSim = ORACLE on TRUE effects); six checks owed. All repo docs corrected; paper text NOT.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% < 96.7% for always
   'stays'** — never a headline. Readiness PER COMPONENT. Live recording caught the demo export

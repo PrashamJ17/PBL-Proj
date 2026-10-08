@@ -34,7 +34,7 @@ be already published. Nothing has been sold to a real customer yet.**
 | **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts — see [below](#what-phase-2-found-about-failed-payments) |
 | **A report a business can actually receive** | ✅ Built | Two spreadsheet exports in, one web page out — tested against real Stripe and Razorpay formats |
 | **Predicting when a customer leaves, and what they are worth** | ✅ Done | Matches or beats established methods on public data — see below |
-| **Quality controls** | ✅ Done | 558 automated tests, all passing |
+| **Quality controls** | ✅ Done | 590 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
 | **The practical version of our method** | 🟨 Built | Beats the standard approach on 93% of runs; does **not** yet beat doing nothing — [see below](#what-phase-4-was-about-and-what-it-honestly-found) |
 | **Customer-facing product** | 🟨 Built | Decision engine, plain-language reasons, and a dashboard an owner can act from — not yet in anyone's hands |
@@ -406,8 +406,8 @@ findings were already in them.
 
 - How these methods behave when a business has only a few hundred customers. The 2018
   study names "how big does the trial need to be?" as an open question. On real data, we
-  found that with 500 customers the best method beats picking at random only three times
-  in four.
+  found that with 500 customers the best method beats picking at random only about seven
+  times in ten.
 - The measurement finding in the section above.
 - Measuring that pattern on real public experiments, including cases where the
   sophisticated method does no better than the simple one.
@@ -523,6 +523,24 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### Our headline small-business figure, measured properly
+
+For two months these documents said that with 500 customers the best method beats picking
+at random "75% of the time", and that one method managed "55%, a coin flip". Both came from
+only twenty tries, and no command in the project actually printed them. Twenty tries
+cannot tell 75% apart from a coin toss.
+
+We re-ran it with two hundred tries. The best method is at **72.5%**, and the true figure
+plausibly lies between 66% and 79%. So the main point stands: at this size it fails about
+one time in four. But the "coin flip" was wrong. That method is at 62.5%, which is clearly
+better than chance. And reliability arrives later than we said, between 2,000 and 5,000
+customers, not at 2,000.
+
+The command now prints every such figure with its plausible range beside it, and the chart
+in [05](05-the-evidence.md) shows those ranges.
+
+32 new automated tests (590 total).
 
 ### Two faults in the report a business receives, found by looking at it
 

@@ -11,7 +11,7 @@ const path = require("path");
 
 const A = path.join(__dirname, "build", "assets");
 const VIDEO_URL = (process.env.VIDEO_URL || "").trim();
-const TESTS = process.env.TESTS || "558";
+const TESTS = process.env.TESTS || "590";
 const OUT = process.env.OUT || path.join(__dirname, "RetainIQ_Presentation.pptx");
 
 const C = {
@@ -477,7 +477,7 @@ async function main() {
       { x: 7.55, y: 4.45, w: 5.2, h: 0.95, fontSize: 10.5, color: C.MUTED });
 
     const stats = [
-      ["75%", "of draws where the best uplift method beats random targeting at n = 500 (real Hillstrom RCT)"],
+      ["72.5%", "of 200 draws where the best method beats random at n = 500 (real Hillstrom RCT; 95% interval 66–79%)"],
       ["93%", "of draws where abstaining beats risk ranking; it still does not beat doing nothing"],
       ["58%", "per-customer offer choice vs one well-chosen offer: CI 42–72%, not distinguishable from chance"],
       ["≈119,500", "customers needed to detect the delivered 1.1-point retention lift with a 10% holdout"],
@@ -498,7 +498,7 @@ async function main() {
       "rankings agree, the simpler outcome model does as well or better because it estimates an easier quantity; the " +
       "order among those four settings is within noise. The SubSim row is not like-for-like: it uses true effects and an " +
       "oracle policy, on a simulator configured to have a negative correlation, so it is a ceiling. Bottom: at n = 500 " +
-      "on the real Hillstrom experiment the best uplift method beats random on 75% of draws, which is why win rate is " +
+      "on the real Hillstrom experiment the best of five methods beats random on 72.5% of 200 draws (exact 95% interval 66% to 79%; 84.5% at 1,000 and 95.5% at 2,000; the weakest method 62.5%), which is why win rate is " +
       "reported instead of the mean. The abstention rule beats ranking on 93% of draws but does not beat doing nothing, " +
       "because the break-even effect is four times the delivered effect. The per-customer optimiser wins 58% of draws, " +
       "CI [0.42, 0.72], which is chance. The holdout estimator is unbiased (88–98% interval coverage), but detecting the " +
@@ -591,7 +591,7 @@ async function main() {
     T(s, [
       para("A churn model can be accurate and still lose money: AUC 0.700, yet targeting its top 20% returns −22,823.", num),
       para("Causal targeting does not always pay: where risk and responsiveness line up, a plain model did as well " +
-           "on public experiments, and at n = 500 the best method beats random on 75% of draws.", num),
+           "on public experiments, and at n = 500 the best method beats random on 72.5% of draws.", num),
       { text: "For small businesses, reliability and measurability limit results more than the choice of model.", options: num },
     ], { x: 0.85, y: 2.08, w: 3.45, h: 3.2, fontSize: 12.5, paraSpaceAfter: 10 });
 

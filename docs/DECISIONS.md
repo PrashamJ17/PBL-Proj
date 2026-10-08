@@ -2513,3 +2513,53 @@ are left as they are in this entry so that the correction is made once, delibera
 
 **Rule.** A rate from a small number of draws is printed with its interval, or not at all.
 
+---
+
+## D-073 — The small-sample command prints win rates with intervals, at 200 draws, and every quoted figure is corrected
+
+D-072 found that the project's headline small-sample figures came from twenty draws that
+no command printed, and left the correction owed. This entry makes it.
+
+**The command is now the source.** `make small-n` (`python -m retainiq.benchmarks.small_n`)
+runs 200 draws by default, prints the win rate of every method at every training size with
+its exact 95% interval and the count it rests on, and redraws the reliability figure from
+the same run, so the table and the picture cannot quote different numbers. It takes about
+twenty minutes. `--draws` gives a quicker look, and the output then says how few draws it
+rests on.
+
+**Why 200.** At a rate near 70% the exact interval is about seven points either side. At
+twenty it is about twenty points either side. The default is the number the documents
+quote, which it was not before: the command ran twelve draws while the documents described
+twenty.
+
+**Why exact intervals.** Clopper-Pearson, because this experiment produces rates of 100%
+and small counts, where the normal approximation gives an interval of zero width or one
+that runs past 1.
+
+**A failed fit counts as a draw that did not beat random.** `run` records it as NaN. A
+business whose model failed to fit gained nothing from it, so it stays in the denominator.
+
+**The figure.** Each method's rate is drawn with its interval shaded, and the best
+method's figure at the smallest size is written on the plot with its interval. The title
+no longer says "below ~2,000 customers it is close to a gamble"; it says what is plotted.
+
+**Corrected to the 200-draw figures:** the README, the project report (with a dated note),
+the explainer (with a plain-language correction on the page that carried the old figures),
+the research plan, the deck (the tile on slide 6 and the takeaway on slide 8), and the
+speech, which gains a question on why the figure changed. The paper sources are not
+changed.
+
+**What the corrected documents now say.** Best of five methods against random: 72.5% at
+500 [66%, 79%], 84.5% at 1,000, 95.5% at 2,000, 98.5% at 5,000, 100% from 10,000. Weakest
+at 500: 62.5%. "Reliability arrives at roughly 2,000 customers" becomes "between 2,000 and
+5,000". "A coin flip" is withdrawn.
+
+**Redrawing without re-running.** `--save-draws` writes every draw to a file and
+`--from-draws` prints and draws from one. A table printed that way is headed "RE-READ …
+not re-run", because a figure re-read from a file is not the experiment run again.
+
+**Tests.** 32, none needing a dataset: the interval against known values; the pairing of a
+method with random on the same draw; a failed fit; that a win rate cannot be printed
+without its interval; that the command's default is what the documents quote; that the
+figure is drawn from the run that was printed; and that re-read draws say so.
+

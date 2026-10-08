@@ -1722,3 +1722,30 @@ command prints, and at twenty draws today the code gives 70%, 50%, 90% and 100%.
 **Not changed.** No code, no figure, and none of the documents that quote the old figures.
 Recorded as owed.
 
+## Small-sample figures corrected everywhere; the command prints them (D-073)
+
+**Changed.** `benchmarks/small_n.py`: `DRAWS = 200`, `exact_interval`, `win_rates` (moved
+here from the figure code, now with counts and intervals), a win-rate table in `report`,
+and a `main` that draws the figure from the run it printed. `benchmarks/figures.py`:
+intervals shaded, descriptive titles. `Makefile`: `make small-n`.
+
+**Run.** `make small-n`, 200 draws. Best method at n = 500: 145 of 200, 72.5% [66%, 79%];
+84.5% at 1,000; 95.5% at 2,000; 98.5% at 5,000; 100% from 10,000. Weakest at 500: 62.5%.
+`fig02_small_n_reliability.png` redrawn from that run and synced to the explainer.
+
+**Documents.** README, project report, explainer 05 and 09, research plan, deck, speech,
+two code comments. Panel materials rebuilt for the new test count.
+
+**Tested.** 32 new tests (590 in 27 files); lint and both calibration gates pass.
+
+**A slip while doing it, caught before commit.** Moving the quoted test count from 589 to 590
+with a bare word-boundary pattern also matched the 589 inside "3,589", the number of
+eligible customers, and changed it in five files. The per-file replacement counts were
+higher than expected, which is what gave it away. Every file was restored and checked
+against the last commit. Count updates now use a pattern that cannot match inside a
+larger number.
+
+**Timing.** `make small-n` takes about 21 minutes on mains power. The full check takes about
+two and a half minutes on mains power and about four on battery; the runbook and the speech
+now say so.
+

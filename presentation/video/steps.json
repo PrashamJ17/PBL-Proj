@@ -10,7 +10,7 @@
     {
       "id": "check", "kind": "terminal",
       "title": "Verify the project",
-      "subtitle": "Lint, 558 automated tests and the simulator's calibration gates",
+      "subtitle": "Lint, 590 automated tests and the simulator's calibration gates",
       "commands": [
         {"cmd": "make check", "caption": "One command re-checks the whole project: linter, test suite, and calibration against published churn benchmarks."}
       ]

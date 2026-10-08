@@ -73,6 +73,9 @@ sample:  ## Build the sample Churn Autopsy to attach to outreach (simulated data
 ai-channels:  ## Does a nearly-free AI actuator change the answer? (D-064)
 	@python -m retainiq.experiments.ai_channels
 
+small-n:  ## How often does each method beat random at small n? 200 draws, ~20 min (D-072)
+	@python -m retainiq.benchmarks.small_n
+
 holdout:  ## Phase 6 — does the holdout estimator recover a known effect? (D-065)
 	@python -m retainiq.experiments.holdout_validation
 

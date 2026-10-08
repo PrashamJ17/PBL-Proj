@@ -66,10 +66,14 @@ oracle on true effects: an upper bound, not a like-for-like measurement.*
 
 **2. At the scale of the businesses this most concerns, neither method is reliable.**
 
-Holding the evaluation set fixed and shrinking only the training set on a real
-64,000-customer experiment, the best effect-based method beats random targeting on **75%
-of draws at n = 500**. One standard estimator manages 55%. Mean performance at that size
-looks respectable — but a business gets one draw, so we report win rate, not mean (D-023).
+Holding the evaluation set fixed and shrinking only the training set on the Hillstrom
+experiment (64,000 customers; the women's-merchandise arm against control), the best of
+five methods beats random targeting on **72.5% of 200 draws at n = 500**, with an exact
+95% interval of 66% to 79%. That rises to 84.5% at 1,000, 95.5% at 2,000 and 98.5% at
+5,000. The weakest method at n = 500 is at 62.5%, and a plain response model (69.5%) is
+within noise of the best uplift model. Mean performance at that size looks respectable —
+but a business gets one draw, so we report the win rate with its interval, not the mean
+(D-023, D-072).
 
 **3. A small business cannot measure its own retention campaigns.**
 
@@ -178,7 +182,7 @@ Every design decision, including the adverse ones, is in
 git clone https://github.com/PrashamJ17/PBL-Proj.git
 cd PBL-Proj
 make install     # or: pip install -e ".[dev,viz]"
-make check       # lint + 558 tests + calibration gates
+make check       # lint + 590 tests + calibration gates
 ```
 
 ```python
@@ -211,6 +215,7 @@ Every number in the paper comes from one of these commands.
 | `make ladder` | Phase 5 gate — rung matching against one good offer (D-058) |
 | `make ai-channels` | Break-even salience for automated outreach (D-064) |
 | `make holdout` | The measurement floor (D-065) |
+| `make small-n` | Win rates against random at small *n*, with intervals, and Figure 2 (D-072; about 20 minutes) |
 | `make figures` | Regenerate all six figures |
 | `make zenodo` | Rebuild the archived data record byte-for-byte |
 | `make help` | Everything else |
@@ -277,7 +282,7 @@ retainiq/
 ├── experiments/  Every experiment in the paper, one module each.
 └── cli.py        preflight and autopsy — argparse only, no runtime dependency.
 
-tests/            558 tests — fairness, realism, edge cases, leakage gates
+tests/            590 tests — fairness, realism, edge cases, leakage gates
 docs/
 ├── BUILDLOG.md   what was built, what was tested, what happened
 └── DECISIONS.md  why each choice was made (D-001 … D-065), append-only

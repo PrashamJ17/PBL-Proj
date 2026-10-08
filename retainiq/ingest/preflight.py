@@ -36,7 +36,7 @@ from retainiq.core.schema import Dataset
 __all__ = ["Preflight", "Check", "preflight", "render_preflight"]
 
 #: Below this many customers, nothing in this project is reliable at all -- D-023 found
-#: conventional methods beating random on 75% of draws at n=500, and Phase 3 found
+#: the best conventional method beating random on about 72% of draws at n=500, and Phase 3 found
 #: nothing beating Kaplan-Meier below 250. A report is still honest work; a *model* is
 #: not, and the distinction has to reach the operator before they promise one.
 MIN_FOR_MODELLING = 250

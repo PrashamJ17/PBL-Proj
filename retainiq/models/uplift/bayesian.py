@@ -3,7 +3,7 @@
 This is the estimator Section 8 of the paper specifies, and the reason the rest of the
 project exists. Everything before it establishes a problem: at the sample sizes small
 businesses actually have, a point estimate of the treatment effect is unreliable
-(D-023: the best conventional method beats random on only 75% of draws at n=500), and
+(D-072: the best conventional method beats random on only 72.5% of draws at n=500), and
 a practitioner cannot tell in advance which correlation regime they are in (D-026).
 
 Neither is solved by a better point estimate. Both are solved by knowing *how uncertain
