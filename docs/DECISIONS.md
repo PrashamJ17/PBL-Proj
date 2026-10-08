@@ -2400,3 +2400,65 @@ these want splitting into separate tests when the count next changes.
 5% → 68%). Its §10.4 quotes the legacy 85.7% and now gives the corrected figure beside it.
 `papers/paper1/main.tex` quotes 58.9% against 85.7% and is not changed.
 
+---
+
+## D-071 — The report assumed rupees and printed "not measured" as zero; neither can now be written by accident
+
+**The defects.** Both were found in D-067, by rendering the Churn Autopsy for a dollar
+export with no invoice file, and left open until now.
+
+1. *Currency.* The formatter hard-coded the rupee symbol and lakh/crore grouping. The
+   canonical subscriptions table has no currency column, so an export's "Plan Currency"
+   was dropped at load and there was nothing to contradict the formatter. A dollar export
+   was reported in rupees.
+2. *Not measured, shown as zero.* With no invoices, `recovery_rate` and
+   `involuntary_share` were both 0.0. The page showed "0% failed payments recovered" and
+   "0% churn that is involuntary", and the last finding advised, unconditionally, "fix
+   the involuntary share first".
+
+Fixing the second found a third. With invoices supplied and **no failed payments**, the
+page also read "0% failed payments recovered", which says a business recovers none of its
+failed payments when it had none.
+
+**Why no test caught them.** Every report in the suite was built from the simulator,
+which is in rupees, has invoices, and has failures. The two-file export, which the loader's
+own docstring calls the normal engagement, was tested for loading and for preflight and
+never for what the page says. The tests exercised the one path on which the code agreed
+with itself.
+
+**Decisions.**
+
+- **The currency belongs to the dataset, not to a formatter.** `Dataset.currency` is what
+  the operator declared (`--currency`, attributed as "you told us"), or else what the
+  export states: read from the raw columns before the canonical tables drop them, and from
+  the invoices' own column. With neither, it is None and amounts are plain numbers.
+  *Rejected:* defaulting to dollars, which is the same error with a different symbol;
+  and adding a currency column to the canonical subscriptions table, which changes three
+  adapters to carry a fact that is true of the tenant, not of the row.
+- **More than one currency blocks.** Every headline figure is a sum. A forced report
+  shows no symbol and says why. A declaration that contradicts the export is a warning,
+  and the declaration is used.
+- **Not measured is None, not 0.0.** Formatting None as a percentage raises, so a caller
+  that forgets the case fails instead of printing a zero. This is D-057's remedy again:
+  make the mistake impossible to write. `involuntary_share` is None with no invoices or
+  no departures; `recovery_rate` is None when nothing failed.
+- **The page says which kind of absence it is:** "not measured · needs your invoices",
+  "none failed", "no departures". A measured zero is still printed as 0%.
+- **The advice follows the measurement.** Four cases: no invoices (send them; the 20-40%
+  benchmark is quoted and labelled as one), no departures, a material involuntary share
+  (the original advice), and a small one (this is mostly decisions).
+- **Preflight says in advance what will not be measured, at "ok" level.** Two files is
+  the normal engagement; it must be told and must not turn every verdict into CHECK.
+- **Rupees are still grouped in lakh and crore.** The sample report is in rupees by design
+  and is unchanged.
+
+**Tests.** 53 for the two fixes: 35 on currency, 18 on measurement. The checks folded into
+existing tests by D-069 and D-070 are now tests of their own (`tests/test_abstention_gate.py`,
+and nine more in `tests/test_sensitivity.py`), as those entries asked. The suite goes from
+487 tests in 23 files to **558 in 26**, and the panel materials that quote the count were
+rebuilt in the same change.
+
+**Known and not fixed.** Preflight's unit check treats large whole-number prices as minor
+units, so it would stop a yen export that is in fact correct. The dashboard and the CSV
+worklists show plain numbers and carry no currency.
+

@@ -208,9 +208,51 @@ def _coverage(ds: Dataset) -> list[Check]:
     return out
 
 
+def _currency(ds: Dataset) -> Check:
+    """Do we know what the amounts are in, and is it one thing?
+
+    Amounts in two currencies cannot be added, and every headline figure is a sum, so
+    that blocks. A currency nobody stated does not block: the report then shows plain
+    numbers, which is honest. What must never happen is a symbol the data did not
+    supply -- the report once printed rupees on a dollar export (D-071).
+    """
+    stated, declared = ds.currencies, ds.declared_currency
+    if len(stated) > 1:
+        return Check(
+            "currency", "block",
+            f"amounts are in more than one currency ({', '.join(stated)})",
+            "Totals across currencies mean nothing. Split the export by currency and run "
+            "each part on its own.",
+        )
+    if declared and stated and stated[0] != declared:
+        return Check(
+            "currency", "warn",
+            f"you said {declared}, but the export says {stated[0]}",
+            "One of the two is wrong. The report will use what you said; check before "
+            "sending.",
+        )
+    if ds.currency:
+        source = "you told us" if declared else "read from the export"
+        return Check("currency", "ok", f"{ds.currency} ({source})")
+    return Check("currency", "ok",
+                 "not stated in the export; amounts will be shown without a currency symbol")
+
+
+def _invoices(ds: Dataset) -> list[Check]:
+    """Say, before the report is built, what it will not be able to measure."""
+    if not ds.invoices.empty:
+        return []
+    return [Check(
+        "invoices", "ok",
+        "none supplied; failed payments and the involuntary share of churn will be "
+        "reported as not measured, not as zero",
+    )]
+
+
 def preflight(ds: Dataset, assumptions: list[str] | None = None) -> Preflight:
     """Run every check against an already-loaded dataset."""
-    checks: list[Check] = [_money_units(ds.subscriptions)]
+    checks: list[Check] = [_money_units(ds.subscriptions), _currency(ds)]
+    checks += _invoices(ds)
     checks += _dates(ds.subscriptions)
     checks.append(_churn(ds.subscriptions))
     checks += _coverage(ds)

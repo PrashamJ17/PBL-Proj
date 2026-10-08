@@ -33,7 +33,7 @@ underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
 ## Status
 
 **Phases 0-1, 3 done. Phase 2 BUILT (gate=client, OPEN). Phases 4-5 BUILT, gates unmet.**
-487 tests. CI green.
+558 tests. CI green.
 **Phase 5 COMPLETE**; gate met on its own terms, evidence did NOT improve (58% [.42,.72]).
 **Phase 2's delivery path is BUILT (D-062)** — `make preflight` then `make autopsy` on real
 CSVs — but its gate is a sales task and **nobody has paid anything**. Next action is
@@ -114,7 +114,7 @@ before dashboards → dunning autopilot → retention decisions, ordered by *tru
 ```
 retainiq/core/       schema (occurred_at+available_at) · features (_visible = ONLY data path)
                  leakage (availability audit, time-travel, canary injection)
-retainiq/ingest/     stripe · csv_ingest (alias resolution, recorded defaults) ·
+retainiq/ingest/     stripe · csv_ingest (alias resolution, recorded defaults, currency) ·
                  preflight (is this export safe? D-062) · subsim_adapter
 retainiq/sim/        config · latents (copula) · hazard (ONE defn, two regimes) · subsim
                  counterfactual (exact τ, CRN, LADDER) · calibration · dunning
@@ -133,7 +133,7 @@ retainiq/experiments/  kill_test · leakage_penalty · dunning · survival_bench
                    ai_channels (D-064) · holdout_validation (D-065) · figures
 retainiq/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Telco, GBSG2) ·
                    models · evaluate · small_n · spectrum · figures
-tests/           487 — fairness, realism, edge cases, leakage gate
+tests/           558 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
 papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
 ```
@@ -141,7 +141,7 @@ papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spe
 ## Commands
 
 ```bash
-make check      # lint + 487 tests + calibration gates — run before every commit
+make check      # lint + 558 tests + calibration gates — run before every commit
 make killtest   # re-run the founding experiment
 make survival   # Phase 3 head-to-head (needs `make install-survival` first)
 make clv        # value every simulated customer, split the leak by cause
@@ -205,10 +205,14 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-22** — **`make abstention` and `make sensitivity` printed only the PRE-D-057 rule (D-069/070)**
-  while every document quoted the corrected one. Both now print corrected first, legacy second;
-  the rule is an argument with NO default. Quoted figures held, except: best cheap rung is
-  checkin_call 20% (not nudge 10%); the gate does NOT flip in-band once corrected (40% at −5); D-056's hedge reading was partly a bug artefact.
+- **CP-23** — **The report assumed rupees and printed "not measured" as 0% (D-071); fixed.**
+  Currency is now a property of the `Dataset` (export or `--currency`; NEVER assumed; None =
+  plain numbers; two currencies BLOCK). Unmeasured shares are `None`, so formatting one raises.
+  Missed because every tested report came from the simulator. Folded tests split: **558 in 26 files**.
+- **CP-22** — **`make abstention` and `make sensitivity` printed only the PRE-D-057 rule (D-069/070).**
+  Both now print corrected first, legacy second; the rule is an argument with NO default. Quoted
+  figures held, except: best cheap rung is checkin_call 20% (not nudge 10%); the gate does NOT
+  flip in-band once corrected (40% at −5); D-056's hedge reading was partly a bug artefact.
 - **CP-21** — **Four papers read in full; novelty narrowed (D-068).** Ascarza 2018 App. A3.4
   simulates corr(RISK, LIFT) (her studies ≈ ±0.2); her Study 2 has risk targeting RAISING churn.
   Profit-scored targeting = Lemmens & Gupta 2020, **not yet a baseline**. Left: pilot size,
@@ -217,27 +221,23 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% < 96.7% for always
   'stays'** — never a headline. Readiness PER COMPONENT. Live recording caught the demo export
-  not producing the quoted numbers — fixed, pinned. **2 unfixed report defects:** ₹ on a USD export; involuntary advice with no invoices.
-- **CP-18** — **Published; the paper cited itself as its software archive (D-066).** DOI
-  `22009471` was the paper. Self-referential citations are locally coherent — D-057's shape.
-  **Rule: resolve every identifier, never recall it.** Repo public → Zenodo↔GitHub release;
-  `make paper` / `make paper-docx` replace manual exports. README numbers re-verified.
-- **CP-17** — **AI outreach priced, not argued (D-064).** Salience harms, not cost per
-  contact, so it was SWEPT. **Break-even salience = 0.80, BELOW neutral**: a channel as
-  intrusive as a standard offer loses money sent to everyone (−4.93/cust). At MATCHED salience
-  the AI call DOES win (5.31 vs 3.97). **Cheap actuators make selection matter MORE**. AI email
+  not producing the quoted numbers — fixed, pinned.
+- **CP-18** — **Published; the paper cited itself as its software archive (D-066).** Self-
+  referential citations are locally coherent — D-057's shape. **Rule: resolve every identifier,
+  never recall it.** `make paper` / `make paper-docx` replace manual exports.
+- **CP-17** — **AI outreach priced, not argued (D-064).** Salience harms, not cost per contact,
+  so it was SWEPT. **Break-even salience = 0.80, BELOW neutral**: a channel as intrusive as a
+  standard offer loses money sent to everyone. At MATCHED salience the AI call DOES win. AI email
   is the best channel — the finding is intrusiveness, not AI. Holdout BEFORE any sender.
 - **CP-16** — **The Autopsy can finally be delivered (D-062).** No command took a client CSV
-  → report; a real Stripe export failed **4 times in a row**. **`preflight` is the important
-  piece** — Stripe exports CENTS, so a report would quote churn cost at **100x**. It BLOCKS,
-  never converts (converting silently = D-057 again). `docs/SALES-RUNBOOK.md` lists FORBIDDEN
-  claims, each tied to the experiment forbidding it. **Gate still open: nobody has paid.**
+  → report; a real Stripe export failed **4 times in a row**. **`preflight`** — Stripe exports
+  CENTS, so a report would quote churn cost at **100x**. It BLOCKS, never converts. `docs/
+  SALES-RUNBOOK.md` lists FORBIDDEN claims by experiment. **Gate still open: nobody has paid.**
 - **CP-15/14/13** — **Phase 5 built, then shipped (D-058/059/061).** Optimizer makes money
   (28% of oracle vs 13%) but beats the achievable rival on only **58% [.42,.72]** — chance;
   a hindsight uniform rung captures **73%**, so **choosing the offer beats choosing the
-  customer**. Reason codes are EXACT (tau is linear), not SHAP. Dashboard is self-contained
-  HTML, reliability banner first and undisableable. RetainIQ-PBL's published ROC-AUC 1.000
-  is pre-fix; its own code gives **0.543** (D-060).
+  customer**. Reason codes are EXACT, not SHAP. Dashboard: reliability banner first and
+  undisableable. RetainIQ-PBL's published ROC-AUC 1.000 is pre-fix; its code gives **0.543**.
 - **CP-11** — **The gate was unpassable, and we tested the wrong rung** (D-055/056).
   Break-even |tau|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**. The two win rates
   move in OPPOSITE directions — never both above chance — while sleeping dogs collapse

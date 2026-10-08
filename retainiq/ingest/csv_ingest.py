@@ -32,6 +32,7 @@ from retainiq.core.schema import (
     TICKETS,
     Dataset,
     Table,
+    currency_code,
     empty,
 )
 
@@ -79,19 +80,40 @@ class IngestError(ValueError):
     """Raised when a file cannot be mapped to the canonical schema."""
 
 
+def _key(name: str) -> str:
+    """A column name reduced to the form aliases are matched in."""
+    # Parenthetical suffixes are stripped because every Stripe dashboard export
+    # ships "Created (UTC)" and "Canceled At (UTC)", which otherwise match nothing
+    # and fail the load on the very first file a prospect sends.
+    n = re.sub(r"\s*\([^)]*\)\s*", " ", str(name))
+    n = n.strip().lower().replace(" ", "_").replace("-", "_")
+    return re.sub(r"_+", "_", n).strip("_")
+
+
+def stated_currencies(frame: pd.DataFrame | None) -> set[str]:
+    """The currency codes a raw export states, read before any column is dropped.
+
+    The canonical subscriptions table has no currency column, so a subscriptions
+    export's "Plan Currency" would otherwise be discarded at load and the report would
+    have nothing to say what its amounts are in.
+    """
+    if frame is None:
+        return set()
+    wanted = {"currency", *ALIASES["currency"]}
+    found: set[str] = set()
+    for col in frame.columns:
+        if _key(col) in wanted:
+            found |= {c for c in map(currency_code, frame[col].unique()) if c}
+    return found
+
+
 def normalise_columns(frame: pd.DataFrame, table: Table) -> pd.DataFrame:
     """Rename columns onto canonical names using known aliases.
 
     Matching is case- and separator-insensitive, since exports arrive as
     "Customer ID", "customer-id", and "CUSTOMER_ID" with equal frequency.
     """
-    def key(name: str) -> str:
-        # Parenthetical suffixes are stripped because every Stripe dashboard export
-        # ships "Created (UTC)" and "Canceled At (UTC)", which otherwise match nothing
-        # and fail the load on the very first file a prospect sends.
-        n = re.sub(r"\s*\([^)]*\)\s*", " ", str(name))
-        n = n.strip().lower().replace(" ", "_").replace("-", "_")
-        return re.sub(r"_+", "_", n).strip("_")
+    key = _key
 
     present = {key(c): c for c in frame.columns}
     rename: dict[str, str] = {}
@@ -282,6 +304,7 @@ def load(
     lags: dict[str, pd.Timedelta] | None = None,
     defaults: dict[str, object] | None = None,
     assumptions: list[str] | None = None,
+    currency: str | None = None,
 ) -> Dataset:
     """Load a full dataset from CSV exports.
 
@@ -293,19 +316,43 @@ def load(
     present falls back to `SAFE_DEFAULTS`. Pass a list as `assumptions` to collect every
     such fill; `preflight` uses it to show the operator what was invented before a
     report goes anywhere near a prospect.
+
+    `currency` is what the operator says the amounts are in, for an export that does not
+    state it. It is never guessed: with no statement from either, the dataset's currency
+    is None and amounts are shown without a symbol.
     """
     lags = lags or {}
     record = assumptions if assumptions is not None else []
+
+    def read(src):
+        return src if src is None or isinstance(src, pd.DataFrame) else pd.read_csv(src)
+
+    # Read each file once, so the currency can be taken from the raw columns before the
+    # canonical tables drop the ones they have no place for.
+    subscriptions, invoices = read(subscriptions), read(invoices)
+    stated = stated_currencies(subscriptions) | stated_currencies(invoices)
+    declared = currency_code(currency)
 
     def maybe(src, table):
         return (load_table(src, table, lags.get(table.name), defaults, record)
                 if src is not None else empty(table))
 
-    return Dataset(
+    ds = Dataset(
         customers=load_table(customers, CUSTOMERS, None, defaults, record),
         subscriptions=load_table(subscriptions, SUBSCRIPTIONS, lags.get("subscriptions"),
                                  defaults, record),
         invoices=maybe(invoices, INVOICES),
         events=maybe(events, EVENTS),
         tickets=maybe(tickets, TICKETS),
+        stated_currencies=tuple(sorted(stated)),
+        declared_currency=declared,
     ).validate()
+
+    if declared:
+        record.append(f"currency: {declared} (you told us)")
+    elif not ds.currencies:
+        record.append(
+            "currency: not stated in the export, so amounts are shown without a currency "
+            "symbol. Pass --currency once the business confirms it."
+        )
+    return ds

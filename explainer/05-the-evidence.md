@@ -336,7 +336,7 @@ data rather than our own simulation.
 
 ## How thoroughly this is checked
 
-**487 automated tests**, all passing, run on every change. Beyond ordinary correctness:
+**558 automated tests**, all passing, run on every change. Beyond ordinary correctness:
 
 - **Fairness tests** — no hidden fact may leak into what models can see.
 - **Direction tests** — with the harm mechanism switched off, sleeping dogs must be
@@ -417,7 +417,7 @@ Everything is open and runs in under a minute on a laptop:
 
 ```bash
 pip install -e .
-python -m pytest tests/ -q            # 487 tests
+python -m pytest tests/ -q            # 558 tests
 python -m retainiq.experiments.figures    # regenerates the figure above
 ```
 

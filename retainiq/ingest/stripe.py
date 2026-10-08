@@ -204,10 +204,20 @@ def to_canonical(
     are left empty. The system must be useful from billing alone -- that is the only
     integration most small businesses will finish.
     """
+    # Read once: the prices state the currency, and the canonical subscriptions table has
+    # no column for it, so it is carried on the dataset (D-071).
+    subscriptions = list(subscriptions)
+    currencies = sorted({
+        str((item.get("price") or {}).get("currency")).upper()
+        for o in subscriptions
+        for item in ((o.get("items") or {}).get("data") or [])
+        if (item.get("price") or {}).get("currency")
+    })
     return Dataset(
         customers=map_customers(customers),
         subscriptions=map_subscriptions(subscriptions),
         invoices=map_invoices(invoices),
         events=empty(EVENTS),
         tickets=empty(TICKETS),
+        stated_currencies=tuple(currencies),
     ).validate()

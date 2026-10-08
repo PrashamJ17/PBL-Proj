@@ -1686,3 +1686,27 @@ rule the gate is not passed anywhere inside the calibration band.
 
 **Tested.** Three existing tests extended; 487 tests, lint and both calibration gates pass.
 
+## Two report defects fixed; folded tests split (D-071)
+
+**Changed.** `core/schema.py`: `Dataset.stated_currencies`, `declared_currency`, and the
+`currencies` and `currency` properties; `currency_code`. `ingest/csv_ingest.py`: reads each
+file once, takes the currency from the raw columns, accepts `currency=`. `ingest/stripe.py`:
+carries the price currency. `ingest/preflight.py`: a currency check (ok, warn or block) and
+an invoices line. `report/autopsy.py`: `format_money`, `Autopsy.currency`, `Autopsy.money`;
+`n_involuntary`, `involuntary_share` and `recovery_rate` are None when not measured; the
+closing advice depends on what was measured. `report/render.py`: two tiles that show a
+percentage only when one was measured. `cli.py`: `--currency`.
+
+**Checked on the demo export** (400 customers, dollars, no invoices). Before: rupees, "0%"
+twice, "fix the involuntary share first". After: "$4,408 is what churn costs you per year",
+"not measured" twice, and advice to send invoices. Preflight prints "currency: USD (read
+from the export)" and says what will not be measured; the verdict is still READY.
+
+**Tested.** 558 tests in 26 files (was 487 in 23): 35 on currency, 18 on measurement, and 18
+from splitting the checks D-069 and D-070 had folded into existing tests. Lint and both
+calibration gates pass.
+
+**Panel materials rebuilt** for the new counts (558 tests, 26 files, 71 decisions): deck,
+speech, runbook, storyboard and the demo video. The speech's answer on known defects now
+says both are fixed and names what is still open.
+

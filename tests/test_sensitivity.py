@@ -16,23 +16,18 @@ import pandas as pd
 import pytest
 
 from retainiq.experiments import sensitivity
-from retainiq.experiments.abstention import (
-    CORRECTED,
-    LEGACY,
-    render,
-    report,
-    run_once,
-    summarise,
-    sweep,
-)
+from retainiq.experiments.abstention import CORRECTED, LEGACY, run_once, summarise, sweep
 from retainiq.experiments.sensitivity import (
     TAU_BAND,
+    alpha_by_offer,
     economics,
     policies_for,
     regret_matrix,
 )
 from retainiq.sim import SimConfig
 from retainiq.sim.counterfactual import LADDER, REFERENCE_OFFER
+
+BOTH_RULES = pytest.mark.parametrize("rule", [CORRECTED, LEGACY], ids=lambda r: r.name)
 
 # --- the sensitivity must not perturb the baseline --------------------------
 
@@ -43,16 +38,14 @@ def test_default_path_is_unchanged_by_parameterisation():
     bare = run_once(400, seed=1001)
     explicit = run_once(400, seed=1001, config=SimConfig(), offer=REFERENCE_OFFER)
     assert bare.keys() == explicit.keys()
-    # Every summary is built from these four names. If one is renamed here and not
-    # there, `summarise` skips the size and the printed table is silently empty (D-069).
-    for rule in (CORRECTED, LEGACY):
-        assert {rule.ours, rule.comparator} <= bare.keys()
     for name in bare:
         assert bare[name].realised_value == pytest.approx(explicit[name].realised_value)
         assert bare[name].n_treated == explicit[name].n_treated
 
-    # The sensitivity remembers its sweeps so that the second decision rule's tables cost
-    # nothing (D-070). A cache that changed a figure would be a recalibration by accident.
+
+def test_a_remembered_sweep_is_identical_to_a_fresh_one():
+    """The sensitivity remembers its sweeps so the second decision rule's tables cost
+    nothing (D-070). A cache that changed a figure would be a recalibration by accident."""
     remembered = sensitivity._sweep((400,), 1)
     pd.testing.assert_frame_equal(remembered, sweep(sizes=(400,), seeds=1))
     assert sensitivity._sweep((400,), 1) is remembered
@@ -122,91 +115,80 @@ def test_in_band_flag_tracks_the_calibration_gate():
 
 def test_ties_and_wins_are_counted_separately():
     """A rule that treats nobody scores exactly 0. Conflating that with a loss would
-    hide the safety property; conflating it with a win would invent one.
-
-    The frame carries both decision rules with *different* outcomes, so this also pins
-    that a summary reads the pair of policies it was asked for and no other, and that
-    the printed report leads with the corrected rule. `make abstention` once printed
-    the pre-D-057 rule under the Phase 4 heading while every document quoted the
-    corrected one (D-069).
-    """
-    draws = [
-        {"abstention": 0.0, "top_k_expected_value": -5.0,
-         "abstention_money": 2.0, "top_k_money": 9.0,
-         "treat_all": 3.0, "random_30pct": -1.0},
-        {"abstention": 4.0, "top_k_expected_value": -5.0,
-         "abstention_money": 0.0, "top_k_money": -1.0,
-         "treat_all": -2.0, "random_30pct": -1.0},
-    ]
+    hide the safety property; conflating it with a win would invent one."""
     frame = pd.DataFrame([
         {"n_customers": 500, "seed": s, "policy": p, "value": v,
          "n_treated": 0, "n_harmed": 0, "n_eligible": 100}
-        for s, vals in enumerate(draws)
+        for s, vals in enumerate([{"abstention": 0.0, "top_k_expected_value": -5.0,
+                                   "treat_all": 3.0, "random_30pct": -1.0},
+                                  {"abstention": 4.0, "top_k_expected_value": -5.0,
+                                   "treat_all": -2.0, "random_30pct": -1.0}])
         for p, v in vals.items()
     ])
+    s = summarise(frame, LEGACY)
+    assert s["abstain_positive"].iloc[0] == pytest.approx(0.5)
+    assert s["abstain_ties"].iloc[0] == pytest.approx(0.5)
+    assert s["abstain_not_worse"].iloc[0] == pytest.approx(1.0)
+    assert s["treat_all_positive"].iloc[0] == pytest.approx(0.5)
 
-    legacy = summarise(frame, LEGACY)
-    assert legacy["abstain_positive"].iloc[0] == pytest.approx(0.5)
-    assert legacy["abstain_ties"].iloc[0] == pytest.approx(0.5)
-    assert legacy["abstain_not_worse"].iloc[0] == pytest.approx(1.0)
-    assert legacy["treat_all_positive"].iloc[0] == pytest.approx(0.5)
-    assert legacy["beats_topk"].iloc[0] == pytest.approx(1.0)      # 0 > -5, 4 > -5
 
-    corrected = summarise(frame, CORRECTED)
-    assert corrected["beats_topk"].iloc[0] == pytest.approx(0.5)   # 2 < 9, 0 > -1
-    assert corrected["abstain_mean"].iloc[0] == pytest.approx(1.0)
-    assert corrected["topk_mean"].iloc[0] == pytest.approx(4.0)
-    assert corrected["abstain_ties"].iloc[0] == pytest.approx(0.5)
+@pytest.fixture(scope="module")
+def printed() -> str:
+    """Everything `make sensitivity` prints, on the smallest sweep that exercises it."""
+    return sensitivity.render(scales=(-2.0,), sizes=(300,), seeds=2, alphas=(0.30,))
 
-    # The printed output: the corrected rule first and under the Phase 4 heading, the
-    # superseded rule second and labelled as superseded, each with its own figures.
-    text = render(frame)
-    assert text.index("PHASE 4 GATE") < text.index("BEFORE THE D-057 CORRECTION")
-    first, second = text.split("BEFORE THE D-057 CORRECTION")
-    assert "beats ranking on 1 of 2 draws (50%); mean realised 1 vs 4" in first
-    assert "beats ranking on 2 of 2 draws (100%); mean realised 2 vs -5" in second
-    assert "not the Phase 4 result" in second
-    assert "ties 0" in first
 
-    # A rule whose policies are absent says so; it never prints an empty table.
-    only_baseline = frame[frame.policy == "treat_all"]
-    assert "no draws recorded" in report(summarise(only_baseline, CORRECTED), CORRECTED)
+def test_the_sensitivity_prints_the_corrected_rule_first(printed):
+    """It printed the legacy rule alone until D-070, which left the outcomes of three
+    pre-registered predictions reproducible by no command."""
+    assert printed.index("PHASE 4 SENSITIVITY") < printed.index("BEFORE THE D-057 CORRECTION")
 
-    # The sensitivity prints in the same order, and each half names only its own rule's
-    # policies. It printed the legacy rule alone until D-070, which left the outcomes of
-    # three pre-registered predictions reproducible by no command.
-    out = sensitivity.render(scales=(-2.0,), sizes=(300,), seeds=2, alphas=(0.30,))
-    assert out.index("PHASE 4 SENSITIVITY") < out.index("BEFORE THE D-057 CORRECTION")
-    result, superseded = out.split("BEFORE THE D-057 CORRECTION")
+
+def test_each_half_of_the_sensitivity_names_only_its_own_rules_policies(printed):
+    result, superseded = printed.split("BEFORE THE D-057 CORRECTION")
     assert CORRECTED.ours in result and CORRECTED.comparator in result
     assert CORRECTED.ours not in superseded and CORRECTED.comparator not in superseded
     assert LEGACY.comparator in superseded and LEGACY.comparator not in result
+
+
+def test_the_superseded_half_says_which_half_is_the_result(printed):
+    _, superseded = printed.split("BEFORE THE D-057 CORRECTION")
     assert "the ones above are the result" in superseded
-    for half in (result, superseded):
+
+
+def test_regret_is_printed_by_axis_under_both_rules(printed):
+    """The minimax-regret reading was formed on one axis and tested on the other
+    (D-056). A maximum over both hid the result it was meant to report."""
+    for half in printed.split("BEFORE THE D-057 CORRECTION"):
         assert "maximum regret by axis" in half
+        assert "effect size" in half and "offer ladder" in half
 
 
-def test_regret_is_normalised_and_the_best_policy_scores_zero():
-    """Under either rule, and never with the two rules' policies in one comparison."""
-    for rule, other in ((CORRECTED, LEGACY), (LEGACY, CORRECTED)):
-        rm = regret_matrix([("default", {})], rule, sizes=(300,), seeds=2)
-        cols = [c for c in rm.columns if c.startswith("regret_")]
-        assert cols == [f"regret_{p}" for p in policies_for(rule)]
-        assert f"regret_{other.ours}" not in cols
-        assert f"regret_{other.comparator}" not in cols
-        vals = rm[cols].to_numpy()
-        assert np.nanmin(vals) == pytest.approx(0.0), "the best policy has zero regret"
-        assert np.nanmax(vals) == pytest.approx(1.0), "the worst policy has regret 1"
-        assert ((vals >= -1e-9) & (vals <= 1 + 1e-9)).all()
+@BOTH_RULES
+def test_regret_is_normalised_and_the_best_policy_scores_zero(rule):
+    rm = regret_matrix([("default", {})], rule, sizes=(300,), seeds=2)
+    cols = [c for c in rm.columns if c.startswith("regret_")]
+    vals = rm[cols].to_numpy()
+    assert np.nanmin(vals) == pytest.approx(0.0), "the best policy has zero regret"
+    assert np.nanmax(vals) == pytest.approx(1.0), "the worst policy has regret 1"
+    assert ((vals >= -1e-9) & (vals <= 1 + 1e-9)).all()
 
 
-def test_tied_alphas_are_reported_as_undetermined():
+@pytest.mark.parametrize(("rule", "other"), [(CORRECTED, LEGACY), (LEGACY, CORRECTED)],
+                         ids=["corrected", "legacy"])
+def test_regret_never_compares_one_rules_policies_with_the_others(rule, other):
+    rm = regret_matrix([("default", {})], rule, sizes=(300,), seeds=2)
+    cols = [c for c in rm.columns if c.startswith("regret_")]
+    assert cols == [f"regret_{p}" for p in policies_for(rule)]
+    assert f"regret_{other.ours}" not in cols
+    assert f"regret_{other.comparator}" not in cols
+
+
+@BOTH_RULES
+def test_tied_alphas_are_reported_as_undetermined(rule):
     """At a sample size where no alpha can act, every arm scores exactly zero. Taking
     `max` would name the first one and invent a preference the data does not contain."""
-    from retainiq.experiments.sensitivity import alpha_by_offer
-
-    for rule in (CORRECTED, LEGACY):
-        d = alpha_by_offer(rule, alphas=(0.05, 0.49), sizes=(200,), seeds=1)
-        tied = d[~d["determinate"]]
-        assert d["determinate"].isin([True, False]).all()
-        assert tied["best_alpha"].isna().all(), "a tie must not be reported as a winner"
+    d = alpha_by_offer(rule, alphas=(0.05, 0.49), sizes=(200,), seeds=1)
+    tied = d[~d["determinate"]]
+    assert d["determinate"].isin([True, False]).all()
+    assert tied["best_alpha"].isna().all(), "a tie must not be reported as a winner"

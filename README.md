@@ -178,7 +178,7 @@ Every design decision, including the adverse ones, is in
 git clone https://github.com/PrashamJ17/PBL-Proj.git
 cd PBL-Proj
 make install     # or: pip install -e ".[dev,viz]"
-make check       # lint + 487 tests + calibration gates
+make check       # lint + 558 tests + calibration gates
 ```
 
 ```python
@@ -277,7 +277,7 @@ retainiq/
 ├── experiments/  Every experiment in the paper, one module each.
 └── cli.py        preflight and autopsy — argparse only, no runtime dependency.
 
-tests/            487 tests — fairness, realism, edge cases, leakage gates
+tests/            558 tests — fairness, realism, edge cases, leakage gates
 docs/
 ├── BUILDLOG.md   what was built, what was tested, what happened
 └── DECISIONS.md  why each choice was made (D-001 … D-065), append-only

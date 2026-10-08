@@ -46,6 +46,10 @@ RECOVERY_WINDOW_DAYS = 30
 #: involuntary churn -- the customer never decided to leave, the card did.
 INVOLUNTARY_WINDOW_DAYS = 45
 
+#: Above this share of departures, involuntary churn is worth a finding of its own and
+#: is the place to start.
+MATERIAL_INVOLUNTARY_SHARE = 0.15
+
 
 @dataclass
 class Finding:
@@ -53,7 +57,7 @@ class Finding:
 
     title: str
     annual_value: float
-    """Estimated annual rupees at stake. Ranked on this."""
+    """Estimated annual amount at stake, in the tenant's currency. Ranked on this."""
     measured: bool
     """True if computed entirely from their data. False if it leans on a published
     benchmark, in which case the report must say so."""
@@ -80,25 +84,51 @@ class Autopsy:
     monthly_revenue_churn: float
     retention_curve: pd.DataFrame
     n_churned: int
-    n_involuntary: int
+    n_involuntary: int | None
+    """Departures that followed an unrecovered payment failure. **None when no invoice
+    data was supplied**: it was not measured, which is not the same as zero."""
 
     # --- payments ---
     n_failures: int
     failed_amount: float
     recovered_amount: float
-    recovery_rate: float
+    recovery_rate: float | None
+    """Share of failed amounts later recovered. **None when no payment failed in the
+    data**, or no invoices were supplied: there is nothing to take a share of."""
     decline_mix: pd.DataFrame
 
     notes: list[str] = field(default_factory=list)
     """Caveats about what could not be computed, shown in the report."""
+
+    currency: str | None = None
+    """The tenant's currency code, or None when the data does not state exactly one.
+    None is shown as plain numbers. It is never replaced by an assumed currency."""
 
     @property
     def arr_active(self) -> float:
         return self.mrr_active * 12
 
     @property
-    def involuntary_share(self) -> float:
-        return self.n_involuntary / self.n_churned if self.n_churned else 0.0
+    def invoices_supplied(self) -> bool:
+        return self.n_involuntary is not None
+
+    @property
+    def involuntary_share(self) -> float | None:
+        """Share of departures that were payment failures, or None if it cannot be said.
+
+        None in two cases: no invoices (not measured), and no departures (nothing to
+        take a share of). It is None and not 0.0 on purpose. A report once printed "0%
+        churn that is involuntary" for an export with no invoice file and then advised
+        fixing involuntary churn first (D-071). Formatting None as a percentage raises,
+        so a caller that forgets the case fails loudly instead of printing a zero.
+        """
+        if self.n_involuntary is None or not self.n_churned:
+            return None
+        return self.n_involuntary / self.n_churned
+
+    def money(self, x: float) -> str:
+        """An amount in this tenant's currency."""
+        return format_money(x, self.currency)
 
     @property
     def annual_churn_cost(self) -> float:
@@ -110,7 +140,7 @@ class Autopsy:
         out: list[Finding] = []
 
         # --- 1. failed payments, measured against their own recovery rate --------
-        if self.n_failures > 0:
+        if self.n_failures > 0 and self.recovery_rate is not None:
             annual_failed = self._annualise(self.failed_amount)
             unrecovered = annual_failed * (1 - self.recovery_rate)
 
@@ -122,11 +152,11 @@ class Autopsy:
                     annual_value=gain,
                     measured=False,
                     detail=(
-                        f"You lose about {_money(annual_failed)} a year to failed payments and "
+                        f"You lose about {self.money(annual_failed)} a year to failed payments and "
                         f"recover {self.recovery_rate:.0%} of it. Operators with dedicated "
                         f"retry logic recover {SMART_RECOVERY_BAND[0]:.0%}-"
                         f"{SMART_RECOVERY_BAND[1]:.0%}. "
-                        f"Closing that gap is worth roughly {_money(gain)} a year. "
+                        f"Closing that gap is worth roughly {self.money(gain)} a year. "
                         f"Your recovery rate is measured from your invoices; the target is a "
                         f"published benchmark, not a promise."
                     ),
@@ -143,20 +173,21 @@ class Autopsy:
                     measured=True,
                     detail=(
                         f"You recover {self.recovery_rate:.0%} of "
-                        f"{_money(annual_failed)} in annual "
+                        f"{self.money(annual_failed)} in annual "
                         f"failed payments, which is at or above the published top quartile. "
-                        f"{_money(unrecovered)} a year still goes unrecovered, but the easy gains "
-                        f"here are already taken."
+                        f"{self.money(unrecovered)} a year still goes unrecovered, but the "
+                        f"easy gains here are already taken."
                     ),
                     action="Focus effort on voluntary churn instead; this lever is close to spent.",
                 ))
 
         # --- 2. involuntary share ------------------------------------------------
-        if self.n_churned > 0 and self.involuntary_share > 0.15:
-            value = self.annual_churn_cost * self.involuntary_share
+        share = self.involuntary_share
+        if share is not None and share > MATERIAL_INVOLUNTARY_SHARE:
+            value = self.annual_churn_cost * share
             out.append(Finding(
                 title=(
-                    f"{self.involuntary_share:.0%} of your churn is a payments problem, "
+                    f"{share:.0%} of your churn is a payments problem, "
                     "not a product problem"
                 ),
                 annual_value=value,
@@ -164,8 +195,8 @@ class Autopsy:
                 detail=(
                     f"{self.n_involuntary} of {self.n_churned} departures followed an unrecovered "
                     f"payment failure. Those customers did not decide to leave -- their card did. "
-                    f"That is about {_money(value)} a year being lost to billing rather than to "
-                    f"anything about your product or pricing."
+                    f"That is about {self.money(value)} a year being lost to billing rather "
+                    f"than to anything about your product or pricing."
                 ),
                 action=(
                     "Treat this as a billing engineering task, not a retention campaign. "
@@ -182,7 +213,7 @@ class Autopsy:
                 annual_value=annual * (1 - float(top["recovery_rate"])),
                 measured=True,
                 detail=(
-                    f"{int(top['n'])} failures worth {_money(annual)} a year, of which you "
+                    f"{int(top['n'])} failures worth {self.money(annual)} a year, of which you "
                     f"recover {float(top['recovery_rate']):.0%}. "
                     + _code_advice(str(top["code"]))
                 ),
@@ -196,8 +227,8 @@ class Autopsy:
             measured=True,
             detail=(
                 f"At {self.monthly_revenue_churn:.1%} monthly revenue churn on "
-                f"{_money(self.mrr_active)} MRR, you lose about "
-                f"{_money(self.annual_churn_cost)} a year. Logo churn is "
+                f"{self.money(self.mrr_active)} MRR, you lose about "
+                f"{self.money(self.annual_churn_cost)} a year. Logo churn is "
                 f"{self.monthly_logo_churn:.1%} a month."
                 + (
                     "  Revenue churn running above logo churn means you are losing your "
@@ -205,13 +236,37 @@ class Autopsy:
                     if self.monthly_revenue_churn > self.monthly_logo_churn * 1.15 else ""
                 )
             ),
-            action=(
-                "Fix the involuntary share first -- it is mechanical. Voluntary churn needs "
-                "a causal approach and is a longer project."
-            ),
+            action=self._where_to_start(),
         ))
 
         return sorted(out, key=lambda f: -f.annual_value)
+
+    def _where_to_start(self) -> str:
+        """What to do about churn overall, which depends on what was measured.
+
+        The advice to fix involuntary churn first is only given when the data shows
+        there is involuntary churn worth fixing. It used to be printed unconditionally.
+        """
+        share = self.involuntary_share
+        if not self.invoices_supplied:
+            return (
+                "Send your invoices or charges export next. Without it we cannot say how "
+                "much of this churn is failed payments, which is usually the cheapest part "
+                "to fix: industry benchmarks put it at 20-40% of churn, and yours is not "
+                "measured. Voluntary churn needs a causal approach and is a longer project."
+            )
+        if share is None:
+            return "No departures in this period, so there is no churn to divide by cause."
+        if share > MATERIAL_INVOLUNTARY_SHARE:
+            return (
+                "Fix the involuntary share first -- it is mechanical. Voluntary churn needs "
+                "a causal approach and is a longer project."
+            )
+        return (
+            f"Only {share:.0%} of your departures followed a failed payment, so this is "
+            "mostly customers deciding to leave. That needs a causal approach and is a "
+            "longer project; there is no mechanical fix to start with."
+        )
 
     def _annualise(self, amount: float) -> float:
         """Scale an observed amount to an annual rate."""
@@ -220,12 +275,35 @@ class Autopsy:
         return amount * 365.0 / self.window_days
 
 
-def _money(x: float) -> str:
-    if abs(x) >= 1e7:
-        return f"₹{x/1e7:.2f} crore"
-    if abs(x) >= 1e5:
-        return f"₹{x/1e5:.1f} lakh"
-    return f"₹{x:,.0f}"
+#: Symbols for the currencies this is most likely to meet. Anything else is shown with
+#: its code in front, which is unambiguous and needs no table.
+CURRENCY_SYMBOLS = {
+    "USD": "$", "EUR": "\u20ac", "GBP": "\u00a3", "INR": "\u20b9", "JPY": "\u00a5",
+    "AUD": "A$", "CAD": "C$", "NZD": "NZ$", "SGD": "S$",
+}
+
+
+def format_money(x: float, currency: str | None) -> str:
+    """An amount, in the currency it is actually in.
+
+    `currency` is an ISO code or None. None means the data did not say, and the amount
+    is then shown as a plain number: a wrong symbol is worse than a missing one. Rupees
+    are grouped in lakh and crore because that is how they are read; every other
+    currency is grouped in thousands and millions.
+    """
+    sign = "-" if x < 0 else ""
+    v = abs(x)
+    if currency == "INR":
+        if v >= 1e7:
+            return f"{sign}\u20b9{v/1e7:.2f} crore"
+        if v >= 1e5:
+            return f"{sign}\u20b9{v/1e5:.1f} lakh"
+        return f"{sign}\u20b9{v:,.0f}"
+    body = f"{v/1e6:.2f} million" if v >= 1e6 else f"{v:,.0f}"
+    if currency is None:
+        return f"{sign}{body}"
+    symbol = CURRENCY_SYMBOLS.get(currency)
+    return f"{sign}{symbol}{body}" if symbol else f"{sign}{currency} {body}"
 
 
 def _code_advice(code: str) -> str:
@@ -296,10 +374,26 @@ def analyse(data: Dataset) -> Autopsy:
     failures, recovered_amount, decline_mix = _payment_analysis(inv, notes)
     n_failures = len(failures)
     failed_amount = float(failures["amount"].sum()) if n_failures else 0.0
-    recovery_rate = recovered_amount / failed_amount if failed_amount else 0.0
+    # Nothing failed, so there is no share to state. None, not 0%: "you recover 0% of
+    # failed payments" is a damning sentence about a business that had none.
+    recovery_rate = recovered_amount / failed_amount if failed_amount else None
 
     # --- involuntary churn ---------------------------------------------------
-    n_involuntary = _count_involuntary(subs, failures, notes)
+    # Without invoices this cannot be counted at all. None, not zero (D-071).
+    n_involuntary = None if inv.empty else _count_involuntary(subs, failures, notes)
+
+    # --- currency ------------------------------------------------------------
+    if len(data.currencies) > 1 and not data.declared_currency:
+        notes.append(
+            f"This export states more than one currency ({', '.join(data.currencies)}). "
+            "Amounts have been added together as if they were one, so every total here "
+            "is unreliable and is shown without a currency symbol."
+        )
+    elif data.currency is None:
+        notes.append(
+            "The export does not state a currency, so amounts are shown as plain numbers "
+            "in the export's own units."
+        )
 
     return Autopsy(
         n_customers=len(data.customers),
@@ -317,6 +411,7 @@ def analyse(data: Dataset) -> Autopsy:
         recovery_rate=recovery_rate,
         decline_mix=decline_mix,
         notes=notes,
+        currency=data.currency,
     )
 
 
@@ -329,7 +424,11 @@ def _payment_analysis(inv: pd.DataFrame, notes: list[str]):
     """
     empty_mix = pd.DataFrame(columns=["code", "n", "amount", "recovery_rate"])
     if inv.empty:
-        notes.append("No invoice data supplied, so failed-payment analysis was skipped.")
+        notes.append(
+            "No invoice data supplied, so failed payments and the involuntary share of "
+            "churn were not measured. They are shown as not measured, which is not the "
+            "same as zero."
+        )
         return inv.head(0), 0.0, empty_mix
 
     failures = inv[inv["status"] == "failed"].copy()

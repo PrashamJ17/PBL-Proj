@@ -43,6 +43,7 @@ def _load(args) -> tuple:
         tickets=args.tickets,
         defaults=defaults or None,
         assumptions=assumptions,
+        currency=args.currency,
     )
     if args.divide_amounts_by and args.divide_amounts_by != 1:
         ds.subscriptions["mrr"] = ds.subscriptions["mrr"] / args.divide_amounts_by
@@ -64,6 +65,10 @@ def _common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--interval", choices=["day", "week", "month", "year"],
                    help="billing interval, when the export does not carry one. "
                         "Getting this wrong scales every revenue figure.")
+    p.add_argument("--currency", metavar="CODE",
+                   help="ISO code of the export's currency (USD, INR, ...), for an export "
+                        "that does not state it. Never guessed: without it, and without a "
+                        "currency column, amounts are shown as plain numbers.")
     p.add_argument("--divide-amounts-by", type=float, default=1.0, metavar="N",
                    help="convert minor units to major (use 100 for Stripe cents). "
                         "Preflight will tell you if this is needed.")

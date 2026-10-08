@@ -3,7 +3,7 @@
 **This document is updated as the project progresses. Everything else in this folder is
 relatively stable; this is the living record.**
 
-**Last updated:** 5 October 2026. Since the previous update: the machinery for proving
+**Last updated:** 8 October 2026. Since the previous update: the machinery for proving
 results with a held-back group was built, and it showed that a small business cannot detect
 its own results that way; the paper, the software and the data were published; and a full
 reading of earlier research showed that three things we had described as our own findings
@@ -34,7 +34,7 @@ be already published. Nothing has been sold to a real customer yet.**
 | **Failed-payment recovery** | ✅ Built | Better-timed retries recover 6.9 percentage points more, using a third fewer attempts — see [below](#what-phase-2-found-about-failed-payments) |
 | **A report a business can actually receive** | ✅ Built | Two spreadsheet exports in, one web page out — tested against real Stripe and Razorpay formats |
 | **Predicting when a customer leaves, and what they are worth** | ✅ Done | Matches or beats established methods on public data — see below |
-| **Quality controls** | ✅ Done | 487 automated tests, all passing |
+| **Quality controls** | ✅ Done | 558 automated tests, all passing |
 | **Written record** | ✅ Done | Every decision and its reasoning documented |
 | **The practical version of our method** | 🟨 Built | Beats the standard approach on 93% of runs; does **not** yet beat doing nothing — [see below](#what-phase-4-was-about-and-what-it-honestly-found) |
 | **Customer-facing product** | 🟨 Built | Decision engine, plain-language reasons, and a dashboard an owner can act from — not yet in anyone's hands |
@@ -523,6 +523,24 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### Two faults in the report a business receives, found by looking at it
+
+While preparing a demonstration we produced the report for a made-up business that bills in
+dollars and sent no invoice records. The page had two faults. Every amount was shown in
+rupees. And it said "0% of your churn is from failed payments", then advised fixing failed
+payments first, when we had no invoice records and had measured nothing at all.
+
+Both are fixed. The report now shows amounts in the currency the business's own files
+state, and shows plain numbers if the files state none. It never assumes a currency. Where
+something was not measured the page says "not measured" instead of zero, and the advice
+becomes "send us your invoices". The check that runs before any report is built now tells
+us, in advance, what the report will not be able to measure.
+
+Our own tests had missed both faults, because every report they examined came from our
+simulator, which happens to use rupees and always has invoice records.
+
+71 new automated tests (558 total).
 
 ### What was already known, and the documents corrected
 

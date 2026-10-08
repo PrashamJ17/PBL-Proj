@@ -28,7 +28,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from retainiq.report.autopsy import Autopsy, _money
+from retainiq.report.autopsy import Autopsy
 
 CSS = """
 /* Theme: LIGHT by default, following the system preference when one is expressed,
@@ -82,6 +82,7 @@ h2 { font-size: 20px; margin: 44px 0 12px; letter-spacing: -0.01em; }
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 .stat { border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; }
 .stat .v { font-size: 22px; font-weight: 600; }
+.stat .v.na { font-size: 15px; font-weight: 600; color: var(--muted); line-height: 1.9; }
 .stat .k { color: var(--muted); font-size: 13px; margin-top: 2px; }
 .finding { border: 1px solid var(--line); border-radius: 5px;
   padding: 20px 22px; margin: 0 0 14px; }
@@ -252,6 +253,29 @@ DEMO_CSS = """
 """
 
 
+def _recovery_tile(a: Autopsy) -> tuple[str, str, bool]:
+    """The recovery tile, which shows a percentage only when one was measured.
+
+    A tile reading "0%" for a business that sent no invoices says they recover none of
+    their failed payments. They may have had none, or we may not have looked (D-071).
+    """
+    if a.recovery_rate is not None:
+        return f"{a.recovery_rate:.0%}", "failed payments recovered", True
+    if not a.invoices_supplied:
+        return "not measured", "failed payments recovered &middot; needs your invoices", False
+    return "none failed", "payments in the invoices you sent", False
+
+
+def _involuntary_tile(a: Autopsy) -> tuple[str, str, bool]:
+    """The involuntary-churn tile, with the same rule as the recovery tile."""
+    share = a.involuntary_share
+    if share is not None:
+        return f"{share:.0%}", "churn that is involuntary", True
+    if not a.invoices_supplied:
+        return "not measured", "churn that is involuntary &middot; needs your invoices", False
+    return "no departures", "churn that is involuntary", False
+
+
 def render(
     a: Autopsy,
     business_name: str = "Your business",
@@ -267,14 +291,15 @@ def render(
     findings = a.findings()
 
     stats = "".join(
-        f'<div class="stat"><div class="v">{v}</div><div class="k">{k}</div></div>'
-        for v, k in [
-            (f"{a.n_active:,}", "active customers"),
-            (_money(a.mrr_active), "monthly recurring revenue"),
-            (f"{a.monthly_logo_churn:.1%}", "monthly customer churn"),
-            (f"{a.monthly_revenue_churn:.1%}", "monthly revenue churn"),
-            (f"{a.recovery_rate:.0%}", "failed payments recovered"),
-            (f"{a.involuntary_share:.0%}", "churn that is involuntary"),
+        f'<div class="stat"><div class="v{"" if measured else " na"}">{v}</div>'
+        f'<div class="k">{k}</div></div>'
+        for v, k, measured in [
+            (f"{a.n_active:,}", "active customers", True),
+            (a.money(a.mrr_active), "monthly recurring revenue", True),
+            (f"{a.monthly_logo_churn:.1%}", "monthly customer churn", True),
+            (f"{a.monthly_revenue_churn:.1%}", "monthly revenue churn", True),
+            _recovery_tile(a),
+            _involuntary_tile(a),
         ]
     )
 
@@ -285,7 +310,7 @@ def render(
         <div class="finding">
           <div class="top">
             <h3>{f.title}</h3>
-            <div class="val">{_money(f.annual_value)}<span
+            <div class="val">{a.money(f.annual_value)}<span
                style="font-size:13px;font-weight:400">/yr</span></div>
           </div>
           <span class="badge {cls}">{f.confidence}</span>
@@ -295,7 +320,7 @@ def render(
 
     decline_rows = "".join(
         f"<tr><td>{r['code']}</td><td class='n'>{int(r['n'])}</td>"
-        f"<td class='n'>{_money(r['amount'])}</td>"
+        f"<td class='n'>{a.money(r['amount'])}</td>"
         f"<td class='n'>{r['recovery_rate']:.0%}</td></tr>"
         for _, r in a.decline_mix.iterrows()
     )
@@ -332,7 +357,7 @@ def render(
      of billing history</p>
 
   <div class="headline">
-    <div class="num">{_money(a.annual_churn_cost)}</div>
+    <div class="num">{a.money(a.annual_churn_cost)}</div>
     <div class="lbl">is what churn costs you per year at your current rate</div>
   </div>
 

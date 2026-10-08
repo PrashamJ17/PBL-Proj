@@ -11,7 +11,7 @@
 | **Programme** | B.Tech, Computer Science and Engineering |
 | **Semester / Year** | V Semester, 3rd Year |
 | **Mentor** | Dr. Rishi Gupta |
-| **Date** | Submitted 11 August 2026 · revised 5 October 2026 (see the revision note) |
+| **Date** | Submitted 11 August 2026 · revised 5 and 8 October 2026 (see the revision note) |
 | **Repository** | `https://github.com/PrashamJ17/PBL-Proj` (private when submitted; public since August 2026) |
 | **Archived** | Paper `10.5281/zenodo.22009470` · software `10.5281/zenodo.22025879` · data `10.5281/zenodo.22025123` |
 
@@ -45,6 +45,12 @@ before the D-057 correction, quoted in §10.2, prints as 74% and the submitted v
 75%. §5.4 to §5.7, the offer-ladder
 table in §5.8, §7.3 and §11 were not re-run. Statements about commercial tools were not
 re-checked.
+
+**Addendum, 8 October 2026.** Two faults in the client report were fixed (D-071): it showed
+every amount in rupees whatever the export's currency, and with no invoice file it showed
+unmeasured quantities as 0% and gave advice built on them. The tests that two earlier fixes
+had folded into existing ones were separated. The counts in §1, §9 and §11 are updated:
+558 tests in 26 files, 71 decisions. Nothing else in the report changed.
 
 ---
 
@@ -88,8 +94,8 @@ with competing risks, a hierarchical Bayesian treatment-effect estimator, an off
 optimiser, a client-facing diagnostic report, a holdout measurement layer, and a research
 paper published as a preprint.
 
-**Scale (5 October 2026):** 13,675 lines of Python in `retainiq/`, 5,511 lines of tests,
-487 automated tests in 23 files, 68 documented design decisions, 7,685 lines of
+**Scale (8 October 2026):** 14,103 lines of Python in `retainiq/`, 6,121 lines of tests,
+558 automated tests in 26 files, 71 documented design decisions, 8,270 lines of
 documentation in `docs/` and `explainer/`, continuous integration across Python 3.11, 3.12
 and 3.13 with four gates. At submission: 12,551 lines of Python, 433 tests, 63 decisions.
 
@@ -678,7 +684,7 @@ retainiq/
 
 ## 9. Testing and engineering discipline
 
-**487 automated tests in 23 files, 5,511 lines of test code**, run on every push across Python 3.11,
+**558 automated tests in 26 files, 6,121 lines of test code**, run on every push across Python 3.11,
 3.12 and 3.13.
 
 Tests fall into five categories:
@@ -696,7 +702,7 @@ does not report an optimiser convergence failure; it says the outcome is constan
 effect is identifiable from it. NaN covariates raise rather than being imputed, because
 filling them is a loader's decision, not a model's.
 
-**A documented decision log.** 68 entries recording *why* each modelling choice was made,
+**A documented decision log.** 71 entries recording *why* each modelling choice was made,
 appended and never edited, so a later reader can see what was believed when.
 
 **Roughly half the failing tests in this project turned out to be the test, not the code** —
@@ -824,10 +830,10 @@ non-contractual to a later phase behind a model router.
 | SHAP per-customer explanations | Exact closed-form attribution (no dependency) |
 | RFM segmentation, CRM activation layer | Neither |
 | Docker orchestration, hosted deployment | Local CLI only |
-| 0 automated tests, no CI | 487 tests, CI on 3 Python versions, 4 gates |
+| 0 automated tests, no CI | 558 tests, CI on 3 Python versions, 4 gates |
 | Correlational churn prediction | Causal effect estimation with ground truth |
 | Binary classifier (ignores censoring) | Survival model with competing risks |
-| 2 documentation files | 68 decision entries, 7,685 documentation lines |
+| 2 documentation files | 71 decision entries, 8,270 documentation lines |
 
 **Both directions are recorded.** RetainIQ-PBL's gate — "somebody can use it" — is met, and
 RetainIQ's is not.

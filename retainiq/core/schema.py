@@ -221,6 +221,18 @@ class SchemaError(ValueError):
     """Raised when a frame does not conform to its canonical table definition."""
 
 
+def currency_code(value: object) -> str | None:
+    """A currency code as stated, upper-cased; None for a blank or a placeholder.
+
+    "unknown" is what the loader writes when an invoices export has no currency column,
+    so it must never be read back as a currency.
+    """
+    if value is None or pd.isna(value):
+        return None
+    code = str(value).strip().upper()
+    return None if code in {"", "UNKNOWN", "NAN", "NONE"} else code
+
+
 @dataclass
 class Dataset:
     """A validated set of canonical tables for one tenant."""
@@ -231,6 +243,34 @@ class Dataset:
     events: pd.DataFrame = field(default_factory=lambda: empty(EVENTS))
     tickets: pd.DataFrame = field(default_factory=lambda: empty(TICKETS))
     interventions: pd.DataFrame = field(default_factory=lambda: empty(INTERVENTIONS))
+    stated_currencies: tuple[str, ...] = ()
+    """Currency codes the source states outside the canonical tables, such as the "Plan
+    Currency" column of a subscriptions export. Invoices carry their own column."""
+    declared_currency: str | None = None
+    """What the operator said the currency is. It wins over what the data states, and
+    preflight says so when the two disagree."""
+
+    @property
+    def currencies(self) -> tuple[str, ...]:
+        """Every distinct currency the *data* states, sorted. Empty if it states none."""
+        found = {currency_code(c) for c in self.stated_currencies}
+        if not self.invoices.empty and "currency" in self.invoices:
+            found |= {currency_code(c) for c in self.invoices["currency"].unique()}
+        return tuple(sorted(c for c in found if c))
+
+    @property
+    def currency(self) -> str | None:
+        """The tenant's currency, or None when it is not known.
+
+        None is a real answer and is not replaced by a guess: amounts are then shown
+        without a symbol. A report once printed every amount in rupees because the
+        formatter assumed them (D-071). More than one stated currency is also None,
+        because amounts in different currencies cannot be added.
+        """
+        if currency_code(self.declared_currency):
+            return currency_code(self.declared_currency)
+        stated = self.currencies
+        return stated[0] if len(stated) == 1 else None
 
     def validate(self) -> Dataset:
         for name, table in TABLES.items():
