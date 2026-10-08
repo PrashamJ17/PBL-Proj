@@ -1710,3 +1710,15 @@ calibration gates pass.
 speech, runbook, storyboard and the demo video. The speech's answer on known defects now
 says both are fixed and names what is still open.
 
+## The small-sample result re-run at 200 draws (D-072)
+
+**Run.** `run(n_seeds=200)` with `figures.win_rates`, 22 minutes. Best method against random
+at n = 500: 145 of 200, 72.5%, exact interval 0.66 to 0.79. Weakest: 62.5%. Full table in
+D-072. Twelve and twenty draws were also run, for comparison with what is quoted.
+
+**Found.** The quoted 75%, 55%, 90% and 100% are a twenty-draw run from August that no
+command prints, and at twenty draws today the code gives 70%, 50%, 90% and 100%.
+
+**Not changed.** No code, no figure, and none of the documents that quote the old figures.
+Recorded as owed.
+

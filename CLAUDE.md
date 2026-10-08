@@ -26,7 +26,7 @@ Lenta +0.17→+20.3% · SubSim churn −0.19→**+106.9%**. Ordering among the p
 points is within noise; the signal is the gap at negative correlation.
 When orderings coincide the outcome model wins (easier estimand); retention is the
 adversarial case. Lenta was an out-of-sample prediction that **landed** (D-031), though
-underpowered. Small-n: uplift beats random on **75% of seeds at n=500** (D-023).
+underpowered. Small-n: best method beats random on **72.5% of 200 draws [.66,.79] at n=500** (D-072).
 
 ---
 
@@ -205,10 +205,12 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   ranking 93%. **2 of 5 pre-registered predictions FAILED** — no cheap rung passes; alpha
   spread did not shrink, so **D-056 survives a challenge we raised ourselves**. Necessary,
   not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-24** — **Small-n re-run at 200 draws (D-072): 72.5% [.66,.79] at n=500, 84.5% at 1,000,
+  95.5% at 2,000.** D-023's 75%/55% were 20 draws no command prints; "55%, a coin flip" is WRONG
+  (62.5%). **README, report, explainer, deck, speech STILL QUOTE 75%/55% — correction owed.**
 - **CP-23** — **The report assumed rupees and printed "not measured" as 0% (D-071); fixed.**
-  Currency is now a property of the `Dataset` (export or `--currency`; NEVER assumed; None =
-  plain numbers; two currencies BLOCK). Unmeasured shares are `None`, so formatting one raises.
-  Missed because every tested report came from the simulator. Folded tests split: **558 in 26 files**.
+  Currency belongs to the `Dataset` (export or `--currency`; NEVER assumed; two currencies BLOCK).
+  Unmeasured shares are `None`, so formatting one raises. **558 tests in 26 files**.
 - **CP-22** — **`make abstention` and `make sensitivity` printed only the PRE-D-057 rule (D-069/070).**
   Both now print corrected first, legacy second; the rule is an argument with NO default. Quoted
   figures held, except: best cheap rung is checkin_call 20% (not nudge 10%); the gate does NOT
@@ -240,6 +242,5 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   undisableable. RetainIQ-PBL's published ROC-AUC 1.000 is pre-fix; its code gives **0.543**.
 - **CP-11** — **The gate was unpassable, and we tested the wrong rung** (D-055/056).
   Break-even |tau|=0.040 vs mean 0.010 → an *oracle* treats only **5.8%**. The two win rates
-  move in OPPOSITE directions — never both above chance — while sleeping dogs collapse
-  27%→3%. **Detectability and profitability are anti-correlated across the ladder.** A
-  minimax-regret reading was pre-registered and **REFUTED** out-of-sample.
+  move in OPPOSITE directions while sleeping dogs collapse 27%→3%. A minimax-regret reading
+  was pre-registered and **REFUTED** out-of-sample.

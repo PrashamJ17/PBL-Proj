@@ -2462,3 +2462,54 @@ rebuilt in the same change.
 units, so it would stop a yen export that is in fact correct. The dashboard and the CSV
 worklists show plain numbers and carry no currency.
 
+---
+
+## D-072 — The small-sample result holds, but not as quoted: 72.5% of 200 draws, and the "coin flip" was wrong
+
+**What the documents say** (from D-023, 8 August): on Hillstrom, with the evaluation set
+fixed and the training set shrunk to 500, the best method beats random on 75% of draws;
+the class-transform estimator on 55%, "a coin flip"; 90% at 1,000; 100% from 2,000. Twenty
+splits.
+
+**No command prints those numbers.** `python -m retainiq.benchmarks.small_n` prints means
+and standard deviations. The win rates are computed inside the figure code, at twenty
+draws, and the command's own default is twelve. Invariant 14 was written three days ago
+and this result was already in breach of it.
+
+**Re-run on 8 October, same code** (unchanged since 8 August):
+
+| Draws | Best at n = 500 | Weakest at n = 500 | Best at 1,000 | Best at 2,000 |
+|---|---|---|---|---|
+| 12 | 9 of 12 = 75% | 50% | 100% | 100% |
+| 20 | 14 of 20 = 70% | 10 of 20 = 50% | 90% | 100% |
+| **200** | **145 of 200 = 72.5% [0.66, 0.79]** | **125 of 200 = 62.5% [0.55, 0.69]** | **84.5% [0.79, 0.89]** | **95.5% [0.92, 0.98]** |
+
+At twenty draws one draw has flipped in each of the first two columns since August. The
+cause is not confirmed; a library update is the likeliest.
+
+**Twenty draws could never carry the claim.** 15 of 20 has an exact 95% interval of 0.51 to
+0.91, and 14 of 20 has 0.46 to 0.88. This project calls its own optimiser's 58%, interval
+0.42 to 0.72, "not distinguishable from chance". The headline it led with had an interval
+that touched a half as well, and no interval was ever printed beside it.
+
+**What holds, at 200 draws.** At 500 customers the best of five methods fails to beat
+random on about one draw in four. Reliability comes with data: 84.5% at 1,000, 95.5% at
+2,000, 98.5% at 5,000, 100% at 10,000.
+
+**What does not.**
+
+- *"One estimator manages 55%, a coin flip."* The weakest is 62.5%, interval 0.55 to 0.69.
+  It is above chance.
+- *"100% at 2,000"* and *"reliability arrives at roughly 2,000 customers."* It is 95.5% at
+  2,000 and reaches 98.5% at 5,000.
+- *That uplift models clearly beat outcome models at this size.* At 500 the plain response
+  model is at 69.5% against 72.5% for the best uplift model, and the intervals overlap.
+
+**Not done here, and owed.** The command should print win rates with intervals, at enough
+draws to mean something (200 takes 22 minutes). The reliability figure should be redrawn
+from that run. And every document that quotes 75%, 55%, 90% or 100% for this experiment
+still does: the README, the project report, the explainer, the deck and the speech. They
+are left as they are in this entry so that the correction is made once, deliberately.
+
+**Rule.** A rate from a small number of draws is printed with its interval, or not at all.
+
