@@ -207,7 +207,7 @@ const SLIDES = [
       "that it pays, and the reasons behind it — computed exactly from the model, not approximated. The " +
       "first thing on the page is a warning that cannot be switched off, stating that the engine beat one " +
       "well-chosen offer on only 58% of tests. " +
-      "Underneath it: **487 automated tests**, continuous integration on three Python versions with four " +
+      "Underneath it: **558 automated tests**, continuous integration on three Python versions with four " +
       "gates — tests, calibration, leakage, and the founding experiment itself — and the code, data and " +
       "paper archived on Zenodo with DOIs.",
     point: "If the panel wants to see it live, this is the moment to offer: “I can run it now, it takes about a minute.”",
@@ -330,7 +330,7 @@ const QA = [
     ["What is the technology stack?",
       "Python 3.11 to 3.13, NumPy, pandas, SciPy, scikit-learn for the churn baseline, lifelines and scikit-survival for Cox and Random Survival Forest baselines, PyTorch for DeepSurv, matplotlib for figures, pytest and ruff, GitHub Actions for CI. The Phase 0 result runs on numpy, pandas and scipy alone."],
     ["How is it tested?",
-      "487 automated tests across 23 files, including edge cases, fairness checks and a leakage suite. CI runs four gates on every push: the test suite on three Python versions, the calibration gates, the leakage gate, and the founding experiment. If the founding claim ever stops holding, the build fails."],
+      "558 automated tests across 26 files, including edge cases, fairness checks and a leakage suite. CI runs four gates on every push: the test suite on three Python versions, the calibration gates, the leakage gate, and the founding experiment. If the founding claim ever stops holding, the build fails."],
     ["How long does the whole thing take to run?",
       "The full check is about two and a half minutes. The founding experiment is a second or two. The dashboard, including a simulated pilot, is about two seconds."],
     ["How would you deploy this for a real client?",
@@ -340,7 +340,7 @@ const QA = [
     ["What happens with bad input data?",
       "That is what preflight is for: currency units, date ordering, dates that parse to 1970, insufficient history, no churn signal, and sample size. It blocks rather than converts, because a silent conversion is exactly how a report ends up a hundred times wrong."],
     ["What are the known defects?",
-      "Two open: the report formats every amount in rupees even for a dollar-denominated export, and when no invoice file is supplied it shows 0% involuntary churn and still advises fixing involuntary churn first — a zero that means “not measured”. Both are logged and both are being fixed separately."],
+      "Two were found while preparing this presentation, by building the report for a dollar export with no invoice file. Every amount was shown in rupees, and quantities that had not been measured were shown as 0%, with advice built on them. **Both are fixed.** The report now takes its currency from the export and shows plain numbers if none is stated, and anything not measured says “not measured”. What is still open: the unit check would wrongly stop a yen export, because yen prices are large whole numbers; and the decision engine has not beaten doing nothing, which I report as an unmet gate."],
     ["Is the code public? Can we run it?",
       "Yes, github.com/PrashamJ17/PBL-Proj, Apache 2.0, with a DOI. `make check` reproduces the verification; `make killtest` reproduces the founding result in seconds."],
   ]],
@@ -448,7 +448,7 @@ children.push(table([2500, 3500, 2000, W - 8000], [
   ["Offer optimiser", "Draws beating one well-chosen offer", "58%, CI 42–72%", "Not met, reported as such"],
   ["Measurement", "Bias and interval coverage vs known truth", "≈0 bias, 88–98%", "Met"],
   ["Measurement floor", "Customers needed to detect the delivered effect", "≈119,500", "Met as a finding"],
-  ["Engineering", "Tests, CI gates, Python versions", "487, 4 gates, 3.11–3.13", "Met"],
+  ["Engineering", "Tests, CI gates, Python versions", "558, 4 gates, 3.11–3.13", "Met"],
   ["Research output", "Paper, software and data archived", "3 Zenodo DOIs", "Met"],
   ["Commercial", "A paying client", "none yet", "Open"],
 ]));
@@ -486,7 +486,7 @@ children.push(table([3200, W - 3200], [
   ["Reliability and gates", "75% of draws beat random at n = 500 · abstention beats ranking on 93% · optimiser 58%, CI 42–72% · break-even effect 0.040 vs delivered 0.010 · an oracle treats 5.8%."],
   ["Measurement", "Bias ≈ 0, coverage 88–98% · MDE at 10,000 customers 0.0374 vs delivered 0.0108 · ≈119,500 customers needed · campaigns looked significant on 0–10% of runs."],
   ["Leakage", "≈0.60 honest against 0.954 leaked (the paper reports 0.603 for its configuration). Value-at-risk and churn-risk top deciles overlap by only 21%."],
-  ["Engineering", "487 tests, 23 files · 4 CI gates · Python 3.11–3.13 · 68 logged decisions · Apache 2.0."],
+  ["Engineering", "558 tests, 26 files · 4 CI gates · Python 3.11–3.13 · 71 logged decisions · Apache 2.0."],
   ["Outputs", "Paper: ~7,500 words, 12 tables, 5 figures, 27 references. DOIs: paper 10.5281/zenodo.22009470 · software 10.5281/zenodo.22025879 · data 10.5281/zenodo.22025123."],
   ["Demo figures", "Dashboard: 1,500 customers, 472 assessed, 142 to contact, 330 left alone, 131 downgrades, 10 discounts, 1 pause. Sample report: 900 customers, ₹2.6 lakh a year lost, 31% involuntary."],
 ]));

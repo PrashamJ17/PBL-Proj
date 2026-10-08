@@ -244,8 +244,10 @@ def _invoices(ds: Dataset) -> list[Check]:
         return []
     return [Check(
         "invoices", "ok",
-        "none supplied; failed payments and the involuntary share of churn will be "
-        "reported as not measured, not as zero",
+        # Kept under 112 characters with its prefix, so it does not wrap in the demo
+        # recording's terminal.
+        "none supplied; failed payments and involuntary churn will show as not measured, "
+        "not as zero",
     )]
 
 

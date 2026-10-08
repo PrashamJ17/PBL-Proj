@@ -68,8 +68,8 @@ const STEPS = [
   ["ls demo/blocked.html", "instant", "No such file or directory",
     "“And nothing was written.”"],
   ["python -m retainiq.cli autopsy --customers demo/customers.csv --subscriptions demo/subscriptions.csv --divide-amounts-by 100 --interval month --name \"Acme Analytics (demo)\" --out demo/demo_autopsy.html --worklists", "1.3 s",
-    "**VERDICT: READY**, median 153.12; writes the report and two worklists",
-    "“Once I confirm the units, the same command runs, and the assumption is recorded in the output.”"],
+    "**VERDICT: READY**, median 153.12; **currency: USD (read from the export)**; a line saying failed payments will be reported as not measured; writes the report and two worklists",
+    "“Once I confirm the units, the same command runs, and the assumption is recorded in the output. It read the currency from the file, and it tells me up front what it cannot measure without invoices.”"],
   ["make killtest", "1.4 s",
     "AUC 0.700 and the six-policy table",
     "“This is the experiment the project is built on: a churn model with AUC 0.700, and targeting its top 20% loses 22,823 — worse than random at −17,035.”"],
@@ -96,7 +96,7 @@ children.push(cmd("cd ~/Desktop/pbl-proj && git pull"));
 children.push(cmd("make check          # 2 min 20 s — run it NOW, not in front of them"));
 children.push(cmd("make sample && make dashboard && rm -rf demo   # warm the caches, then clear the demo folder"));
 [
-  "`make check` must end with **487 passed** and **RESULT: ALL TARGETS MET** twice. Now you can quote it, and the Python caches are warm so the live commands are instant.",
+  "`make check` must end with **558 passed** and **RESULT: ALL TARGETS MET** twice. Now you can quote it, and the Python caches are warm so the live commands are instant.",
   "`rm -rf demo` matters: the refusal in step 3 only happens if the export is regenerated live.",
   "Terminal: full screen, font **18–20 pt**, dark theme, `clear` the scrollback.",
   "Browser: close every tab except one blank one. The pages are self-contained files, so no server and no internet is needed.",
@@ -127,9 +127,9 @@ children.push(table([3800, W - 3800], [
   [mono("make ladder"), "The Phase 5 gate: per-customer offer choice, 58% with CI 42–72%."],
   [mono("make sensitivity"), "Why that gate could not be passed: break-even 0.040 against a delivered 0.010."],
   [mono("make survival"), "Cox, Random Survival Forest and DeepSurv head-to-head. **Needs `make install-survival` first** — do not run this cold."],
-  [mono("make check"), "Lint, 487 tests, calibration gates. 2 min 20 s: offer it, say it has already been run."],
+  [mono("make check"), "Lint, 558 tests, calibration gates. 2 min 20 s: offer it, say it has already been run."],
   [mono("make help"), "Every command the project exposes."],
-  [mono("open docs/DECISIONS.md"), "68 logged decisions with their reasoning, including the two bugs found in our own code and the prior-art correction."],
+  [mono("open docs/DECISIONS.md"), "71 logged decisions with their reasoning, including the two bugs found in our own code and the prior-art correction."],
 ]));
 
 children.push(H1("4. If something goes wrong"));
@@ -150,7 +150,7 @@ children.push(P("Do this **the day before**, never in the room: the install need
 children.push(cmd("git clone https://github.com/PrashamJ17/PBL-Proj.git"));
 children.push(cmd("cd PBL-Proj && python3 -m venv .venv && source .venv/bin/activate"));
 children.push(cmd("make install        # needs Python 3.11 or newer"));
-children.push(cmd("make check          # expect 487 passed, RESULT: ALL TARGETS MET twice"));
+children.push(cmd("make check          # expect 558 passed, RESULT: ALL TARGETS MET twice"));
 children.push(P("Then run section 0 to warm the caches. If the machine is Windows without make, every target is a plain Python command — `make help` lists them and the Makefile shows each one."));
 
 children.push(H1("6. The three things to say while your hands are busy"));
