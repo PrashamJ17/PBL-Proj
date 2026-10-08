@@ -300,7 +300,8 @@ def _pct(x: float) -> str:
     return "  n/a" if np.isnan(x) else f"{x:.0%}"
 
 
-def report(frame: pd.DataFrame) -> str:
+def report(frame: pd.DataFrame, source: str | None = None) -> str:
+    """The tables. `source` names a saved file when the draws were re-read, not re-run."""
     if frame.empty:
         return "No usable draws."
     table = by_policy(frame)
@@ -309,8 +310,12 @@ def report(frame: pd.DataFrame) -> str:
     out = [
         "ABSTENTION AGAINST LEMMENS & GUPTA (2020) -- same pilots, scored on unseen customers",
         "realised money relative to doing nothing; ground truth withheld from every policy",
-        "=" * width,
     ]
+    if source:
+        # Named as re-read so that a table printed from a saved file is never mistaken
+        # for the experiment having been run again (invariant 14).
+        out.append(f"RE-READ from {source}, not re-run")
+    out.append("=" * width)
     for name in order:
         out.append(f"  {name:<18} {DESCRIPTION[name]}")
 
@@ -373,11 +378,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--resume", type=Path, metavar="CSV",
                     help="append each finished draw to CSV and skip the draws already in it")
     ap.add_argument("--from-draws", type=Path, metavar="CSV",
-                    help="print the report for draws saved earlier, without running anything")
+                    help="print the report for draws saved earlier, without running anything. "
+                         "The output says it was re-read, not re-run.")
     args = ap.parse_args(argv)
 
     if args.from_draws:
-        print(report(pd.read_csv(args.from_draws)))
+        print(report(pd.read_csv(args.from_draws), source=args.from_draws.name))
         return 0
     frame = sweep(draws=args.draws, jobs=args.jobs, resume=args.resume)
     if args.save:

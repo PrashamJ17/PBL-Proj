@@ -1768,7 +1768,8 @@ now say so.
 - `experiments/baseline.py`: both rules on the same pilot; four pre-registered
   configurations of theirs and two labelled sensitivity runs; wins, ties and losses
   counted apart; `can_act`, so a rule that had no campaign size open to it is marked
-  differently from one that chose to do nothing. `--jobs`, `--resume`, `--from-draws`.
+  differently from one that chose to do nothing. `--jobs`, `--resume`, `--from-draws`
+  (output headed "RE-READ … not re-run").
 - `experiments/abstention.py`: `draw_pilot` split out of `run_once` so that both rules
   draw the same pilot. Checked bit-identical to the committed version on five draws, 45
   policy results.

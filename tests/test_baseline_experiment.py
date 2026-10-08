@@ -352,4 +352,8 @@ def test_the_report_can_be_printed_from_saved_draws(small_sweep, tmp_path, capsy
     saved = tmp_path / "draws.csv"
     small_sweep.to_csv(saved, index=False)
     assert main(["--from-draws", str(saved)]) == 0
-    assert capsys.readouterr().out.strip() == report(small_sweep)
+    out = capsys.readouterr().out.strip()
+    # A table printed from a file must say so, and must otherwise be the same table.
+    marker = "RE-READ from draws.csv, not re-run"
+    assert marker in out and marker not in report(small_sweep)
+    assert out.replace(marker + "\n", "") == report(small_sweep)
