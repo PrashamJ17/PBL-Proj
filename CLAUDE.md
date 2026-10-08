@@ -212,9 +212,8 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   Currency belongs to the `Dataset` (export or `--currency`; NEVER assumed; two currencies BLOCK).
   Unmeasured shares are `None`, so formatting one raises. **558 tests in 26 files**.
 - **CP-22** — **`make abstention` and `make sensitivity` printed only the PRE-D-057 rule (D-069/070).**
-  Both now print corrected first, legacy second; the rule is an argument with NO default. Quoted
-  figures held, except: best cheap rung is checkin_call 20% (not nudge 10%); the gate does NOT
-  flip in-band once corrected (40% at −5); D-056's hedge reading was partly a bug artefact.
+  Both now print corrected first, legacy second; the rule is an argument with NO default. Held, except:
+  best cheap rung is checkin_call 20%; the gate does NOT flip in-band once corrected (40% at −5).
 - **CP-21** — **Four papers read in full; novelty narrowed (D-068).** Ascarza 2018 App. A3.4
   simulates corr(RISK, LIFT) (her studies ≈ ±0.2); her Study 2 has risk targeting RAISING churn.
   Profit-scored targeting = Lemmens & Gupta 2020, **not yet a baseline**. Left: pilot size,
