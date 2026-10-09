@@ -1896,3 +1896,24 @@ check` with 750 tests took 5 minutes 32 seconds on battery. It has not been time
 power since the last 29 tests were added; with 721 it took 3 minutes 18 seconds there. The
 runbook and the speech now say "about five and a half minutes on battery, less on mains
 power".
+
+## A fixed stopping rule for the benchmark classifier, and control-only risk as the headline (D-077)
+
+**Order of work.** Pre-registration committed alone (`000d0a8`), then the change, then the
+runs.
+
+**Changed.** `benchmarks/models._clf`: `early_stopping=False`, with the reason in its
+docstring. `benchmarks/spectrum_checks.py`: `HEADLINE = "control_indep"`, a headline
+table at the top of the report, the figure's panels and axis label, the diagnostic's
+labels. `tests/test_spectrum_checks.py`: three tests rewritten for the new setting,
+including the invariant test. `tests/test_benchmarks.py`: the Hillstrom "no sleeping dogs"
+test restated over ten splits with standard errors.
+
+**Run.** `make correlation-checks` (26 minutes, mains power) and `make small-n` (41
+minutes). Both saved; `fig07` and `fig02` redrawn from the saved runs.
+
+**Found.** K1 and K2 passed; S1 to S6 held. Figures in D-077.
+
+**Not changed.** Anything under `presentation/`, at the author's instruction.
+
+**Tested.** 750 tests; lint and both calibration gates pass.

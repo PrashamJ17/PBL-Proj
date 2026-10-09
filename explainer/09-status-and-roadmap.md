@@ -515,11 +515,11 @@ not been accepted by a journal.
 1. **Get the failed-payment work in front of real businesses.** This is not a coding
    task and no further code completes it. The report described above needs to be run
    against real billing exports and shown to the people who own them.
-2. **Put the new results into the paper.** The checks we owed on our own evidence have
-   been run (see [above](#what-we-had-wrongly-called-ours)). The paper still describes the
-   old figures. Two things remain: deciding whether to fix the software setting described
-   above and re-run the measurements it affects, and the question of why our method loses
-   money on most of the occasions when it acts. None of this needs a client.
+2. **Finish the rewritten paper.** The checks we owed on our own evidence have been run
+   (see [above](#what-we-had-wrongly-called-ours)), the software setting described there
+   has been fixed, and a new draft of the paper has been written from the corrected
+   results. One question remains open: why our method loses money on most of the occasions
+   when it acts. None of this needs a client.
 3. **Nothing further to build for clients until somebody uses it.** The measuring
    machinery of Phase 6 is built and tested on simulated businesses. Finishing it, and all
    of Phase 7 (learning across businesses), needs a real client by definition. Every
@@ -566,6 +566,23 @@ From [07](07-risks-and-limitations.md), the falsifiable conditions:
 ## Change log
 
 Entries are appended as work completes. Older entries are never edited.
+
+### The fault fixed, and everything measured again
+
+The entry below describes a setting in our software that had been distorting two of our
+measurements. It is now fixed: the two predictions that are subtracted from each other
+are always built in the same number of steps. We also changed which customers the first
+of our two questions is asked of, to match the 2018 study whose idea we are measuring.
+
+Before making either change we wrote down two checks and six predictions. All eight held.
+In particular, our lead result, how often the best method beats picking at random with
+500 customers, came out exactly as before, 72.5%, and the two largest experiments barely
+moved.
+
+One of our own automated tests failed when the setting changed. It had been checking a
+claim on a single division of the customers, which is the same mistake the entries below
+describe. It now checks the claim over ten. The number of automated tests is unchanged at
+750. The slides and speaking notes have not been brought up to date with these figures.
 
 ### One more check, and a fault in our measuring instrument
 

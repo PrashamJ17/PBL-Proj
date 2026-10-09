@@ -77,6 +77,17 @@ default once it has more than 10,000 rows.** §5.3 says so, gives the figures wi
 default switched off, and corrects the explanation the decision log had given (D-074).
 Three of the five new predictions held. Counts: 750 tests in 30 files, 76 decisions.
 
+**Fourth addendum, 9 October 2026.** The classifier was then fixed so that it always runs
+the same number of rounds, and the correlation table and the small-sample result were
+measured again, with two checks and six predictions written down first (D-077). All eight
+held. The small-sample figures in §5.4 are unchanged. **The table in §5.3 is the
+measurement of 8 October and is superseded**: the current table is in the repository's
+README and in D-077. It now leads with risk fitted on control customers only, on customers
+the effect model never saw, which is the definition in Ascarza (2018). On that definition
+the figures are +0.43 for Criteo, +0.17 for the men's e-mail, +0.07 for Lenta, −0.01 for
+the women's e-mail and −0.14 for the simulated trial. The research paper is being
+rewritten from these results. 77 decisions; the number of tests is unchanged.
+
 ---
 
 ## Table of contents

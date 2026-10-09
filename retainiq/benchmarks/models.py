@@ -24,8 +24,20 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 
 
 def _clf(seed: int):
+    """Every classifier the benchmarks fit. It runs all 150 rounds, always.
+
+    scikit-learn's default is to stop early once a model is given more than 10,000 rows:
+    it holds back a random tenth and stops when that tenth stops improving. A T-learner is
+    two models, one per arm, and its effect estimate is one minus the other. Left to the
+    default, each stopped at its own round, and the estimate followed the difference in
+    rounds and not the customers (D-076). Early stopping is therefore off, so that every
+    model is fitted by the same rule whatever the size of its sample (D-077,
+    `docs/PREREG-fixed-stopping.md`). Results fitted on 10,000 rows or fewer are the same
+    either way, because nothing there ever stopped early.
+    """
     return HistGradientBoostingClassifier(
-        max_iter=150, learning_rate=0.06, max_depth=3, random_state=seed
+        max_iter=150, learning_rate=0.06, max_depth=3, random_state=seed,
+        early_stopping=False,
     )
 
 

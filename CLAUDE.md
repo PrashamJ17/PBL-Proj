@@ -19,14 +19,13 @@ by *churn risk* by only **21%** — the score finds the wrong 79% of the money, 
 causal argument is made.
 
 **Real data (Hillstrom, Criteo, Lenta RCTs).** Worse-than-random did NOT replicate →
-claim SCOPED (D-020). **corr(τ, propensity)** (NOT ours, D-068) over **30 splits** (D-074,
-`make correlation-checks`; mean [2.5,97.5 pct] → uplift gain per 1,000): Criteo +0.58
-[.51,.65]→+0.1 · Hillstrom-mens +0.28 [−.21,.66]→−0.1 · Hillstrom-womens +0.18→+2.6 ·
-Lenta +0.13→+0.6 · SubSim FITTED trial (60k) −0.21 [−.33,−.07]→**+9.7 [5.0,14.4]**, 30/30.
-**NEVER quote one split:** the old "+0.69→−5.6%" was the HIGHEST of 30. Real four cannot be
-ordered; on log-odds none is clearly positive (−0.46…+0.06). **Hillstrom's wide ranges are an
-EARLY-STOPPING artefact (D-076)**: stopping off → +0.30 [.17,.42], +0.16 [.04,.31]. Lenta's prediction **landed**
-(D-031), underpowered. Small-n: best method beats random on **72.5% of 200 draws [.66,.79] at n=500** (D-072).
+claim SCOPED (D-020). **corr(benefit, RISK)** (NOT ours, D-068), 30 splits, fixed stopping,
+**risk = control-only on unseen customers = Ascarza's** (D-077, `make correlation-checks`; mean
+[2.5,97.5 pct] → uplift gain per 1,000): Criteo +0.43 [.31,.53]→+0.1 · Hillstrom-mens +0.17
+[.00,.31]→+0.1 · Lenta +0.07→+0.5 · Hillstrom-womens −0.01→+2.9 · SubSim FITTED trial (60k)
+−0.14 [−.30,.00]→**+9.1 [4.5,13.6]**, 30/30. Both-arm risk (old definition) reads +0.05…+0.17
+HIGHER. On log-odds NO real setting is positive. **NEVER quote one split** (old "+0.69" was the
+highest of 30, an early-stopping artefact, D-076). Lenta's prediction **landed** (D-031), underpowered. Small-n: best method beats random on **72.5% of 200 draws [.66,.79] at n=500** (D-072).
 
 ---
 
@@ -106,6 +105,8 @@ before dashboards → dunning autopilot → retention decisions, ordered by *tru
     NaN covariates raise rather than impute — filling is a loader decision.
 14. **A quoted number is what its named command prints TODAY.** Run the command; never copy
     a figure from another document (D-057, D-066, D-069 are all this failure).
+15. **Benchmark classifiers never stop early** (`benchmarks/models._clf`, `early_stopping=False`).
+    A T-learner is one model minus another: both must be fitted by the same rule. Tested (D-077).
 
 ---
 
@@ -203,19 +204,19 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   truth was +20.5. Overstatement `1/(p0(1-p0))` → **worst for low-risk customers**: the
   Sure Thing error, inside our own rule. Every test passed: all were self-consistency
   checks, and a units error is self-consistent. Fixed in `policy/economics.py`; the new
-  rule takes **money only**, so it is unrepresentable. Losses -3,531→-1,070, beats
-  ranking 93%. **2 of 5 pre-registered predictions FAILED**; D-056 survives a challenge we
-  raised ourselves. Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-26** — **Follow-up check, pre-registered; 3 of 5 held (D-076).** Sharing customers inflates
-  corr ≤0.05; control-only risk (Ascarza's) reads LOWER than both-arm (ours): −0.08 Criteo, −0.12
-  H-womens. **A failed prediction found the instrument's fault: sklearn HGB early-stops by default
-  above 10,000 rows; Hillstrom arms ≈ 10,650; the T-learner's two models stopped at different
-  rounds (seed 0: 70 vs 26 → +0.69; alike → +0.35).** Means, log-odds, gains unmoved; ≤10,000 rows
-  untouched (tested). **OPEN DECISION: fix `benchmarks/models._clf` stopping, re-run Criteo+Lenta.**
-- **CP-25** — **Both owed checks run, pre-registered; 4 of 11 predictions held (D-074/075).**
-  **vs Lemmens & Gupta (re-implemented): abstention ahead 78% of differing draws from n=1,000; NOT
-  at 250 (26%) or 500 (47%); do-nothing beats both.** Their rule could not act at 250 (my 10-per-arm
-  guard, marked in output). **Abstention made money on 25 of the 139 draws it acted on.**
+  rule takes **money only**, so it is unrepresentable. **2 of 5 pre-registered predictions
+  FAILED.** Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-27** — **Classifier fixed, table re-run, pre-registered: 2 checks + 6 predictions ALL held
+  (D-077).** Criteo/Lenta moved 0.02/0.01; small-n identical to 10,000. Headline risk is now
+  Ascarza's. A single-split Hillstrom test failed under the change and was restated over 10 splits.
+  **New paper draft (pilot size + measurement floor) is LOCAL ONLY**, listed in `.git/info/exclude`
+  until the author publishes it. `presentation/` NOT updated at the author's instruction.
+- **CP-26** — **Follow-up check; 3 of 5 held (D-076).** A failed prediction found the instrument's
+  fault: sklearn HGB early-stops by default above 10,000 rows; Hillstrom arms ≈ 10,650; the
+  T-learner's two models stopped at different rounds (seed 0: 70 vs 26 → +0.69; alike → +0.35).
+- **CP-25** — **Both owed checks run; 4 of 11 predictions held (D-074/075). vs Lemmens & Gupta
+  (re-implemented): abstention ahead 78% of differing draws from n=1,000; NOT at 250 or 500;
+  do-nothing beats both. Abstention made money on 25 of the 139 draws it acted on.**
 - **CP-24** — **Small-n at 200 draws (D-072/073): 72.5% [.66,.79] at n=500, 84.5% at 1,000, 95.5% at
   2,000.** D-023's 75%/55% were 20 draws no command printed; "55%, a coin flip" was WRONG (62.5%).
 - **CP-23** — **The report assumed rupees and printed "not measured" as 0% (D-071); fixed.**
@@ -223,8 +224,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
 - **CP-22** — **`make abstention` and `make sensitivity` printed only the PRE-D-057 rule (D-069/070).**
   Both now print corrected first, legacy second; the rule is an argument with NO default.
 - **CP-21** — **Four papers read in full; novelty narrowed (D-068).** Ascarza 2018 App. A3.4
-  simulates corr(RISK, LIFT); her Study 2 has risk targeting RAISING churn. Profit-scored targeting
-  = Lemmens & Gupta 2020. Left: pilot size, low-churn floor. All repo docs corrected; paper text NOT.
+  simulates corr(RISK, LIFT); her Study 2 has risk targeting RAISING churn. Left: pilot size.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% < 96.7% for always
   'stays'** — never a headline. Readiness PER COMPONENT.

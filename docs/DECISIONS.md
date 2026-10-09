@@ -2985,3 +2985,102 @@ add up to the movement they explain; the mechanism behind C1 is demonstrated wit
 depending on whether the outcome is good or bad, and nothing when the arms are equally
 noisy); the diagnostic's "automatic" column is the main tables' figure exactly; and below
 10,000 rows the stopping rule makes no difference.
+
+## D-077 — The benchmark classifier runs all its rounds, and the table reports Ascarza's risk: both checks passed and all six predictions held
+
+D-076 left a decision open: whether to give the benchmark classifier a fixed stopping
+rule. It was taken, and with it the question of which definition of risk the table should
+lead with. Both changes and their predictions were committed before anything was changed
+or re-run (`docs/PREREG-fixed-stopping.md`, commit `000d0a8`).
+
+**What changed.**
+
+- `benchmarks/models._clf` sets `early_stopping=False`. Every benchmark model runs its
+  full 150 rounds at every sample size, so a T-learner's two models are always fitted by
+  the same rule. Off was chosen over always-on because always-on would hold back a tenth
+  of every sample, including samples of 500, and change every small-sample result.
+- The headline correlation is `control_indep`: risk fitted on control customers only, on
+  customers the effect model never saw. That is Ascarza's RISK. The both-arm,
+  same-customer figure stays in the table beside it.
+
+**The two checks.**
+
+| | Check | Result |
+|---|---|---|
+| K1 | Hillstrom and simulator rows reproduce the diagnostic's stopping-off figures | **Passed.** Every column identical on all 90 splits |
+| K2 | `make small-n` unchanged at every training size up to 10,000 | **Passed.** All five methods identical at 500, 1,000, 2,000, 5,000 and 10,000 |
+
+**The six predictions.**
+
+| | Prediction | Result |
+|---|---|---|
+| S1 | Criteo and Lenta move by less than 0.05 | **Held.** −0.020 and −0.011 |
+| S2 | Their spread across splits does not grow | **Held.** It shrank: 0.044 to 0.039, 0.056 to 0.051 |
+| S3 | Lower on the log-odds scale in all four real settings | **Held.** On all 120 splits |
+| S4 | Uplift gain's range includes zero in each real setting; positive on at least 27 of 30 in the simulator | **Held.** 30 of 30 in the simulator |
+| S5 | Control-only risk reads lower than both-arm risk, customers separate, in all four; by 0.05 or more in Criteo | **Held.** −0.02, −0.08, −0.11, −0.01 |
+| S6 | Best method at 20,000 training customers stays at 99% or above | **Held.** 100% |
+
+**The table now.** Thirty splits, fixed stopping; mean with the 2.5th and 97.5th
+percentiles across splits.
+
+| Setting | Risk on control, other customers (headline) | Same, log-odds scale | Risk on both arms, same customers | Uplift gain per 1,000 | Gain positive on |
+|---|---|---|---|---|---|
+| Criteo | +0.43 [+0.31, +0.53] | −0.03 [−0.37, +0.26] | +0.56 [+0.48, +0.63] | +0.1 [−0.1, +0.4] | 20 of 30 |
+| Hillstrom (mens) | +0.17 [+0.00, +0.31] | −0.30 [−0.45, −0.11] | +0.30 [+0.17, +0.42] | +0.1 [−2.9, +3.2] | 15 of 30 |
+| Lenta | +0.07 [−0.02, +0.21] | −0.06 [−0.19, +0.09] | +0.12 [+0.04, +0.22] | +0.5 [−0.1, +1.2] | 28 of 30 |
+| Hillstrom (womens) | −0.01 [−0.20, +0.17] | −0.28 [−0.42, −0.15] | +0.16 [+0.04, +0.31] | +2.9 [−0.1, +5.8] | 28 of 30 |
+| SubSim (fitted) | −0.14 [−0.30, +0.00] | −0.18 [−0.35, +0.10] | −0.22 [−0.33, −0.07] | +9.1 [+4.5, +13.6] | 30 of 30 |
+
+**What this says.**
+
+- **D-074's reading of Criteo and Lenta stands.** They were not being shaped by where
+  their models stopped. With hundreds of thousands of rows per model the stopping round
+  matters little, as predicted.
+- **Under Ascarza's definition one real setting has a clearly positive correlation.**
+  Criteo, +0.43. Hillstrom (mens) is weakly positive, Lenta and Hillstrom (womens) cannot
+  be told from zero, and the simulated retention trial is negative on 29 of 30 splits.
+  Criteo's range sits above the other three by two thousandths, which is not a separation
+  to lean on.
+- **The gain lines up with it, on five points.** Nothing where the correlation is
+  highest; small and positive on 28 of 30 splits where it is near zero; +9.1 per 1,000
+  where it is negative. That is what Ascarza's argument leads to. Five settings, four of
+  them not retention and the fifth configured, do not establish it.
+- **On the log-odds scale no real setting is positive**, and the simulator (−0.18) is not
+  set apart from the two Hillstrom arms (−0.30, −0.28). Unchanged from D-074.
+- **The both-arm definition reads higher by 0.05 to 0.17.** Part is shared estimation
+  error (up to 0.07). Part is in the definition: a model fitted on both arms predicts the
+  untreated risk plus the treated share of the effect, so it correlates with the effect
+  whenever the effect varies.
+- In the simulator the best outcome model's selection adds churn on 24 of 30 splits (26
+  under the old stopping rule).
+
+**A test that failed under the change, and what it was worth.**
+`test_hillstrom_has_no_sleeping_dogs` asserted that on one split the customers a
+T-learner ranks lowest still had positive measured uplift. Under the new setting that
+split gives −0.003, against a standard error of 0.015. Over thirty splits, under either
+stopping rule, the mean is about +0.02, 2 splits in 30 are slightly negative, and none is
+two standard errors below zero. The claim it protects, that Hillstrom has no segment the
+campaign harms, holds. The test had been resting it on one split. It now takes ten splits
+and uses the standard error. It is the same lesson as D-072 and D-074, found this time in
+the test suite.
+
+**The small-sample result.** Identical at every size up to 10,000, where no model ever
+had more than 10,000 rows. At 20,000 two figures moved: outcome propensity 96.5% to
+95.0%, class transformation 99.0% to 100.0%. Nothing quoted anywhere uses those two.
+`fig02` is redrawn from this run.
+
+**A new invariant.** Benchmark classifiers never stop early. A test checks the setting on
+every model class and checks that the diagnostic's "off" column is the main tables'
+figure to the last digit.
+
+**Not updated, at the author's instruction.** The deck, the speech and the other panel
+documents. They still carry the D-076 table.
+
+**Timing.** `make correlation-checks` took 26 minutes with stopping off, less than the 31
+it took with stopping on, because nothing is held back and scored each round. I had
+estimated an hour or more. `make small-n` took 41 minutes, against 22, because at 20,000
+every model now runs all 150 rounds.
+
+**Tests.** 750, the same number. Three were rewritten to pin the new setting and one to
+state its claim over ten splits.

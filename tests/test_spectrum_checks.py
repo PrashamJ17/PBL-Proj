@@ -22,6 +22,7 @@ from retainiq.benchmarks.spectrum_checks import (
     CLIP,
     COEFFICIENTS,
     FOLLOW_UP,
+    HEADLINE,
     RISKS,
     SCALES,
     SIM,
@@ -384,9 +385,11 @@ def test_the_summary_says_how_many_splits_each_figure_rests_on():
 
 def test_the_report_has_a_section_for_each_check():
     text = report(frame_of({"pooled_pearson_prob": [0.5, 0.7]}))
-    for heading in ("1. THE COEFFICIENT", "2. THE SCALE", "3. THE DEFINITION OF RISK",
+    for heading in ("HEADLINE: risk fitted on control customers", "1. THE COEFFICIENT",
+                    "2. THE SCALE", "3. THE DEFINITION OF RISK",
                     "4. WHAT THE UPLIFT MODEL GAINS"):
         assert heading in text
+    assert text.index("HEADLINE") < text.index("1. THE COEFFICIENT")
     assert "mean over 2 splits" in text
     assert "+0.60 [+0.51, +0.69]" in text
 
@@ -452,9 +455,12 @@ def test_the_figure_plots_no_oracle_point():
         "no point is an oracle", "")
 
 
-def test_the_figure_shows_both_scales():
-    assert [m for m, _ in spectrum_checks.PANELS] == ["pooled_pearson_prob",
-                                                      "pooled_pearson_logodds"]
+def test_the_figure_shows_the_headline_risk_on_both_scales():
+    """Ascarza's RISK: fitted on control customers only, on customers the effect model
+    never saw (D-077). The both-arm figure stays in the tables, not in the picture."""
+    assert HEADLINE == "control_indep"
+    assert [m for m, _ in spectrum_checks.PANELS] == ["control_indep_pearson_prob",
+                                                      "control_indep_pearson_logodds"]
 
 
 @pytest.fixture
@@ -650,7 +656,7 @@ def diagnostic():
     return stopping_diagnostic(make_rct(n=1500, seed=2), Setting("Synthetic", "test"), splits=2)
 
 
-def test_the_two_ways_of_fitting_are_the_default_and_off():
+def test_the_two_ways_of_fitting_are_the_library_default_and_the_projects_setting():
     assert STOPPING == {"automatic": "auto", "off": False}
 
 
@@ -663,18 +669,18 @@ def test_the_diagnostic_covers_the_settings_where_a_model_crosses_the_line():
 def test_fitting_reaches_every_benchmark_classifier():
     from retainiq.benchmarks import models
 
-    with fitting(False):
-        assert models._clf(3).early_stopping is False
-        assert spectrum_checks._clf(3).early_stopping is False
-    assert models._clf(3).early_stopping == "auto"
-    assert spectrum_checks._clf(3).early_stopping == "auto"
+    with fitting("auto"):
+        assert models._clf(3).early_stopping == "auto"
+        assert spectrum_checks._clf(3).early_stopping == "auto"
+    assert models._clf(3).early_stopping is False
+    assert spectrum_checks._clf(3).early_stopping is False
 
 
 def test_fitting_changes_nothing_about_the_classifier_but_its_stopping():
     from retainiq.benchmarks import models
 
     default = models._clf(5).get_params()
-    with fitting(False):
+    with fitting("auto"):
         changed = models._clf(5).get_params()
     assert {k for k in default if default[k] != changed[k]} == {"early_stopping"}
 
@@ -683,17 +689,29 @@ def test_the_classifier_is_put_back_even_when_a_fit_fails():
     from retainiq.benchmarks import models
 
     original = models._clf
-    with pytest.raises(RuntimeError, match="a fit failed"), fitting(False):
+    with pytest.raises(RuntimeError, match="a fit failed"), fitting("auto"):
         raise RuntimeError("a fit failed")
     assert models._clf is original and spectrum_checks._clf is original
 
 
-def test_automatic_stopping_is_exactly_the_default():
-    """The diagnostic's "automatic" column has to be the main tables' figure, to the last
-    digit, or the comparison beside it is with something else."""
+def test_the_benchmark_classifier_never_stops_early():
+    """The invariant from D-077. A T-learner's effect is one model minus another, so the
+    two have to be fitted by the same rule: every benchmark classifier runs all its
+    rounds, whatever the size of its sample. The diagnostic's "off" column is therefore
+    the main tables' figure, to the last digit."""
+    from sklearn.ensemble import HistGradientBoostingClassifier
+
+    from retainiq.benchmarks import models
+
+    assert models._clf(0).early_stopping is False
+    for cls in (*models.ALL_TARGETERS, models.TLearner):
+        fitted_by = [m for m in vars(cls(seed=0)).values()
+                     if isinstance(m, HistGradientBoostingClassifier)]
+        assert all(m.early_stopping is False for m in fitted_by), cls.__name__
+
     rct = make_rct(n=1500, seed=2)
     plain = one_split(rct, seed=1)
-    with fitting("auto"):
+    with fitting(False):
         forced = one_split(rct, seed=1)
     assert same(plain, forced)
 
@@ -718,6 +736,8 @@ def test_above_ten_thousand_rows_the_default_stops_early_and_off_does_not():
     assert automatic["train_treated"] > 10_000 and automatic["train_control"] > 10_000
     assert [off[k] for k in ("rounds_treated", "rounds_control", "rounds_pooled")] == [150] * 3
     assert min(automatic[k] for k in ("rounds_treated", "rounds_control", "rounds_pooled")) < 150
+    # With no override, the project's own setting is the "off" one.
+    assert boosting_rounds(rct, seed=0) == off
 
 
 def test_the_diagnostic_measures_every_split_both_ways(diagnostic):

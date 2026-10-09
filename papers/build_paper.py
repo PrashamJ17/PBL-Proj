@@ -267,9 +267,15 @@ def _split_sections(html: str) -> tuple[str, str, str]:
     return title, abstract, body
 
 
-def build(out: Path = OUTPUT, keep_html: bool = False) -> Path:
+def _title(md: str) -> str:
+    """The document's own first heading, for the PDF's title field."""
+    m = re.search(r"^#\s+(.+)$", md, flags=re.M)
+    return m.group(1).strip() if m else "Research paper"
+
+
+def build(out: Path = OUTPUT, keep_html: bool = False, source: Path = SOURCE) -> Path:
     _require(CHROME, "Google Chrome is required to render the PDF.")
-    md = SOURCE.read_text(encoding="utf-8")
+    md = source.read_text(encoding="utf-8")
 
     html = _pandoc(md)
     html = _inline_images(html)
@@ -283,7 +289,7 @@ def build(out: Path = OUTPUT, keep_html: bool = False) -> Path:
 
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<title>When Does Uplift Modelling Pay?</title>
+<title>{_title(md)}</title>
 <style>{CSS}</style></head>
 <body>
 <div class="titleblock">{title}</div>
@@ -371,7 +377,7 @@ def _reference_docx(dest: Path) -> Path:
     return dest
 
 
-def build_docx(out: Path | None = None) -> Path:
+def build_docx(out: Path | None = None, source: Path = SOURCE) -> Path:
     """Render the paper to a Word document."""
     out = out or (HERE / "RetainIQ_Research_Paper.docx")
     tmpdir = Path(tempfile.mkdtemp(prefix="retainiq-docx-"))
@@ -380,7 +386,7 @@ def build_docx(out: Path | None = None) -> Path:
     subprocess.run(
         # implicit_figures off for the same reason as the PDF: the source writes its own
         # numbered captions, and pandoc would add a second one from the alt text.
-        ["pandoc", str(SOURCE),
+        ["pandoc", str(source),
          "--from", "markdown-implicit_figures+pipe_tables+tex_math_dollars",
          "--to", "docx", "--reference-doc", str(ref),
          "--resource-path", str(HERE), "-o", str(out)],
@@ -390,10 +396,20 @@ def build_docx(out: Path | None = None) -> Path:
     return out
 
 
+def _option(name: str) -> Path | None:
+    """`--source FILE` or `--out FILE`, when given. The defaults render the published
+    paper to its usual files, so `make paper` is unchanged."""
+    if name in sys.argv:
+        return Path(sys.argv[sys.argv.index(name) + 1]).resolve()
+    return None
+
+
 if __name__ == "__main__":
+    src = _option("--source") or SOURCE
     if "--docx" in sys.argv:
-        doc = build_docx()
+        doc = build_docx(out=_option("--out"), source=src)
         print(f"wrote {doc}  ({doc.stat().st_size / 1024:,.0f} KB)")
     else:
-        pdf = build(keep_html="--keep-html" in sys.argv)
+        pdf = build(out=_option("--out") or OUTPUT, keep_html="--keep-html" in sys.argv,
+                    source=src)
         print(f"wrote {pdf}  ({pdf.stat().st_size / 1024:,.0f} KB)")

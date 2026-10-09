@@ -315,9 +315,10 @@ times as many steps as the other, and the answer swung with the difference. In t
 measurement we had printed, one prediction had been given 70 steps and the other 26. When
 both are given the full 150, that same measurement comes out at +0.35 instead of +0.69,
 and all thirty land between +0.09 and +0.47. The long horizontal lines through the two
-orange points in the chart are mostly this. We have not yet changed the setting, because
-doing so alters other results and they would need re-running; the chart shows the
-measurements as the tools produced them and says so underneath.
+orange points in an earlier version of the chart were mostly this. The setting has since
+been fixed, so that both predictions are always given the same number of steps, and every
+measurement was made again. Before doing so we wrote down eight things we expected to
+see, and all eight held. The chart above shows the new measurements.
 
 **The old chart showed the simulator using perfect knowledge**, as a hollow point marked
 as a ceiling. That point has been replaced by one measured like the others.
@@ -343,7 +344,7 @@ from.
 
 It also produced a prediction we could get wrong. Before downloading Lenta, we wrote down
 that retail promotion should land *between* advertising and subscription retention. On
-the left-hand way of counting it averages +0.13, between +0.58 and −0.21, as predicted.
+the left-hand way of counting it averages +0.07, between +0.43 and −0.14, as predicted.
 
 Three caveats, stated plainly.
 

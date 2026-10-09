@@ -229,10 +229,12 @@ Ascarza's, gives a lower figure than both-arm, which is ours. Three of five pred
 held. **The one that failed found a fault in the instrument:** the benchmark classifier
 stops early by default above 10,000 rows, Hillstrom's arms hold about 10,650, and the two models
 whose difference is the effect stopped at different rounds. That, not shared noise, is
-why the Hillstrom figures were unstable. **Decide before the paper is rewritten** whether
-to give the classifier a fixed stopping rule and re-run the correlation table under it.
-The recommendation is yes: a referee who fits a T-learner with two differently stopped
-models and finds the result unstable will not need long to work out why.
+why the Hillstrom figures were unstable.
+
+**1c. The classifier fixed and the table re-run. DONE, 9 October 2026 (D-077).** Every
+benchmark model now runs a fixed 150 rounds, and the table leads with Ascarza's
+definition of risk. Two checks and six predictions were written first and all held. The
+paper is being rewritten from that table.
 
 **2. The baseline. DONE, 8 October 2026 (D-075).** `make baseline`. Six predictions were
 written first; two failed and two hold only pooled. Estimator and stopping rule were

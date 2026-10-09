@@ -228,18 +228,31 @@ def test_hillstrom_treatment_effect_is_positive():
 def test_hillstrom_has_no_sleeping_dogs():
     """Regression test on the key scoping finding.
 
-    Every decile of predicted uplift has POSITIVE true uplift. This is why
-    Hillstrom cannot test the worse-than-random claim: the precondition -- a
-    negative-uplift segment -- does not exist in this dataset."""
+    The customers a T-learner ranks lowest are not harmed by the campaign: over ten
+    splits the lowest decile of predicted uplift has positive measured uplift on
+    average, and on no split is it more than two standard errors below zero. This is
+    why Hillstrom cannot test the worse-than-random claim: the precondition, a segment
+    the treatment harms, is not found in this dataset.
+
+    Until D-077 this asserted a positive figure on a single split. That held under the
+    classifier's old stopping rule and failed under the new one, at -0.003 against a
+    standard error of 0.015. One split could never carry the claim: under either rule
+    2 splits in 30 come out slightly negative and the mean is about +0.02."""
     from retainiq.benchmarks.run import split
 
     rct = load_hillstrom()
-    train, test = split(rct, seed=0)
-    scores = TLearner(seed=0).fit(train.X, train.treatment, train.outcome).score(test.X)
+    uplifts, errors = [], []
+    for seed in range(10):
+        train, test = split(rct, seed=seed)
+        scores = TLearner(seed=seed).fit(train.X, train.treatment, train.outcome).score(test.X)
+        bottom = scores < np.quantile(scores, 0.1)
+        treated = test.outcome[bottom & (test.treatment == 1)]
+        control = test.outcome[bottom & (test.treatment == 0)]
+        uplifts.append(uplift_of_set(test.treatment, test.outcome, bottom))
+        errors.append(np.sqrt(treated.var() / len(treated) + control.var() / len(control)))
 
-    q = np.quantile(scores, [0.0, 0.1])
-    bottom = (scores >= q[0]) & (scores < q[1])
-    assert uplift_of_set(test.treatment, test.outcome, bottom) > 0
+    assert np.mean(uplifts) > 0
+    assert all(u > -2 * e for u, e in zip(uplifts, errors, strict=True))
 
 
 @needs_data

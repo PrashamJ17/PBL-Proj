@@ -32,44 +32,45 @@ estimated outcome propensity, on four settings from three public randomised expe
 and on a randomised trial drawn from one calibrated simulator, over thirty random splits
 of each (`make correlation-checks`, D-074).
 
-| Setting | corr(τ̂, π̂), probability scale | Same, risk fitted on other customers | Same, log-odds scale | Advantage of uplift | Extra outcomes per 1,000 |
+| Setting | corr(τ̂, r̂), probability scale | Same, log-odds scale | Earlier definition of risk | Advantage of uplift | Extra outcomes per 1,000 |
 |---|---:|---:|---:|---:|---:|
-| Criteo-UPLIFT v2.1 | +0.58 [+0.51, +0.65] | +0.56 [+0.43, +0.68] | +0.06 [−0.13, +0.33] | +0.7% [−1.5, +3.8] | +0.1 [−0.1, +0.3] |
-| Hillstrom — mens arm | +0.28 [−0.21, +0.66] † | +0.19 [+0.01, +0.39] | −0.46 [−0.73, +0.06] | −0.1% [−10.3, +11.6] | −0.1 [−3.0, +2.8] |
-| Hillstrom — womens arm | +0.18 [−0.07, +0.49] † | +0.11 [−0.09, +0.32] | −0.22 [−0.44, +0.11] | +14.0% [−7.7, +35.3] | +2.6 [−1.9, +6.2] |
-| Lenta | +0.13 [+0.05, +0.22] | +0.13 [−0.00, +0.31] | −0.05 [−0.18, +0.06] | +24.7% [−4.3, +109.1] | +0.6 [−0.1, +1.5] |
-| SubSim — simulated retention trial | −0.21 [−0.33, −0.07] | −0.17 [−0.31, −0.01] | −0.26 [−0.40, −0.10] | not quoted | **+9.7 [+5.0, +14.4]** |
+| Criteo-UPLIFT v2.1 | +0.43 [+0.31, +0.53] | −0.03 [−0.37, +0.26] | +0.56 [+0.48, +0.63] | +0.9% [−1.1, +4.8] | +0.1 [−0.1, +0.4] |
+| Hillstrom — mens arm | +0.17 [+0.00, +0.31] | −0.30 [−0.45, −0.11] | +0.30 [+0.17, +0.42] | +0.7% [−9.7, +11.6] | +0.1 [−2.9, +3.2] |
+| Lenta | +0.07 [−0.02, +0.21] | −0.06 [−0.19, +0.09] | +0.12 [+0.04, +0.22] | +20.8% [−3.6, +64.3] | +0.5 [−0.1, +1.2] |
+| Hillstrom — womens arm | −0.01 [−0.20, +0.17] | −0.28 [−0.42, −0.15] | +0.16 [+0.04, +0.31] | +15.8% [−0.6, +34.6] | +2.9 [−0.1, +5.8] |
+| SubSim — simulated retention trial | −0.14 [−0.30, +0.00] | −0.18 [−0.35, +0.10] | −0.22 [−0.33, −0.07] | not quoted | **+9.1 [+4.5, +13.6]** |
 
-*Mean over 30 splits; brackets are the 2.5th and 97.5th percentiles across splits. The
-advantage is the best fitted uplift model against the best fitted outcome model, treating
-the top 30%. The last column is the same gap as a count. The second column of figures
-fits the risk model on customers the effect model never saw, so it is free of the noise
-the two share; it rests on half the data (D-076).*
+*Mean over 30 splits; brackets are the 2.5th and 97.5th percentiles across splits. Risk
+`r̂` is fitted on control customers only, on customers the effect model never saw, which
+is Ascarza's definition of RISK; each model then sees half the training data or less. The
+fourth column is the definition this table used before (D-077): risk fitted on both arms
+and on the same customers as the effect model. The advantage is the best fitted uplift
+model against the best fitted outcome model, treating the top 30%. The last column is the
+same gap as a count. Every model runs a fixed 150 boosting rounds.*
 
-*† Most of the width of these two ranges is produced by the classifier, not the data. It
-stops early by default above 10,000 rows, and Hillstrom's arms hold about 10,650 customers each,
-so the two models whose difference is the effect stop at different rounds. With early
-stopping off the figures are +0.30 [+0.17, +0.42] and +0.16 [+0.04, +0.31]
-(`python -m retainiq.benchmarks.spectrum_checks --stopping-diagnostic`, D-076).*
-
-Read the table with these cautions (D-068, D-074, D-076):
+Read the table with these cautions (D-068, D-074, D-076, D-077):
 
 - **The four real rows are not retention data.** They are an email promotion, an
   advertising campaign and a retail promotion. In none of them does the range of the
-  uplift model's advantage across splits exclude zero. It is positive on 27 of 30 splits
+  uplift model's advantage across splits exclude zero. It is positive on 28 of 30 splits
   in Hillstrom women and in Lenta, on 20 in Criteo and on 15 in Hillstrom men. Splits of
-  one dataset overlap, so those counts are not a significance test. The four cannot be
-  ordered.
+  one dataset overlap, so those counts are not a significance test. Only Criteo has a
+  clearly positive correlation, and its range clears the other three by a hair.
 - **An earlier version of this table gave Hillstrom men as +0.69 and −5.6%.** That was one
   split, and of the thirty it is the highest. The advantage is positive on 15 of 30. The
   other rows were close to their thirty-split means. The cause was found afterwards
   (D-076): on that split the treated arm's model had been fitted for 70 rounds and the
-  control arm's for 26, because each stops early by itself. Fitted alike, the same split
-  gives +0.35.
-- **How risk is defined moves the figure, and the table uses the higher definition.** Risk
-  here is fitted on both arms. Fitted on control customers only, which is Ascarza's
-  definition, the figure is lower: by 0.08 in Criteo and 0.12 in Hillstrom women, with the
-  customers kept separate (D-076).
+  control arm's for 26, because under the library's default each stopped early by itself.
+  Fitted alike, the same split gives +0.35.
+- **How risk is defined moves the figure.** The table now leads with Ascarza's
+  definition, risk fitted on control customers only. Fitted on both arms, as this table
+  did before, the figure is higher by 0.05 to 0.17: a both-arm model has seen treated
+  customers, so its prediction carries part of the effect inside it (D-076, D-077).
+- **How the models are fitted moves it too.** scikit-learn stops a model early by default
+  above 10,000 rows. Under that default the two models whose difference is the effect
+  stopped at different rounds in Hillstrom, and the figure swung between splits. The
+  benchmark classifier now runs a fixed 150 rounds (D-077). Results fitted on 10,000 rows
+  or fewer, which include result 2, are identical either way.
 - **Most of the positive correlation belongs to the probability scale.** An offer that
   multiplies everyone's odds by the same factor moves the probability most where the
   baseline is highest, which by itself makes effect and risk correlate. On the log-odds
@@ -78,7 +79,7 @@ Read the table with these cautions (D-068, D-074, D-076):
   responders are more persuadable.
 - **The SubSim row is a simulation, now measured like the others.** Fitted models on a
   randomised trial of 60,000 simulated customers: the uplift model beat the outcome model
-  on 30 of 30 splits, and targeting by the outcome model added churn on 26. Its percentage
+  on 30 of 30 splits, and targeting by the outcome model added churn on 24. Its percentage
   is not quoted because the base it divides by is negative. An *oracle* on true effects
   gains +106.9% in money (`python -m retainiq.benchmarks.spectrum`); that figure is in
   other units and is not comparable.
@@ -188,9 +189,9 @@ differ. At 250 and 500 it is not ahead, and doing nothing beats both at every si
 the six predictions failed. It is a re-implementation on a simulator, not their code on
 their data.
 
-**Still owed:** a decision on the benchmark classifier's stopping rule, with a re-run of
-the two large experiments if it changes (D-076), and a randomised *retention* experiment,
-which none of the public datasets used here is.
+**Still owed:** a randomised *retention* experiment, which none of the public datasets
+used here is, and an explanation of why the abstention rule loses on most of the
+occasions it acts.
 
 ---
 
@@ -221,14 +222,15 @@ supports, and three of these are the most useful things the project learned.
 - **The first explanation of that was wrong too (D-076).** The spread between splits was
   put down to noise shared between two models. A check designed to confirm it failed, and
   the cause turned out to be a library default: the classifier stops early above 10,000
-  rows, and Hillstrom's arms hold about 10,650.
+  rows, and Hillstrom's arms hold about 10,650. The classifier was fixed and everything
+  re-run, with eight checks and predictions written first; all held (D-077).
 - **Abstention does not beat the published alternative at the smallest sizes (D-075).**
   At 250 customers it acts on 34 draws of 100 and loses money on 25 of them. Across all
   sizes it made money on 25 of the 139 draws on which it acted. It is a rule for losing
   less, and here the best rule is still to do nothing.
 
 Every design decision, including the adverse ones, is in
-[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-076). It is append-only.
+[`docs/DECISIONS.md`](docs/DECISIONS.md) (D-001 … D-077). It is append-only.
 
 ---
 

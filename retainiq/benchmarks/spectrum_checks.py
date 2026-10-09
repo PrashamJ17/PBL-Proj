@@ -32,9 +32,17 @@ at a time. Their design and predictions are in `docs/PREREG-pooled-independent-r
 **And a diagnostic that nobody planned (D-076).** The follow-up's second prediction failed,
 and the reason turned out to be in the instrument: scikit-learn's gradient boosting stops
 early by default once it is given more than 10,000 rows. In Hillstrom each arm of the
-training half has about 10,650, so the T-learner's two models each stop when a random tenth of
-their own data says so, at different rounds, and the correlation follows the difference.
-`--stopping-diagnostic` measures that. It is exploratory and says so in its output.
+training half has about 10,650, so the T-learner's two models each stopped when a random
+tenth of their own data said so, at different rounds, and the correlation followed the
+difference. `--stopping-diagnostic` measures that. It is exploratory and says so in its
+output.
+
+**What changed as a result (D-077).** The benchmark classifier now runs its full 150
+rounds at every sample size, so every figure in this module is fitted that way. And the
+headline figure is `control_indep`: risk fitted on control customers only, on customers
+the effect model never saw. That is Ascarza's definition of RISK, and it shares no
+estimation noise with the effect. The both-arm figure (`pooled`) is kept beside it. Both
+changes were written down before anything was re-run (`docs/PREREG-fixed-stopping.md`).
 
 Nothing here changes what `spectrum.py` prints. That command still shows one split, and
 this one shows how far one split can sit from the other twenty-nine. The figure drawn
@@ -77,6 +85,10 @@ RISKS = ("pooled", "control_same", "control_indep")
 #:   pooled_indep  effect on one half, both-arm risk on the OTHER half
 FOLLOW_UP = ("pooled_half", "pooled_indep")
 ALL_RISKS = (*RISKS, *FOLLOW_UP)
+
+#: The figure the documents lead with (D-077): Ascarza's RISK, fitted on control customers
+#: only, on customers the effect model never saw.
+HEADLINE = "control_indep"
 
 #: The gap between the table's figure and the independent control-only one, taken one
 #: change at a time. Each is a difference between two correlations on the same split.
@@ -351,6 +363,11 @@ def report(frame: pd.DataFrame, truth: dict[str, float] | None = None,
         r = s[(s["setting"] == name) & (s["measure"] == measure)]
         return "n/a" if r.empty or np.isnan(r["sd"].iloc[0]) else f"{r['sd'].iloc[0]:.3f}"
 
+    lead = HEADLINE
+    table("HEADLINE: risk fitted on control customers the effect model never saw (D-077)",
+          [("Pearson, probability", f"{lead}_pearson_prob"),
+           ("Pearson, log-odds", f"{lead}_pearson_logodds"),
+           ("Spearman, probability", f"{lead}_spearman_prob")])
     table("1. THE COEFFICIENT (probability scale, pooled risk)",
           [("Pearson", "pooled_pearson_prob"), ("Spearman", "pooled_spearman_prob")])
     table("2. THE SCALE (Pearson, pooled risk)",
@@ -404,8 +421,9 @@ def report(frame: pd.DataFrame, truth: dict[str, float] | None = None,
 # --- a diagnostic: the classifier's early stopping ---------------------------------------
 
 #: The two ways the benchmark classifier is fitted in the diagnostic. "automatic" is the
-#: library default, and so what every other figure in this module was made with: on when
-#: a model is given more than 10,000 rows, off otherwise.
+#: library default: on when a model is given more than 10,000 rows, off otherwise. Every
+#: figure in D-074 and D-076 was made with it. "off" is the project's setting since D-077,
+#: and so what every other figure in this module is made with now.
 STOPPING = {"automatic": "auto", "off": False}
 
 #: Settings in which some model crosses the 10,000-row line somewhere in the design, so
@@ -421,7 +439,8 @@ def fitting(early_stopping):
 
     The classifier is built in one place, `models._clf`, and used by every model in the
     benchmark. Swapping that factory for the duration reaches all of them without
-    copying a single hyperparameter. `"auto"` reproduces the default exactly.
+    copying a single hyperparameter. `False` reproduces the project's own setting
+    exactly; `"auto"` is the library default it replaced.
     """
     from retainiq.benchmarks import models
 
@@ -488,7 +507,7 @@ def report_stopping(frame: pd.DataFrame) -> str:
         "deviation",
         "=" * width,
         "",
-        "A. HOW LONG EACH MODEL WAS FITTED under automatic stopping",
+        "A. HOW LONG EACH MODEL WAS FITTED under the library's automatic stopping",
         "   boosting rounds, fewest / median / most, of a possible 150",
         "-" * width,
         f"{'setting':<22}{'customers per arm':>20}{'treated model':>17}{'control model':>17}"
@@ -535,8 +554,9 @@ def report_stopping(frame: pd.DataFrame) -> str:
         return cell(label, name, measure).split(" sd ")[0]
 
     for label in ("off", "automatic"):
-        out.extend(["", f"C. ONE CHANGE AT A TIME, stopping {label}" if label == "off" else
-                    "   THE SAME, automatic stopping (as in the main tables)", "-" * width,
+        out.extend(["", "C. ONE CHANGE AT A TIME, stopping off (as in the main tables)"
+                    if label == "off" else
+                    "   THE SAME, automatic stopping (the library default)", "-" * width,
                     f"{'setting':<22}" + "".join(f"{h:>24}" for h, _ in four)])
         for name in settings:
             out.append(f"{name:<22}" + "".join(f"{plain(label, name, m):>24}" for _, m in four))
@@ -555,6 +575,8 @@ def report_stopping(frame: pd.DataFrame) -> str:
         "The library stops a model early, by default, when it has more than 10,000 rows: it holds",
         "back a random tenth and stops when that tenth stops improving. Each arm's model stops at",
         "its own round. Below 10,000 rows nothing stops early and the two columns must agree.",
+        "Since D-077 the benchmark classifier is fitted with stopping off; the 'automatic'",
+        "columns show what the library default would give.",
     ]
     return "\n".join(out)
 
@@ -565,8 +587,8 @@ def report_stopping(frame: pd.DataFrame) -> str:
 MARKERS = {"Hillstrom (mens)": "o", "Hillstrom (womens)": "s", "Criteo": "D", "Lenta": "^",
            "SubSim (fitted)": "P"}
 
-PANELS = (("pooled_pearson_prob", "probability scale"),
-          ("pooled_pearson_logodds", "log-odds scale"))
+PANELS = ((f"{HEADLINE}_pearson_prob", "probability scale"),
+          (f"{HEADLINE}_pearson_logodds", "log-odds scale"))
 
 
 def figure(frame: pd.DataFrame, out: Path | None = None) -> Path:
@@ -606,7 +628,7 @@ def figure(frame: pd.DataFrame, out: Path | None = None) -> Path:
             )
         ax.set_xlim(-0.9, 0.9)
         ax.set_title(f"correlation taken on the {scale}", fontsize=11.5)
-        ax.set_xlabel("corr( estimated benefit , estimated outcome propensity ),  Pearson",
+        ax.set_xlabel("corr( estimated benefit , estimated risk if left alone ),  Pearson",
                       fontsize=10)
         ax.grid(alpha=0.25, lw=0.6)
         ax.set_axisbelow(True)
@@ -628,8 +650,8 @@ def figure(frame: pd.DataFrame, out: Path | None = None) -> Path:
         f"of {SIM_CUSTOMERS:,} simulated customers whose negative\n"
         "correlation is configured, not observed. The correlation is the one varied in "
         "Ascarza (2018, Web Appendix A3.4).\n"
-        "The wide horizontal bars on the two Hillstrom points are largely the classifier's "
-        "default early stopping, not the data (D-076).",
+        "Risk is fitted on control customers only, on customers the effect model never saw; "
+        "each model sees half the training data or less (D-077).",
         ha="center", va="bottom", fontsize=8.8, color="#455A64", linespacing=1.45,
     )
     fig.tight_layout(rect=(0, 0.155, 1, 0.9))
