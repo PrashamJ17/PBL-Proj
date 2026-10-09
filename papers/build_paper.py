@@ -229,7 +229,10 @@ def _inline_images(html: str) -> str:
 def _pair_tables_with_captions(html: str) -> str:
     """Bind each table to the caption above it, and span wide ones across both columns."""
     out, pos = [], 0
-    for m in re.finditer(r"<table>.*?</table>", html, flags=re.S):
+    # Pandoc writes `<table style="width:100%;">` when a table's source rows are long, so
+    # the tag is matched with or without attributes. Matching only the bare tag left such
+    # tables unwrapped, and a six-column table then ran into the neighbouring column.
+    for m in re.finditer(r"<table[^>]*>.*?</table>", html, flags=re.S):
         table = m.group(0)
         head = table.split("</thead>")[0]
         n_cols = len(re.findall(r"<th[ >]", head)) or max(
