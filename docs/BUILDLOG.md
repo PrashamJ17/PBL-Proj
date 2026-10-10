@@ -1956,3 +1956,11 @@ labels as the file is saved. `papers/build_paper.py` passes `--mathml`, so TeX e
 are typeset in the PDF and are native equations in the Word file.
 
 **Tested.** `make check`: 750 passed. The script stops if a label it expects is gone.
+
+## The manuscript's title (D-080)
+
+**Changed.** The final manuscript's title, from the preprint's ("... A Correlation
+Criterion and a Measurement Floor ...") to "Reliability of Uplift Targeting and
+Detectability of Retention Effects at the Scale of a Small Subscription Business". The
+introduction paragraph that explained the old title's two terms is removed. The preprint
+is cited under its own title. Nothing else in the manuscript changed, and no code did.

@@ -207,7 +207,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   rule takes **money only**, so it is unrepresentable. **2 of 5 pre-registered predictions
   FAILED.** Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
 - **CP-28** — **Final manuscript checked line by line against the code (D-079); four statements were
-  wrong or missing, no number was.** `papers/draw_paper_figures.py` draws its plain-label figures.
+  wrong or missing, no number was.** Title now says what it shows, not "A Correlation Criterion" (D-080).
 - **CP-27** — **Classifier fixed, table re-run, pre-registered: 2 checks + 6 predictions ALL held
   (D-077).** Criteo/Lenta moved 0.02/0.01; small-n identical to 10,000. Headline risk is now
   Ascarza's. Calibration ranges checked against ChartMogul, Recurly, Fader & Hardie 2007 (D-078).

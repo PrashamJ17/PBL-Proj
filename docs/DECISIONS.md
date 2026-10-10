@@ -3170,3 +3170,29 @@ correlation criterion is Ascarza's and the manuscript says so.
 
 **Not done.** The archived software release still predates these results. The manuscript
 cites the commit that produced them. A new archived release is the author's to make.
+
+---
+
+## D-080 — The manuscript's title says what it shows
+
+**Date:** 10 October 2026.
+
+The August preprint is titled "When Does Uplift Modelling Pay? A Correlation Criterion and
+a Measurement Floor for Small-Scale Subscription Retention". D-079 kept that title for the
+final manuscript and added a paragraph to its introduction explaining that the correlation
+criterion is Ascarza's and is not claimed.
+
+**A title that needs a paragraph to explain what it does not claim is the wrong title.**
+Since D-068 the manuscript's own position is that the criterion belongs to Ascarza (2018).
+A reader who sees "A Correlation Criterion" in the title expects one to be derived or
+established, and the manuscript does neither: it measures the correlation and reports how
+far the measurement can be trusted.
+
+**The title is now** "Reliability of Uplift Targeting and Detectability of Retention
+Effects at the Scale of a Small Subscription Business". It names the two results the
+manuscript leads with: how often targeting beats random selection when the pilot is small,
+and what a holdout can detect. The explanatory paragraph D-079 added is removed, since
+there is nothing left for it to explain.
+
+**The preprint keeps its title**, and the manuscript cites it under that title, as an
+earlier version posted under a different one. No result, table or figure is changed.
