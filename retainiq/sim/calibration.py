@@ -34,14 +34,16 @@ TARGETS: list[Target] = [
         0.030,
         0.070,
         "fraction",
-        "SMB B2B SaaS monthly logo churn band, 2026 benchmarks",
+        "ChartMogul: median monthly customer churn 6.1% (ARPA < $25) to 2.2% (> $500); "
+        "6-7% under $10. Those are TOTAL churn; this band is voluntary only (D-078)",
     ),
     Target(
         "involuntary_share_of_churn",
         0.20,
         0.40,
         "fraction",
-        "Involuntary churn is 20-40% of total churn across most SaaS",
+        "Recurly Research, July 2026 network data: involuntary is 33% of SaaS churn, "
+        "23-30% for $10-100 a month, 6-16% above $100 (D-078)",
     ),
     Target(
         "month_24_retention",
@@ -61,7 +63,9 @@ TARGETS: list[Target] = [
         3.00,
         "ratio",
         "Early-tenure hazard exceeds late-tenure: fragile customers leave first, "
-        "so the surviving pool is progressively hardier",
+        "so the surviving pool is progressively hardier. Fader & Hardie (2007), J. "
+        "Interact. Mark. 21:76-90: first-year hazard 36.9% and 13.1%, fifth-year 11.3% "
+        "and 7.1%, in two cohorts (D-078)",
     ),
 ]
 

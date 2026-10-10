@@ -1917,3 +1917,23 @@ minutes). Both saved; `fig07` and `fig02` redrawn from the saved runs.
 **Not changed.** Anything under `presentation/`, at the author's instruction.
 
 **Tested.** 750 tests; lint and both calibration gates pass.
+
+## Sources for the simulator's calibration ranges (D-078)
+
+**Done.** Each of the four calibration ranges compared with a published figure read from
+its source: ChartMogul (monthly churn by revenue per account), Recurly Research (share of
+churn that is involuntary), Fader & Hardie 2007 (first-year against later hazard).
+Retention at 24 months has no direct source and follows from the churn figures.
+
+**Changed.** The `source` text of three targets in `sim/calibration.py`. No range and no
+parameter was changed.
+
+**Found.** The simulator sits at the high-churn end of the published range; the
+involuntary share holds only for prices under $100 a month.
+
+**An intermittent failure found on the way.** `make check` failed once in
+`test_razorpay_epoch_seconds_are_parsed_not_read_as_nanoseconds` with a floating-point
+overflow inside pandas, then passed alone. When an epoch-seconds column has gaps, pandas
+leaves the gaps' slots uninitialised during conversion, and whatever is in that memory
+can overflow. `csv_ingest._to_datetime` now converts only the values that exist. It had
+passed in every earlier run, here and in CI, which is what an intermittent fault does.

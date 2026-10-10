@@ -191,10 +191,19 @@ def _to_datetime(series: pd.Series) -> pd.Series:
 
     finite = numeric.dropna()
     lo, hi = _EPOCH_S
+
+    def from_epoch(unit: str) -> pd.Series:
+        # Only the values that exist are converted. Given a column with gaps, pandas
+        # leaves the gaps' slots uninitialised while it converts, and whatever is in
+        # that memory can overflow and raise, on some runs and not others.
+        out = pd.Series(pd.NaT, index=numeric.index, dtype="datetime64[ns]")
+        out[finite.index] = pd.to_datetime(finite, unit=unit, errors="coerce")
+        return out
+
     if finite.between(lo, hi).all():
-        return pd.to_datetime(numeric, unit="s", errors="coerce")
+        return from_epoch("s")
     if finite.between(lo * 1000, hi * 1000).all():
-        return pd.to_datetime(numeric, unit="ms", errors="coerce")
+        return from_epoch("ms")
     return pd.to_datetime(series, errors="coerce")
 
 

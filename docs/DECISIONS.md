@@ -3084,3 +3084,40 @@ every model now runs all 150 rounds.
 
 **Tests.** 750, the same number. Three were rewritten to pin the new setting and one to
 state its claim over ten splits.
+
+## D-078 — Where the simulator's calibration ranges stand against published figures
+
+The calibration targets carried descriptions such as "SMB B2B SaaS monthly logo churn
+band, 2026 benchmarks" and named no source. A reviewer of the paper asked for citations.
+Sources were looked up and each range compared with what they actually say. Nothing in
+the simulator was changed.
+
+| Target | Simulator (default) | Published figure | Source |
+|---|---|---|---|
+| Monthly churn | 4.4% voluntary, 6.5% in total; the check allows 3% to 7% voluntary | Median 6.1% a month for software businesses with revenue per account under $25, 2.2% above $500; 6% to 7% under $10 | ChartMogul, "What is a good customer churn rate?" (S. Jain, 2022) and Help Center, "Report: customer churn rate" |
+| Involuntary share of churn | 32%; allowed 20% to 40% | 33% for software, 35% across industries; 30%, 29% and 23% for prices of $10 to $25, $25 to $50 and $50 to $100; 16% and 6% above that | Recurly Research, churn rate benchmarks, July 2026 network data |
+| Retention at 24 months | 22.8%; allowed 22% to 50% | No direct source. A constant 6.1% a month leaves 22%, and 2.2% leaves 59% | Arithmetic on the ChartMogul medians |
+| Early against late hazard | 2.0 (first six months against after the first year); allowed 1.15 to 3.0 | Share of remaining customers leaving: 36.9% in year one and 11.3% in year five in one cohort, 13.1% and 7.1% in another | Fader & Hardie (2007), *J. Interact. Mark.* 21(1), 76-90, Table 1 |
+
+**What the comparison shows.**
+
+- **The simulator is in a plausible region and at its high-churn end.** Its total churn of
+  6.5% a month matches ChartMogul's lowest-revenue band, while its customers pay a median
+  of about 55 a month, which is above that band.
+- **The voluntary band is looser than the sources at the top.** The check applies 3% to 7%
+  to voluntary churn alone. With failed payments on top, a configuration at 7% voluntary
+  would have about 10% total churn, above anything in the sources.
+- **The involuntary share is supported for low prices only.** Above $100 a month Recurly's
+  share falls to 16% and then 6%.
+- **Only the shares are taken from Recurly.** Its page describes the rates as annual
+  medians, which is hard to square with their size. A share of involuntary in total does
+  not depend on the period, so that is what is used.
+- **The hazard ratio is supported in direction and rough size**, from annual data on a
+  different kind of subscription over a longer horizon.
+- **The share of customers the offer harms, and the size of its effect, have no source.**
+  They are assumptions, and the paper says so.
+
+These are industry reports and one academic dataset. They are not peer-reviewed studies of
+small subscription businesses, and they do not validate the simulator. The target
+descriptions in `sim/calibration.py` now name them. Each figure above was read from the
+source itself on 10 October 2026, not recalled.

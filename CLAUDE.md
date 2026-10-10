@@ -208,7 +208,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   FAILED.** Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
 - **CP-27** — **Classifier fixed, table re-run, pre-registered: 2 checks + 6 predictions ALL held
   (D-077).** Criteo/Lenta moved 0.02/0.01; small-n identical to 10,000. Headline risk is now
-  Ascarza's. A single-split Hillstrom test failed under the change and was restated over 10 splits.
+  Ascarza's. Calibration ranges checked against ChartMogul, Recurly, Fader & Hardie 2007 (D-078).
   **New paper draft (pilot size + measurement floor) is LOCAL ONLY**, listed in `.git/info/exclude`
   until the author publishes it. `presentation/` NOT updated at the author's instruction.
 - **CP-26** — **Follow-up check; 3 of 5 held (D-076).** A failed prediction found the instrument's
