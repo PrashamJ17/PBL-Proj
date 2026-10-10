@@ -288,7 +288,11 @@ def build(out: Path = OUTPUT, keep_html: bool = False, source: Path = SOURCE) ->
     # The references list is the last <ol>; give it its own class for tighter setting.
     body = re.sub(r'(<h2[^>]*>REFERENCES</h2>)', r'<div class="refs">\1', body, count=1)
     if '<div class="refs">' in body:
-        body = re.sub(r'(<h2[^>]*>AUTHOR BIOGRAPHIES</h2>)', r'</div>\1', body, count=1)
+        # Close the list at whichever section follows it, or at the end of the document.
+        start = body.index('<div class="refs">')
+        after = re.search(r"<h2[ >]", body[start + 60:])
+        cut = start + 60 + after.start() if after else len(body)
+        body = body[:cut] + "</div>" + body[cut:]
 
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
