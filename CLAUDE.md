@@ -206,6 +206,8 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   checks, and a units error is self-consistent. Fixed in `policy/economics.py`; the new
   rule takes **money only**, so it is unrepresentable. **2 of 5 pre-registered predictions
   FAILED.** Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-28** — **Final manuscript checked line by line against the code (D-079); four statements were
+  wrong or missing, no number was.** `papers/draw_paper_figures.py` draws its plain-label figures.
 - **CP-27** — **Classifier fixed, table re-run, pre-registered: 2 checks + 6 predictions ALL held
   (D-077).** Criteo/Lenta moved 0.02/0.01; small-n identical to 10,000. Headline risk is now
   Ascarza's. Calibration ranges checked against ChartMogul, Recurly, Fader & Hardie 2007 (D-078).
@@ -219,10 +221,8 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   do-nothing beats both. Abstention made money on 25 of the 139 draws it acted on.**
 - **CP-24** — **Small-n at 200 draws (D-072/073): 72.5% [.66,.79] at n=500, 84.5% at 1,000, 95.5% at
   2,000.** D-023's 75%/55% were 20 draws no command printed; "55%, a coin flip" was WRONG (62.5%).
-- **CP-23** — **The report assumed rupees and printed "not measured" as 0% (D-071); fixed.**
-  Currency belongs to the `Dataset` (NEVER assumed; two currencies BLOCK). Unmeasured = `None`.
-- **CP-22** — **`make abstention` and `make sensitivity` printed only the PRE-D-057 rule (D-069/070).**
-  Both now print corrected first, legacy second; the rule is an argument with NO default.
+- **CP-23/22** — **Currency is NEVER assumed; unmeasured = `None`, not 0% (D-071).** `make abstention`
+  and `make sensitivity` print the corrected rule first; the rule is an argument with NO default (D-069/070).
 - **CP-21** — **Four papers read in full; novelty narrowed (D-068).** Ascarza 2018 App. A3.4
   simulates corr(RISK, LIFT); her Study 2 has risk targeting RAISING churn. Left: pilot size.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real

@@ -1937,3 +1937,22 @@ overflow inside pandas, then passed alone. When an epoch-seconds column has gaps
 leaves the gaps' slots uninitialised during conversion, and whatever is in that memory
 can overflow. `csv_ingest._to_datetime` now converts only the values that exist. It had
 passed in every earlier run, here and in CI, which is what an intermittent fault does.
+
+## The final manuscript checked against the code, and plain-label figures (D-079)
+
+**Checked.** Every table and quoted count in the manuscript against its command.
+`make killtest`, `make holdout` and `make calibrate` re-run on 10 October; the small-sample,
+correlation and decision-rule tables compared with the outputs saved on 8 and 9 October.
+All match.
+
+**Found.** Four statements that did not match the code: the baseline retention of 0.80
+behind the detectable-effect table was not stated; "every classifier" did not cover the
+simulator's churn model; the first figure's left panel is a mean of six businesses, not
+one; the detectable-effect panel's axis is eligible customers.
+
+**Built.** `papers/draw_paper_figures.py` draws three figures for the manuscript in
+`papers/figures/paper/`, by calling the repository's figure functions and rewording the
+labels as the file is saved. `papers/build_paper.py` passes `--mathml`, so TeX equations
+are typeset in the PDF and are native equations in the Word file.
+
+**Tested.** `make check`: 750 passed. The script stops if a label it expects is gone.

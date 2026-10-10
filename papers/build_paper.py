@@ -189,7 +189,7 @@ def _pandoc(md: str) -> str:
         # implicit_figures off: the source writes its own numbered captions, and pandoc's
         # version would duplicate them from the alt text.
         ["pandoc", "--from", "markdown-implicit_figures+pipe_tables+tex_math_dollars",
-         "--to", "html5", "--wrap", "none"],
+         "--to", "html5", "--wrap", "none", "--mathml"],
         input=md, capture_output=True, text=True, check=True,
     ).stdout
 

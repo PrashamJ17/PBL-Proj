@@ -3121,3 +3121,52 @@ These are industry reports and one academic dataset. They are not peer-reviewed 
 small subscription businesses, and they do not validate the simulator. The target
 descriptions in `sim/calibration.py` now name them. Each figure above was read from the
 source itself on 10 October 2026, not recalled.
+
+---
+
+## D-079 — The final manuscript was checked against the code, and its figures carry no headline
+
+**Date:** 10 October 2026.
+
+The manuscript was put into its final form and every table, every quoted count and every
+statement about a setting was checked against the command or the code it comes from.
+The two cheap commands were re-run (`make killtest`, `make holdout`), as was
+`make calibrate`; the three long ones were checked against the outputs saved on 8 and 9
+October, which the code has not changed since.
+
+**No number was wrong.** All seven results tables match. So do the counts in the text:
+the gain is positive on 15, 20, 28, 28 and 30 of 30 splits, the simulated trial's
+correlation is negative on 29, and the outcome model's selection raises churn on 24.
+
+**Four statements were wrong or missing.** None changes a result. Each would have been a
+fair objection from a reviewer.
+
+| What the manuscript said | What the code does | What it says now |
+|---|---|---|
+| The detectable-effect table was given without the retention rate behind it | `minimum_detectable_effect` takes a baseline retention, 0.80 by default, and the table uses the default | States 0.80, and that a rate between 20% and 80% gives a larger detectable effect |
+| "Every classifier" has 150 rounds, learning rate 0.06, depth 3, early stopping off | True of the benchmark classifier. The simulator's churn model (`kill_test.train_churn_model`) has 200 rounds, 0.08 and depth 4, and is left at scikit-learn's default stopping | Scopes the sentence, and describes the churn model and the re-implemented rule's two stages separately |
+| The first figure shows "the simulated business" of the policy table | Its left panel is the mean of six simulated businesses with a band of one standard deviation; only the right panel is the one business | The caption and the panel title say so |
+| The detectable-effect panel's axis read "customers in the business" | The table's *n* is the number of customers eligible for the offer | The axis says eligible customers |
+
+The churn model's stopping rule is not the fault D-076 found. That fault needs two models
+fitted by different rules and subtracted. This is one model used for a ranking.
+
+**The figures.** The repository's figures carry a headline that states a conclusion
+("destroys value at every budget level") and the project's own names (`SubSim`, a
+decision number). A journal figure should carry neither. `papers/draw_paper_figures.py`
+draws the manuscript's versions of three of them. It calls the function that draws the
+repository's version and changes only the wording, at the moment the file is saved, so
+the data and the marks cannot drift apart. A label it no longer finds stops the run. The
+repository's own figures are unchanged.
+
+**The equations.** `papers/build_paper.py` now passes `--mathml` to pandoc, so display
+equations written in TeX are typeset in the PDF and become native equations in the Word
+file. Sources without TeX maths render as before.
+
+**Also added to the manuscript.** A citation of the August preprint where its two
+superseded figures are mentioned (+0.69 from one split; 75% and 55% from 20 draws), and
+one paragraph tying the two terms of the title to the results that carry them. The
+correlation criterion is Ascarza's and the manuscript says so.
+
+**Not done.** The archived software release still predates these results. The manuscript
+cites the commit that produced them. A new archived release is the author's to make.
