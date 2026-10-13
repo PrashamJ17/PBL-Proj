@@ -3196,3 +3196,51 @@ there is nothing left for it to explain.
 
 **The preprint keeps its title**, and the manuscript cites it under that title, as an
 earlier version posted under a different one. No result, table or figure is changed.
+
+---
+
+## D-081 — The release metadata described the August preprint; it now describes this code
+
+**Date:** 13 October 2026.
+
+The software record on Zenodo is cut from a tagged GitHub release, with `.zenodo.json`
+supplying the metadata (D-066). The next release will therefore publish whatever those
+files say, and a Zenodo version cannot be withdrawn. They were read before any release was
+made. They had not been touched since 20 August.
+
+**What they said, and what was true.**
+
+| File | It said | The fact |
+|---|---|---|
+| `.zenodo.json` | version 1.0.0; "463 automated tests"; "four real randomised controlled trials"; "two units errors reported in the paper as findings"; "Table 12 of the paper" | 750 tests; three experiments giving four comparisons; the manuscript has no such table and reports no bug as a finding |
+| `.zenodo.json` | related records by version DOI (`…22015220`, `…22025124`) | A version DOI goes stale with the next version. D-066 had already said to use the concept DOIs |
+| `CITATION.cff` | "The central result is that whether effect-based targeting pays is governed by corr(tau, propensity)" | Withdrawn in D-068; it is Ascarza's |
+| `README.md` | "Every number in the paper comes from one of these commands", with the August paper's table numbers | The manuscript's tables are numbered differently, and two of its figures had no command listed |
+| `pyproject.toml`, `retainiq/__init__.py` | 1.0.0 and 0.1.0 | Two different versions for one package |
+| `experiments/zenodo_release.py` | `related_software_doi: 10.5281/zenodo.22009471` | That DOI is the paper. This is the error D-066 found in the paper's text, still present in the code that writes the data record's manifest |
+
+**The version is 2.0.0, not 1.1.0.** Since v1.0.0 the benchmark classifier's stopping rule
+changed, which changes what the benchmarks print, and the experiments that compare
+decision rules now require the rule to be named, with no default. Both break the earlier
+behaviour. The number says so.
+
+**The metadata names both titles.** The manuscript is not public and its title differs
+from the preprint's (D-080). The description gives the manuscript's title and identifies
+the preprint by its title and DOI, which is true whether or not the manuscript is later
+posted to the same record.
+
+**The data record still stands.** `make zenodo` was run with the corrected script. All ten
+data files have the same SHA-256 as the output of August, so the archived files are what
+this code produces. Only the manifest differs, by the one DOI and by the dataset notes
+that named tables of the preprint.
+
+**Two things in the published records that only their owner can change.**
+
+- The data record's manifest (inside the archived zip) names the paper as its software.
+  Correcting it needs a new version of the data record.
+- The data record's metadata lists its related software as `10.5880/zenodo.22025880`. The
+  prefix should be `10.5281`. It was read from the record on 13 October 2026. Metadata can
+  be edited without a new version.
+
+**Not done here.** No release was made. Making one publishes to Zenodo, so it waits for
+the author's word.

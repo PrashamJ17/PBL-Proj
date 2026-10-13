@@ -206,13 +206,14 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   checks, and a units error is self-consistent. Fixed in `policy/economics.py`; the new
   rule takes **money only**, so it is unrepresentable. **2 of 5 pre-registered predictions
   FAILED.** Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-28** — **Final manuscript checked line by line against the code (D-079); four statements were
-  wrong or missing, no number was.** Title now says what it shows, not "A Correlation Criterion" (D-080).
+- **CP-29** — **Release metadata brought to v2.0.0 (D-081):** `.zenodo.json`, `CITATION.cff`, README
+  still described the August preprint. **A GitHub release PUBLISHES to Zenodo, irreversibly: only
+  on the author's word.** Data files reproduce byte-for-byte; the data manifest named the PAPER as software.
+- **CP-28** — **Final manuscript checked against the code (D-079): four statements wrong, no number; new title (D-080).**
 - **CP-27** — **Classifier fixed, table re-run, pre-registered: 2 checks + 6 predictions ALL held
   (D-077).** Criteo/Lenta moved 0.02/0.01; small-n identical to 10,000. Headline risk is now
   Ascarza's. Calibration ranges checked against ChartMogul, Recurly, Fader & Hardie 2007 (D-078).
-  **New paper draft (pilot size + measurement floor) is LOCAL ONLY**, listed in `.git/info/exclude`
-  until the author publishes it. `presentation/` NOT updated at the author's instruction.
+  **Manuscript is LOCAL ONLY** (`.git/info/exclude`) until the author publishes it. `presentation/` NOT updated.
 - **CP-26** — **Follow-up check; 3 of 5 held (D-076).** A failed prediction found the instrument's
   fault: sklearn HGB early-stops by default above 10,000 rows; Hillstrom arms ≈ 10,650; the
   T-learner's two models stopped at different rounds (seed 0: 70 vs 26 → +0.69; alike → +0.35).
@@ -223,8 +224,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   2,000.** D-023's 75%/55% were 20 draws no command printed; "55%, a coin flip" was WRONG (62.5%).
 - **CP-23/22** — **Currency is NEVER assumed; unmeasured = `None`, not 0% (D-071).** `make abstention`
   and `make sensitivity` print the corrected rule first; the rule is an argument with NO default (D-069/070).
-- **CP-21** — **Four papers read in full; novelty narrowed (D-068).** Ascarza 2018 App. A3.4
-  simulates corr(RISK, LIFT); her Study 2 has risk targeting RAISING churn. Left: pilot size.
+- **CP-21** — **Four papers read in full; novelty narrowed (D-068):** corr(RISK, LIFT) is Ascarza 2018 A3.4.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% < 96.7% for always
   'stays'** — never a headline. Readiness PER COMPONENT.

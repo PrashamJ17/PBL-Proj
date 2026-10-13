@@ -8,9 +8,13 @@
 
 **Causal retention decisioning for small subscription businesses.**
 
-Research software for the paper **[When Does Uplift Modelling Pay? A Correlation Criterion
-and a Measurement Floor for Small-Scale Subscription
-Retention](https://doi.org/10.5281/zenodo.22009470)**.
+Research software for the manuscript **Reliability of Uplift Targeting and Detectability
+of Retention Effects at the Scale of a Small Subscription Business**. An earlier version of
+that work was posted as a preprint, [*When Does Uplift Modelling Pay? A Correlation
+Criterion and a Measurement Floor for Small-Scale Subscription
+Retention*](https://doi.org/10.5281/zenodo.22009470). Release 2.0.0 of this software
+contains the code behind the manuscript's results and supersedes several figures of the
+preprint; [CHANGELOG.md](CHANGELOG.md) lists which.
 
 Uplift modelling — targeting customers by estimated treatment effect rather than by
 predicted churn risk — is widely recommended and inconsistently useful. This repository
@@ -259,27 +263,38 @@ the founding result can be reproduced on a machine with no ML stack installed.
 
 ---
 
-## Reproducing the paper
+## Reproducing the results
 
-Every number in the paper comes from one of these commands.
+Each results table and figure in the manuscript comes from one of these commands.
+
+| Command | Produces | In the manuscript |
+|---|---|---|
+| `make killtest` | Value of each targeting policy in one simulated business | Table 2 |
+| `make small-n` | Win rates against random at small *n*, with exact intervals (D-072; about 20 minutes) | Table 3, Figure 2 |
+| `make holdout` | The holdout estimator against the simulator's known effect, and the minimum detectable effect (D-065) | Tables 4 and 5 |
+| `make correlation-checks` | The risk–lift correlation over 30 splits, on two scales and five definitions of risk (D-074, D-076, D-077; about 30 minutes) | Table 6 |
+| `python -m retainiq.benchmarks.spectrum_checks --stopping-diagnostic` | The same splits with the classifier's early stopping automatic and off, on Hillstrom and the simulated trial (D-076, exploratory) | Section V-C |
+| `make baseline` | The declining rule against ranking and against Lemmens & Gupta (2020) on the same pilots, 500 simulated businesses (D-075; about a minute) | Table 7 |
+| `make calibrate` | The simulator's aggregates against their ranges (D-078) | Appendix B |
+| `python papers/draw_paper_figures.py --from-splits FILE` | Three figures with plain labels (D-079). `FILE` is written by `python -m retainiq.benchmarks.spectrum_checks --save FILE` | Figures 1, 3 and 4 |
+| `python papers/draw_comparison_figure.py` | The comparison of decision rules as a figure | Figure 5 |
+
+Other analyses in this repository, which the manuscript does not report:
 
 | Command | Produces |
 |---|---|
-| `make killtest` | The founding experiment (Table 1) |
-| `make survival` | Survival head-to-head vs Cox / RSF / DeepSurv (Tables 6–7) |
+| `make survival` | Survival head-to-head vs Cox / RSF / DeepSurv |
 | `make clv` | Customer value and the leak split by cause |
 | `make abstention` | Phase 4 gate — abstention against ranking |
 | `make sensitivity` | Why that gate failed — effect size and offer cost (D-055/056) |
 | `make ladder` | Phase 5 gate — rung matching against one good offer (D-058) |
 | `make ai-channels` | Break-even salience for automated outreach (D-064) |
-| `make holdout` | The measurement floor (D-065) |
-| `make small-n` | Win rates against random at small *n*, with intervals, and Figure 2 (D-072; about 20 minutes) |
-| `make correlation-checks` | The risk–lift correlation over 30 splits, on two scales and five definitions of risk, and Figure 7 (D-074, D-076; about 30 minutes) |
-| `python -m retainiq.benchmarks.spectrum_checks --stopping-diagnostic` | The same splits with the classifier's early stopping automatic and off, on Hillstrom and the simulated trial (D-076, exploratory; about 15 minutes) |
-| `make baseline` | Abstention against Lemmens & Gupta (2020) on the same pilots, 500 draws (D-075; about a minute) |
-| `make figures` | Regenerate Figures 1 to 6 (Figure 7 is drawn by `make correlation-checks`) |
-| `make zenodo` | Rebuild the archived data record byte-for-byte |
+| `make figures` | Regenerate the repository's own Figures 1 to 6 (Figure 7 is drawn by `make correlation-checks`) |
+| `make zenodo` | Rebuild the archived data record. Every data file is reproduced byte-for-byte; the manifest's software DOI was corrected after archiving (D-081) |
 | `make help` | Everything else |
+
+`papers/RESEARCH_PAPER.md` and its PDF are the August preprint, kept as it was posted. The
+manuscript itself is not in this repository.
 
 Survival baselines need `make install-survival` first (adds Cox, RSF and DeepSurv).
 
@@ -398,14 +413,16 @@ as **not beating an achievable rival**. Neither was tuned until it passed.
 
 ## Citing
 
-Please cite the paper rather than the code:
+The manuscript is not yet published. Until it is, please cite the preprint record, whose
+DOI always resolves to its latest version:
 
 ```bibtex
-@article{jain2026uplift,
+@misc{jain2026uplift,
   title  = {When Does Uplift Modelling Pay? A Correlation Criterion and a
             Measurement Floor for Small-Scale Subscription Retention},
   author = {Jain, Prasham and Gupta, Rishi},
   year   = {2026},
+  note   = {Preprint, Zenodo},
   doi    = {10.5281/zenodo.22009470}
 }
 ```

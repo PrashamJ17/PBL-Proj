@@ -6,6 +6,63 @@ each choice in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
+## v2.0.0 — the release behind the final manuscript
+
+**13 October 2026. The first release since v1.0.0 (20 August 2026). It contains the code
+that produced every result in the manuscript, and it corrects or withdraws several results
+that v1.0.0 and the August preprint reported.** Phases 4 to 6 were already part of v1.0.0;
+their record is in [`docs/BUILDLOG.md`](docs/BUILDLOG.md).
+
+### Corrected
+
+- **The risk–lift correlation was quoted from one split.** Over thirty splits the
+  preprint's +0.69 for the Hillstrom men's e-mail was the highest of the thirty. Its
+  spread came from scikit-learn's default early stopping, which switches on above 10,000
+  rows and stopped the two models of a T-learner at different rounds (D-074, D-076). The
+  benchmark classifier now runs all its rounds, and the table reports risk fitted on
+  control customers the effect models never saw, which is Ascarza's definition (D-077).
+  Current figures: Criteo +0.43, Hillstrom men's +0.17, Lenta +0.07, Hillstrom women's
+  −0.01, simulated trial −0.14.
+- **The small-sample win rates were quoted from 20 draws.** At 200 draws the best method
+  beats random on 72.5% of draws at *n* = 500, with an exact 95% interval of 66% to 79%.
+  The method quoted at 55% is at 62.5% (D-072, D-073).
+- **`make abstention` and `make sensitivity` printed the decision rule from before the
+  units fix.** Both print the corrected rule first, and the rule is an argument with no
+  default (D-069, D-070).
+- **The client report assumed rupees and printed "not measured" as 0%.** Currency now
+  belongs to the dataset and an unmeasured quantity is `None` (D-071).
+- **The paper cited itself as its software archive** (D-066), and the generator of the
+  data record still named the paper's DOI as the software's. Fixed here (D-081). Every
+  data file in the archived record is reproduced byte-for-byte.
+- **An intermittent overflow when parsing epoch-second dates with gaps** in a billing
+  export (D-078).
+
+### Withdrawn
+
+- **The claim that the correlation between risk and response is a new criterion.** It is
+  in Ascarza (2018), web appendix A3.4. Targeting scored in profit is in Lemmens & Gupta
+  (2020). README, report, explainer and the correlation module were corrected (D-068).
+
+### Added
+
+- `make correlation-checks`: the correlation over thirty splits, on two scales and five
+  definitions of risk, with a diagnostic for the classifier's stopping rule.
+- `make baseline`: the declining rule against a re-implementation of Lemmens & Gupta
+  (2020) on the same pilots. Ahead in 78% of the businesses where the two differ from
+  1,000 customers; not ahead at 250 or 500; doing nothing beats both (D-075).
+- Three documents of predictions written before the runs that test them
+  (`docs/PREREG-*.md`). Of 22 predictions, 13 held, 4 failed and 5 held in part.
+- Published sources for the simulator's calibration ranges (D-078).
+- `papers/draw_paper_figures.py` and `papers/draw_comparison_figure.py`, which draw the
+  manuscript's figures; the paper build typesets equations (D-079).
+- Presentation materials and a demo recording built from real outputs (D-067).
+
+### Numbers
+
+750 tests, up from 463. Four CI gates, unchanged: tests, calibration, leakage, kill test.
+
+---
+
 ## Phase 3 — Discrete-time survival hazard and CLV
 
 **Turns "who might churn" into "what is this customer worth, and how much of it is at

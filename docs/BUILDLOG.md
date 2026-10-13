@@ -1964,3 +1964,21 @@ Criterion and a Measurement Floor ...") to "Reliability of Uplift Targeting and
 Detectability of Retention Effects at the Scale of a Small Subscription Business". The
 introduction paragraph that explained the old title's two terms is removed. The preprint
 is cited under its own title. Nothing else in the manuscript changed, and no code did.
+
+## Release metadata for v2.0.0 (D-081)
+
+**Changed.** `.zenodo.json` (description, version, keywords, related records by concept
+DOI), `CITATION.cff` (version, release date, abstract, the preprint as preferred citation
+with a note), `README.md` (opening, the table mapping each command to the manuscript's
+tables and figures, the citation), `CHANGELOG.md` (a v2.0.0 entry), the package version in
+`pyproject.toml` and `retainiq/__init__.py`, and `experiments/zenodo_release.py` (the
+software DOI in the data manifest, and dataset notes without table numbers).
+
+**Checked.** Both Zenodo records were read through the API for their concept DOIs, latest
+versions and related identifiers. `make zenodo` reproduces all ten archived data files
+with identical SHA-256. `.zenodo.json` and `CITATION.cff` parse.
+
+**Tested.** `make check`: 750 passed.
+
+**Left for the author.** The GitHub release itself, which publishes to Zenodo, and two
+corrections to the published data record (D-081).

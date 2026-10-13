@@ -1,8 +1,10 @@
 cff-version: 1.2.0
 title: "RetainIQ: causal retention decisioning for small subscription businesses"
-message: "If you use this software or the SubSim benchmark, please cite the paper below."
+message: "If you use this software or the simulator, please cite the work below."
 type: software
-version: 1.0.0
+version: 2.0.0
+date-released: "2026-10-13"
+doi: 10.5281/zenodo.22025879
 license: Apache-2.0
 repository-code: "https://github.com/PrashamJ17/PBL-Proj"
 authors:
@@ -13,26 +15,30 @@ authors:
     family-names: Gupta
     affiliation: "Manipal University Jaipur"
 abstract: >-
-  Churn prediction is a commodity; retention decisioning under small-sample
-  causal uncertainty is not. This repository contains SubSim, a subscription
-  churn simulator calibrated to published SMB-SaaS benchmarks that emits exact
-  individual-level ground-truth counterfactuals; benchmark harnesses for four
-  real randomised controlled trials; a discrete-time competing-risks survival
-  model; a hierarchical Bayesian CATE estimator with a money-denominated
-  abstention rule; an offer-ladder optimiser; and a validated holdout
-  incrementality estimator. The central result is that whether effect-based
-  targeting pays is governed by corr(tau, propensity), the correlation between
-  estimated treatment effect and estimated outcome propensity.
+  Research software on what a small subscription business can learn from its
+  own data about whom to send a retention offer, and whether it can tell
+  afterwards that the offer worked. It contains a subscription simulator that
+  gives each customer's churn probability with and without an offer; benchmark
+  harnesses for three public randomised experiments; an analysis of how often
+  targeting methods beat random selection as the training set shrinks; a
+  measurement of the correlation between risk and response over repeated
+  splits; a Bayesian decision rule that can decline to act, with a
+  re-implementation of the rule of Lemmens and Gupta (2020) for comparison; a
+  holdout module with minimum-detectable-effect calculations; and a
+  discrete-time competing-risks survival model.
 keywords:
   - uplift modelling
   - heterogeneous treatment effects
   - causal inference
   - customer retention
+  - randomised experiments
+  - small samples
+  - statistical power
   - survival analysis
-  - abstention
   - subscription business
 preferred-citation:
   type: article
+  status: preprint
   title: >-
     When Does Uplift Modelling Pay? A Correlation Criterion and a Measurement
     Floor for Small-Scale Subscription Retention
@@ -44,4 +50,7 @@ preferred-citation:
       family-names: Gupta
       affiliation: "Manipal University Jaipur"
   year: 2026
-  doi: 10.5281/zenodo.22015220
+  doi: 10.5281/zenodo.22009470
+  notes: >-
+    Preprint. A revised manuscript, "Reliability of Uplift Targeting and Detectability of Retention Effects at the Scale of a Small Subscription Business", supersedes several of its
+    results. The DOI resolves to the latest version of the record.
