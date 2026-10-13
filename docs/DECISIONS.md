@@ -3244,3 +3244,25 @@ that named tables of the preprint.
 
 **Not done here.** No release was made. Making one publishes to Zenodo, so it waits for
 the author's word.
+
+---
+
+## D-082 — The repository says how it was written
+
+**Date:** 13 October 2026.
+
+The manuscript's acknowledgment states that an AI system, Claude (Anthropic), wrote most
+of the software in this repository and drafted the manuscript's text. Until now the
+repository and the Zenodo software record said nothing on the point, and the preprint's
+declaration mentioned AI assistance with implementation only.
+
+**A reader who follows the manuscript's link to the code should find the same statement
+there.** The author was asked and chose to add it. `README.md` has a section saying that
+most of the code and most of the documentation were written by the AI system at the
+direction of the first author, that this includes the code behind every table and figure,
+and that the authors directed the work and are responsible for it. `.zenodo.json` carries
+the same paragraph, so the archived release states it too.
+
+**Also decided by the author on the same day.** Release v2.0.0 is to be made. The
+manuscript stays out of the public repository for now. It can be added in a later
+release; making it public cannot be undone.

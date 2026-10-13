@@ -206,8 +206,8 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   checks, and a units error is self-consistent. Fixed in `policy/economics.py`; the new
   rule takes **money only**, so it is unrepresentable. **2 of 5 pre-registered predictions
   FAILED.** Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
-- **CP-29** — **Release metadata brought to v2.0.0 (D-081):** `.zenodo.json`, `CITATION.cff`, README
-  still described the August preprint. **A GitHub release PUBLISHES to Zenodo, irreversibly: only
+- **CP-29** — **Release metadata brought to v2.0.0 (D-081) and README states AI authorship of the code
+  (D-082);** the metadata still described the August preprint. **A GitHub release PUBLISHES to Zenodo, irreversibly: only
   on the author's word.** Data files reproduce byte-for-byte; the data manifest named the PAPER as software.
 - **CP-28** — **Final manuscript checked against the code (D-079): four statements wrong, no number; new title (D-080).**
 - **CP-27** — **Classifier fixed, table re-run, pre-registered: 2 checks + 6 predictions ALL held

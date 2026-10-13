@@ -411,6 +411,16 @@ as **not beating an achievable rival**. Neither was tuned until it passed.
 
 ---
 
+## How this software was written
+
+Most of the code in this repository, and most of its documentation, was written by an
+artificial intelligence system, Claude (Anthropic), used as a coding assistant at the
+direction of the first author. That includes the code that runs the experiments and
+produces every table and figure in the manuscript. The authors directed the work and are
+responsible for its content. The manuscript says the same in its acknowledgment.
+
+---
+
 ## Citing
 
 The manuscript is not yet published. Until it is, please cite the preprint record, whose

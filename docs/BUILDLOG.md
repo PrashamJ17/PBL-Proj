@@ -1982,3 +1982,9 @@ with identical SHA-256. `.zenodo.json` and `CITATION.cff` parse.
 
 **Left for the author.** The GitHub release itself, which publishes to Zenodo, and two
 corrections to the published data record (D-081).
+
+## A statement of how the software was written (D-082)
+
+**Added.** A section in `README.md` and a paragraph in `.zenodo.json` saying that most of
+the code and documentation were written by an AI system at the direction of the first
+author, matching the manuscript's acknowledgment. Added at the author's decision.
