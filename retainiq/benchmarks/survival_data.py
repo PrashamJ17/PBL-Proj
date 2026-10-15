@@ -2,8 +2,10 @@
 
 Three sources, chosen to answer three different questions.
 
-**Telco (IBM, 7,043 customers)** -- the one that matters. Real, public, and a
-*contractual subscription* business, which is the vertical. Tenure in months plus a
+**Telco (IBM, 7,043 customers)** -- the one that matters. Public, and shaped like a
+*contractual subscription* business, which is the vertical. IBM publishes it as sample
+data for a fictional telecommunications company, so it shows how a model behaves on
+data of this shape and is not evidence about real customers. Tenure in months plus a
 churn flag is exactly a right-censored duration. Small enough (7k rows, 26.5% churn)
 to be in the regime this project cares about rather than the industrial regime the
 uplift literature lives in.

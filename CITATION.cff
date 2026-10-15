@@ -2,8 +2,8 @@ cff-version: 1.2.0
 title: "RetainIQ: causal retention decisioning for small subscription businesses"
 message: "If you use this software or the simulator, please cite the work below."
 type: software
-version: 2.0.0
-date-released: "2026-10-13"
+version: 2.0.1
+date-released: "2026-10-15"
 doi: 10.5281/zenodo.22025879
 license: Apache-2.0
 repository-code: "https://github.com/PrashamJ17/PBL-Proj"

@@ -1988,3 +1988,16 @@ corrections to the published data record (D-081).
 **Added.** A section in `README.md` and a paragraph in `.zenodo.json` saying that most of
 the code and documentation were written by an AI system at the direction of the first
 author, matching the manuscript's acknowledgment. Added at the author's decision.
+
+## Release 2.0.1: the superseded paper leaves the repository (D-083)
+
+**Removed from the index**, kept on disk and excluded locally: `papers/RESEARCH_PAPER.md`,
+`papers/RetainIQ_Research_Paper.pdf`, `papers/RetainIQ_Research_Paper.docx`,
+`papers/paper1/`. **Changed:** README, `docs/RESEARCH-PLAN.md` and the project file point at
+the history instead; `papers/build_paper.py` exits with a message when its default source
+is absent; the Telco description in `benchmarks/survival_data.py` and in the changelog;
+version 2.0.1 in `pyproject.toml`, `retainiq/__init__.py`, `CITATION.cff` and
+`.zenodo.json`.
+
+**Checked.** The items an outside review had left open (D-083 table). **Tested.**
+`make check`.

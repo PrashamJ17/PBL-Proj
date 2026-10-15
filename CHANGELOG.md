@@ -6,6 +6,23 @@ each choice in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ---
 
+## v2.0.1 — the repository no longer presents a superseded paper
+
+**15 October 2026. No result changes.**
+
+- **Removed from the repository:** the August preprint's source, PDF and Word file
+  (`papers/RESEARCH_PAPER.md` and its renders), and the older draft it grew from
+  (`papers/paper1/`), whose notes named a different target journal. A reader following
+  the manuscript's link to the code found a paper other than the one in front of them.
+  The preprint stays on Zenodo and both remain in the git history (D-083).
+- **Corrected:** the Telco survival dataset was described as real customer data. IBM
+  publishes it as sample data for a fictional company (D-083). The manuscript does not
+  use it.
+- `papers/build_paper.py` says what is missing, instead of failing with a traceback, when
+  the default source is absent.
+
+---
+
 ## v2.0.0 — the release behind the final manuscript
 
 **13 October 2026. The first release since v1.0.0 (20 August 2026). It contains the code
@@ -80,7 +97,8 @@ risk from which cause". Gate met against Cox and RSF; a tie with DeepSurv.**
   DeepSurv (written directly against torch, ~40 lines, Breslow ties).
 - `retainiq/models/clv/value.py` — CLV, expected remaining months, value at risk, and an
   exact decomposition of the value shortfall by cause.
-- `retainiq/benchmarks/survival_data.py` — Telco (IBM, real subscription churn), GBSG2,
+- `retainiq/benchmarks/survival_data.py` — Telco (IBM sample data for a fictional telecom
+  company; earlier described here as real, corrected in D-083), GBSG2,
   and SubSim adapters.
 - `retainiq/experiments/survival_benchmark.py`, `retainiq/experiments/clv.py`, and figure 5.
 

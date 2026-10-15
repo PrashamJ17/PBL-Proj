@@ -12,7 +12,7 @@ Research software for the manuscript **Reliability of Uplift Targeting and Detec
 of Retention Effects at the Scale of a Small Subscription Business**. An earlier version of
 that work was posted as a preprint, [*When Does Uplift Modelling Pay? A Correlation
 Criterion and a Measurement Floor for Small-Scale Subscription
-Retention*](https://doi.org/10.5281/zenodo.22009470). Release 2.0.0 of this software
+Retention*](https://doi.org/10.5281/zenodo.22009470). Release 2.0.1 of this software
 contains the code behind the manuscript's results and supersedes several figures of the
 preprint; [CHANGELOG.md](CHANGELOG.md) lists which.
 
@@ -293,8 +293,11 @@ Other analyses in this repository, which the manuscript does not report:
 | `make zenodo` | Rebuild the archived data record. Every data file is reproduced byte-for-byte; the manifest's software DOI was corrected after archiving (D-081) |
 | `make help` | Everything else |
 
-`papers/RESEARCH_PAPER.md` and its PDF are the August preprint, kept as it was posted. The
-manuscript itself is not in this repository.
+The August preprint is archived on Zenodo
+([10.5281/zenodo.22009470](https://doi.org/10.5281/zenodo.22009470)). Its source, and the
+older draft it grew from, were taken out of this repository in release 2.0.1 so that the
+repository does not present a superseded paper; both remain in the git history. The
+manuscript will be added when it is published.
 
 Survival baselines need `make install-survival` first (adds Cox, RSF and DeepSurv).
 
@@ -361,9 +364,9 @@ retainiq/
 tests/            750 tests — fairness, realism, edge cases, leakage gates
 docs/
 ├── BUILDLOG.md   what was built, what was tested, what happened
-└── DECISIONS.md  why each choice was made (D-001 … D-065), append-only
+└── DECISIONS.md  why each choice was made (D-001 … D-083), append-only
 explainer/        10 documents for non-technical readers
-papers/           RESEARCH_PAPER.md and the six figures
+papers/           the paper build, the scripts that draw the manuscript's figures, and the figures
 ```
 
 CI runs on every push across Python 3.11–3.13 and gates on four things: the test suite,

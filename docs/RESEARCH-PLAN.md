@@ -122,7 +122,7 @@ Do not start with the code.
 | 1 | `explainer/00`–`09` | Written for a reader with no background. Gets you the shape in an evening. |
 | 2 | `CLAUDE.md` — thesis and the 14 invariants | Each invariant is a mistake someone can make. Learn what breaks without it. |
 | 3 | `docs/DECISIONS.md`, selectively | The *why*. Start with **D-002, D-011, D-013, D-020, D-023, D-026, D-031, D-054, D-055, D-057, D-058, D-060, D-068**. |
-| 4 | `papers/paper1/main.tex` | Now the argument will read as familiar rather than new. |
+| 4 | `papers/paper1/main.tex` (in git history; removed from the tree in D-083) | Now the argument will read as familiar rather than new. |
 | 5 | `retainiq/sim/counterfactual.py` → `models/uplift/bayesian.py` → `policy/economics.py` | The three files that carry the intellectual content. |
 | 6 | `docs/BUILDLOG.md` | What was built and tested, in order. Skim. |
 | 7 | The four papers in D-068, in full, appendices included | A claim is only as good as your knowledge of what was already shown. D-068 exists because this step was skipped; the correlation this project led with is in an appendix of the paper it cited. |
@@ -299,7 +299,7 @@ obtained, following the Lenta pattern exactly.
 Do not soften the negative results to make it more attractive. §8.1, §8.2 and the refuted
 minimax hypothesis (D-056) are the parts a good referee will respect, and a paper that
 reports only wins from a simulator its authors built is one a good referee will not
-believe. `papers/paper1/README.md` records this; it is there to be obeyed later, when the
+believe. `papers/paper1/README.md` recorded this (in git history since D-083); it is there to be obeyed later, when the
 temptation arrives.
 
 ---

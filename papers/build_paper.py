@@ -1,4 +1,4 @@
-"""Render RESEARCH_PAPER.md to a two-column PDF.
+"""Render a paper written in markdown to a two-column PDF.
 
 There is no LaTeX on the build machine, so the route is markdown -> HTML -> headless
 Chrome. That is not a compromise for this document: the paper is authored in markdown,
@@ -404,8 +404,8 @@ def build_docx(out: Path | None = None, source: Path = SOURCE) -> Path:
 
 
 def _option(name: str) -> Path | None:
-    """`--source FILE` or `--out FILE`, when given. The defaults render the published
-    paper to its usual files, so `make paper` is unchanged."""
+    """`--source FILE` or `--out FILE`, when given. The defaults render the August preprint,
+    `RESEARCH_PAPER.md`, which is kept locally and is no longer in the repository (D-083)."""
     if name in sys.argv:
         return Path(sys.argv[sys.argv.index(name) + 1]).resolve()
     return None
@@ -413,6 +413,10 @@ def _option(name: str) -> Path | None:
 
 if __name__ == "__main__":
     src = _option("--source") or SOURCE
+    if not src.exists():
+        why = (" The August preprint's source is no longer in the repository (D-083); "
+               "pass --source FILE.") if src == SOURCE else ""
+        sys.exit(f"{src} not found.{why}")
     if "--docx" in sys.argv:
         doc = build_docx(out=_option("--out"), source=src)
         print(f"wrote {doc}  ({doc.stat().st_size / 1024:,.0f} KB)")

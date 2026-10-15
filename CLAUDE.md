@@ -62,12 +62,12 @@ business method + program *per se*).
 
 **Published (D-066):** repo is PUBLIC; three cross-linked Zenodo records — paper
 `10.5281/zenodo.22009470` · software `10.5281/zenodo.22025879` · data `10.5281/zenodo.22025123`
-(concept DOIs; cite these, not version DOIs). `make paper` renders the PDF.
+(concept DOIs; cite these, not version DOIs). Software v2.0.1 is the one the manuscript cites.
 **Patent route in IN/EPO is CLOSED** — publishing the paper was the disclosure. US grace
 period to ~19 Aug 2027.
 
-**Papers (D-042):** merged 1+2 **drafted** → `papers/paper1/` (read its README first; §8
-REPORTS results + why the gate was unpassable). **Positioning narrowed by D-068:** lead =
+**Papers (D-042):** the old drafts (`papers/paper1/`, the August preprint source) are OUT of the
+repo since D-083: local and in git history only. **Positioning narrowed by D-068:** lead =
 pilot size / small-*n* reliability + low-churn regime; simulator is the *instrument*. NOT
 ours: "churn scores are bad", harm from risk targeting, the risk–lift correlation (Ascarza
 2018, App. A3.4), profit-scored targeting (Lemmens & Gupta 2020). **GTM (D-040/041):** reports
@@ -136,7 +136,7 @@ retainiq/benchmarks/   datasets (Hillstrom, Criteo, Lenta) · survival_data (Tel
                    models · evaluate · small_n · spectrum (ONE split) · spectrum_checks (D-074) · figures
 tests/           750 — fairness, realism, edge cases, leakage gate
 explainer/       10 docs for non-technical evaluators/investors (see protocol)
-papers/paper1/   merged paper 1+2 draft — README says what is evidence vs. spec
+papers/         build_paper · draw_paper_figures · draw_comparison_figure · figures/ (no paper, D-083)
 ```
 
 ## Commands
@@ -206,6 +206,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   checks, and a units error is self-consistent. Fixed in `policy/economics.py`; the new
   rule takes **money only**, so it is unrepresentable. **2 of 5 pre-registered predictions
   FAILED.** Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
+- **CP-30** — **Outside review's last blocker fixed (D-083):** old paper + draft OUT of repo (on disk, excluded); Telco is FICTIONAL; v2.0.1 cut from here.
 - **CP-29** — **Release metadata brought to v2.0.0 (D-081) and README states AI authorship of the code
   (D-082);** the metadata still described the August preprint. **A GitHub release PUBLISHES to Zenodo, irreversibly: only
   on the author's word.** Data files reproduce byte-for-byte; the data manifest named the PAPER as software.
@@ -224,7 +225,6 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   2,000.** D-023's 75%/55% were 20 draws no command printed; "55%, a coin flip" was WRONG (62.5%).
 - **CP-23/22** — **Currency is NEVER assumed; unmeasured = `None`, not 0% (D-071).** `make abstention`
   and `make sensitivity` print the corrected rule first; the rule is an argument with NO default (D-069/070).
-- **CP-21** — **Four papers read in full; novelty narrowed (D-068):** corr(RISK, LIFT) is Ascarza 2018 A3.4.
 - **CP-20/19** — **Deck, storyboard, silent demo video (D-067; `make demo-video`).** Real
   outputs only. AUC 0.700, recall 44.5%, precision 7.4%; **accuracy 79.6% < 96.7% for always
   'stays'** — never a headline. Readiness PER COMPONENT.

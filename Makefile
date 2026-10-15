@@ -88,10 +88,10 @@ holdout:  ## Phase 6 — does the holdout estimator recover a known effect? (D-0
 zenodo:  ## Build the Zenodo data release (SubSim ground truth + third-party manifest)
 	@python -m retainiq.experiments.zenodo_release
 
-paper:  ## Render the research paper to a two-column PDF (D-066)
+paper:  ## Render papers/RESEARCH_PAPER.md, if you have it locally, to a two-column PDF (D-066, D-083)
 	@python papers/build_paper.py
 
-paper-docx:  ## Render the research paper to a submission-ready Word document
+paper-docx:  ## The same paper as a Word document (D-083: the source is not in the repository)
 	@python papers/build_paper.py --docx
 
 demo-data:  ## Write a Stripe-shaped export (amounts in cents) for the demo video

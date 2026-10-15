@@ -3266,3 +3266,40 @@ the same paragraph, so the archived release states it too.
 **Also decided by the author on the same day.** Release v2.0.0 is to be made. The
 manuscript stays out of the public repository for now. It can be added in a later
 release; making it public cannot be undone.
+
+---
+
+## D-083 — The repository no longer presents a superseded paper
+
+**Date:** 15 October 2026.
+
+An outside pre-submission review of 14 October checked the repository against the
+manuscript. It found one remaining blocker: `papers/` still held the August preprint
+(`RESEARCH_PAPER.md` with its PDF and Word renders) and the older draft
+`papers/paper1/`, whose README named *EJOR* or *Decision Support Systems* as the target. A
+reviewer who followed the manuscript's link to the code would find a different paper,
+with different headline numbers, and a different venue.
+
+**Decided by the author, when asked:** take both out of the repository, keep the
+manuscript private, and cut release 2.0.1 so that the archived software the manuscript
+cites does not contain them either. The files were removed from the index only. The
+copies on the author's disk are untouched, including a modified local render of the
+preprint, and they are listed in `.git/info/exclude` so they cannot be committed by
+accident. The git history and the preprint's Zenodo record keep them public, which is
+right: they were posted, and removal from the tree is not a retraction.
+
+**Also corrected.** `benchmarks/survival_data.py` called the Telco dataset "real". IBM's
+own description is of a fictional telecommunications company (checked on 15 October
+2026). The manuscript does not use Telco, so no result in it changes. The Phase 3 entry
+of `CHANGELOG.md` carried the same word and now says what the data are.
+
+**What the review had not re-checked, checked here.**
+
+| Item | Finding |
+|---|---|
+| "Cannot measure" stated as conditional on effect size | Yes, in the abstract and Section V-B |
+| Holdout share of about 6% in the estimator table | 10% of the roughly 60% of customers eligible at the decision month, as the caption and Section IV-D say |
+| Detectable-effect table | All six rows reproduce from equation (4) with p = 0.80. The 119,501 figure uses the unrounded delivered effect; with 0.0108 exactly the formula gives 119,629, so "about 119,500" holds |
+| Ascarza (2018) and Ascarza, Iyengar & Schleicher (2016) figures in the introduction | Match the full-text reading recorded in D-068. The 2016 figures also match the published summaries: about 65,000 customers in all, three-month churn of about 6% against 10% |
+| 13 of 22 predictions held | Each outcome in the manuscript's Tables 8 to 10 matches the outcome recorded in D-074 to D-077: 13 held, 4 failed, 5 held in part |
+| Telco framing, and the Telco against GBSG2 explanation | Not in the manuscript. The repository's wording is corrected above |
