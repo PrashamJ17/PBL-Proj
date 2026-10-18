@@ -52,3 +52,6 @@ presentation/package-lock.json
 
 # Microsoft Office lock files
 ~$*
+
+# Print-ready TIFFs of the Scientific Reports figures; the vector PDFs beside them are tracked (D-084)
+papers/figures/scirep/*.tif

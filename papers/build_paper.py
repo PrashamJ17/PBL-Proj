@@ -173,7 +173,8 @@ hr { border: 0; border-top: .5pt solid #c8c8ce; margin: 8pt 0; }
 #: The source numbers its own captions. Figure captions FOLLOW the image; table captions
 #: PRECEDE the table. Both are paired into one unbreakable block below, because a caption
 #: stranded in the other column from the thing it names is worse than either alone.
-TABLE_CAPTION = re.compile(r"<p><strong>TABLE[^<]*</strong>.*?</p>\s*$", re.S)
+TABLE_CAPTION = re.compile(r"<p><strong>(?:supplementary\s+)?table\b[^<]*</strong>.*?</p>\s*$",
+                           re.S | re.I)
 
 
 def _require(path: str, hint: str) -> None:
@@ -218,7 +219,7 @@ def _inline_images(html: str) -> str:
         r'(?:\s*<p>(?P<cap><strong>FIGURE[^<]*</strong>.*?)</p>)?'
     )
     out, n = re.subn(pattern, repl, html, flags=re.S)
-    if n == 0:
+    if n == 0 and "<img" in html:
         sys.exit("no figures matched -- pandoc's image markup changed; check the pattern")
     leftover = re.search(r'<img src="(?!data:)', out)
     if leftover:
@@ -270,13 +271,18 @@ def _split_sections(html: str) -> tuple[str, str, str]:
     return title, abstract, body
 
 
+#: A supplement is mostly tables with long cells; one column sets them at full width.
+ONE_COLUMN = "\n.body { column-count: 1; }\n"
+
+
 def _title(md: str) -> str:
     """The document's own first heading, for the PDF's title field."""
     m = re.search(r"^#\s+(.+)$", md, flags=re.M)
     return m.group(1).strip() if m else "Research paper"
 
 
-def build(out: Path = OUTPUT, keep_html: bool = False, source: Path = SOURCE) -> Path:
+def build(out: Path = OUTPUT, keep_html: bool = False, source: Path = SOURCE,
+          columns: int = 2) -> Path:
     _require(CHROME, "Google Chrome is required to render the PDF.")
     md = source.read_text(encoding="utf-8")
 
@@ -297,7 +303,7 @@ def build(out: Path = OUTPUT, keep_html: bool = False, source: Path = SOURCE) ->
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <title>{_title(md)}</title>
-<style>{CSS}</style></head>
+<style>{CSS}{ONE_COLUMN if columns == 1 else ''}</style></head>
 <body>
 <div class="titleblock">{title}</div>
 <hr class="rule">
@@ -422,5 +428,5 @@ if __name__ == "__main__":
         print(f"wrote {doc}  ({doc.stat().st_size / 1024:,.0f} KB)")
     else:
         pdf = build(out=_option("--out") or OUTPUT, keep_html="--keep-html" in sys.argv,
-                    source=src)
+                    source=src, columns=1 if "--one-column" in sys.argv else 2)
         print(f"wrote {pdf}  ({pdf.stat().st_size / 1024:,.0f} KB)")

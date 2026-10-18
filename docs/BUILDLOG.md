@@ -2001,3 +2001,15 @@ version 2.0.1 in `pyproject.toml`, `retainiq/__init__.py`, `CITATION.cff` and
 
 **Checked.** The items an outside review had left open (D-083 table). **Tested.**
 `make check`.
+
+## Figures and supplement for the Scientific Reports version (D-084)
+
+**Added.** `papers/draw_scirep_figures.py`, writing five figures to `papers/figures/scirep/`
+as PDF (tracked) and 300-dpi TIFF (ignored). **Changed.** `papers/build_paper.py`:
+`--one-column`; "Supplementary Table" captions bind to their tables; a document without
+figures builds. **Local only:** the Supplementary Information (Tables S1 to S7, 3 pages)
+and a file of new figure legends and text changes, in `papers/scirep/`.
+
+**Checked.** Page size, embedded fonts and type size of every PDF; each figure and each
+supplement page looked at after rendering. The supplement's prediction tables tally 22
+predictions: 13 held, 5 held in part, 4 failed. **Tested.** `make check`.

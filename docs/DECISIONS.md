@@ -3303,3 +3303,46 @@ of `CHANGELOG.md` carried the same word and now says what the data are.
 | Ascarza (2018) and Ascarza, Iyengar & Schleicher (2016) figures in the introduction | Match the full-text reading recorded in D-068. The 2016 figures also match the published summaries: about 65,000 customers in all, three-month churn of about 6% against 10% |
 | 13 of 22 predictions held | Each outcome in the manuscript's Tables 8 to 10 matches the outcome recorded in D-074 to D-077: 13 held, 4 failed, 5 held in part |
 | Telco framing, and the Telco against GBSG2 explanation | Not in the manuscript. The repository's wording is corrected above |
+
+---
+
+## D-084 — The Scientific Reports figures are drawn at print size, to the journal's rules
+
+**Date:** 18 October 2026.
+
+A check of the manuscript as typeset for *Scientific Reports* found that its figures did
+not follow the journal's figure guidelines, read on nature.com the same day: panels must
+be labelled with lower-case bold letters in the same type size as the rest of the figure;
+one sans-serif typeface at one size in every figure; sentence-case lettering; no line
+thinner than one point; lettering legible after reduction; line art as vector files. The
+figures in the manuscript were drawn about 13 inches wide with 9- to 13-point type, so at
+the journal's 183 mm they would print at roughly 5 points. They said "left" and "right"
+instead of a and b, and the first still carried a headline inside the image.
+
+**`papers/draw_scirep_figures.py` draws all five again.** Each is 183 mm wide, 62 to 72 mm
+tall, with 7-point Arial for every label including the panel letters, every line at least
+one point, Okabe-Ito colours that stay distinct under the common forms of colour blindness,
+and a different marker or line style for every series so that a grey-scale print still
+separates them. Each is written as a PDF with the fonts embedded, which is vector and is
+what the LaTeX source should include, and as a 300-dpi TIFF for the submission system.
+EPS was not used because it cannot carry the transparent bands in three of the figures.
+
+**The data are the manuscript's own.** Each figure is drawn from the same function or
+saved run as the corresponding table: the small-sample draws and their exact intervals
+through `small_n.win_rates`, the correlation splits through `spectrum_checks.summarise`,
+the decision-rule draws through `baseline.by_policy` and `compare`, and the holdout and
+policy figures by re-running `holdout_validation` and the kill-test curves. Only the
+drawing is new.
+
+**Checked.** All five PDFs are 183 mm wide, embed Arial, and contain text at 7 points only.
+Every figure was looked at after rendering: the first version had a legend over the data
+in Figure 1, a count label colliding with the 50% line in Figure 4, and two axis labels too
+long for their panels, one of which pushed a panel letter off the page. All four were
+fixed before commit.
+
+**The Supplementary Information file stays local**, like the manuscript. It numbers its
+tables S1 to S7 as the manuscript cites them, puts the title and authors on its first page
+as the journal requires, and gives the commit and time of each prediction document and of
+the results it concerns, all from the git history. To build it, `papers/build_paper.py`
+gained a `--one-column` option, binds "Supplementary Table" captions to their tables as it
+already did "TABLE" ones, and no longer refuses a document that has no figures.

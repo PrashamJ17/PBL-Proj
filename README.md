@@ -278,6 +278,7 @@ Each results table and figure in the manuscript comes from one of these commands
 | `make calibrate` | The simulator's aggregates against their ranges (D-078) | Appendix B |
 | `python papers/draw_paper_figures.py --from-splits FILE` | Three figures with plain labels (D-079). `FILE` is written by `python -m retainiq.benchmarks.spectrum_checks --save FILE` | Figures 1, 3 and 4 |
 | `python papers/draw_comparison_figure.py` | The comparison of decision rules as a figure | Figure 5 |
+| `python papers/draw_scirep_figures.py` | All five figures again at print size for *Scientific Reports*, as vector PDF and 300-dpi TIFF (D-084) | Figures 1 to 5 of that version |
 
 Other analyses in this repository, which the manuscript does not report:
 
