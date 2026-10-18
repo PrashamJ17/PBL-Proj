@@ -207,7 +207,7 @@ Older detail lives in `docs/BUILDLOG.md`; only the current edge is kept here.
   rule takes **money only**, so it is unrepresentable. **2 of 5 pre-registered predictions
   FAILED.** Necessary, not sufficient: `corr(tau_hat, tau_true)=0.13`.
 - **CP-30** — **Outside review's last blocker fixed (D-083):** old paper + draft OUT of repo (on disk, excluded); Telco is FICTIONAL; v2.0.1 cut from here.
-- **CP-31** — **SR figures at print size (183 mm, 7-pt Arial, panels a/b; `draw_scirep_figures.py`) + SR supplement S1–S7, LOCAL (D-084).**
+- **CP-31** — **SR figures at print size (`draw_scirep_figures.py`), supplement S1–S7, and the SR manuscript rebuilt from the verified text with every change (D-084/085), LOCAL.**
 - **CP-29** — **v2.0.0 metadata (D-081); README states AI authorship (D-082). A GitHub release PUBLISHES to Zenodo,
   irreversibly: only on the author's word.** Data files reproduce byte-for-byte.
 - **CP-28** — **Final manuscript checked against the code (D-079): four statements wrong, no number; new title (D-080).**

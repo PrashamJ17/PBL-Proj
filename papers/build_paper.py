@@ -26,6 +26,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -218,7 +219,7 @@ def _inline_images(html: str) -> str:
         r'<p><img src="(?P<src>[^"]+)"(?: alt="(?P<alt>[^"]*)")?[^>]*/?></p>'
         r'(?:\s*<p>(?P<cap><strong>FIGURE[^<]*</strong>.*?)</p>)?'
     )
-    out, n = re.subn(pattern, repl, html, flags=re.S)
+    out, n = re.subn(pattern, repl, html, flags=re.S | re.I)
     if n == 0 and "<img" in html:
         sys.exit("no figures matched -- pandoc's image markup changed; check the pattern")
     leftover = re.search(r'<img src="(?!data:)', out)
@@ -271,6 +272,10 @@ def _split_sections(html: str) -> tuple[str, str, str]:
     return title, abstract, body
 
 
+#: A link is broken where it must be, never hyphenated: a hyphen added at a line break would be
+#: copied into the address.
+LINKS = "\na { hyphens: manual; overflow-wrap: anywhere; color: inherit; }\n"
+
 #: A supplement is mostly tables with long cells; one column sets them at full width.
 ONE_COLUMN = "\n.body { column-count: 1; }\n"
 
@@ -292,7 +297,8 @@ def build(out: Path = OUTPUT, keep_html: bool = False, source: Path = SOURCE,
     title, abstract, body = _split_sections(html)
 
     # The references list is the last <ol>; give it its own class for tighter setting.
-    body = re.sub(r'(<h2[^>]*>REFERENCES</h2>)', r'<div class="refs">\1', body, count=1)
+    body = re.sub(r'(<h2[^>]*>REFERENCES</h2>)', r'<div class="refs">\1', body, count=1,
+                  flags=re.I)
     if '<div class="refs">' in body:
         # Close the list at whichever section follows it, or at the end of the document.
         start = body.index('<div class="refs">')
@@ -303,7 +309,7 @@ def build(out: Path = OUTPUT, keep_html: bool = False, source: Path = SOURCE,
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <title>{_title(md)}</title>
-<style>{CSS}{ONE_COLUMN if columns == 1 else ''}</style></head>
+<style>{CSS}{LINKS}{ONE_COLUMN if columns == 1 else ''}</style></head>
 <body>
 <div class="titleblock">{title}</div>
 <hr class="rule">
@@ -390,8 +396,9 @@ def _reference_docx(dest: Path) -> Path:
     return dest
 
 
-def build_docx(out: Path | None = None, source: Path = SOURCE) -> Path:
-    """Render the paper to a Word document."""
+def build_docx(out: Path | None = None, source: Path = SOURCE,
+               line_numbers: bool = False) -> Path:
+    """Render the paper to a Word document, with page and line numbers if asked."""
     out = out or (HERE / "RetainIQ_Research_Paper.docx")
     tmpdir = Path(tempfile.mkdtemp(prefix="retainiq-docx-"))
     ref = _reference_docx(tmpdir / "reference.docx")
@@ -406,7 +413,63 @@ def build_docx(out: Path | None = None, source: Path = SOURCE) -> Path:
         check=True, capture_output=True,
     )
     shutil.rmtree(tmpdir, ignore_errors=True)
+    if line_numbers:
+        _number_pages_and_lines(out)
     return out
+
+
+#: A footer holding a centred PAGE field.
+_FOOTER = (
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+    '<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    '<w:p><w:pPr><w:jc w:val="center"/></w:pPr>'
+    '<w:r><w:fldChar w:fldCharType="begin"/></w:r>'
+    '<w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r>'
+    '<w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>1</w:t></w:r>'
+    '<w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>'
+)
+
+
+def _number_pages_and_lines(docx: Path) -> None:
+    """A4 pages, one-inch margins, continuous line numbers and a page number in the footer.
+
+    Journals ask reviewers to cite page and line, and pandoc writes neither. The section
+    properties are rewritten in the order the schema requires (footer reference first,
+    page size and margins, then line numbering); Word refuses a file whose order is wrong.
+    """
+    with zipfile.ZipFile(docx) as z:
+        files = {n: z.read(n) for n in z.namelist()}
+    rels = files["word/_rels/document.xml.rels"].decode()
+    if "footer1.xml" in rels:
+        sys.exit(f"{docx.name} already has a footer; not numbering it twice")
+    files["word/footer1.xml"] = _FOOTER.encode()
+    files["word/_rels/document.xml.rels"] = rels.replace("</Relationships>", (
+        '<Relationship Id="rIdPageFooter" Type="http://schemas.openxmlformats.org/'
+        'officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>'
+    )).encode()
+    files["[Content_Types].xml"] = files["[Content_Types].xml"].decode().replace("</Types>", (
+        '<Override PartName="/word/footer1.xml" ContentType="application/'
+        'vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/></Types>'
+    )).encode()
+    doc = files["word/document.xml"].decode()
+    sections = list(re.finditer(r"<w:sectPr>(.*?)</w:sectPr>", doc, flags=re.S))
+    if len(sections) != 1:
+        sys.exit(f"expected one section in {docx.name}, found {len(sections)}")
+    sect = sections[0]
+    numbered = (
+        '<w:sectPr><w:footerReference w:type="default" r:id="rIdPageFooter"/>'
+        + sect.group(1).strip()
+        + '<w:pgSz w:w="11906" w:h="16838"/>'
+        '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" '
+        'w:header="708" w:footer="708" w:gutter="0"/>'
+        '<w:lnNumType w:countBy="1" w:restart="continuous"/></w:sectPr>'
+    )
+    files["word/document.xml"] = (doc[:sect.start()] + numbered + doc[sect.end():]).encode()
+    tmp = docx.with_suffix(".tmp.docx")
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+        for name in ["[Content_Types].xml"] + [n for n in files if n != "[Content_Types].xml"]:
+            z.writestr(name, files[name])
+    tmp.replace(docx)
 
 
 def _option(name: str) -> Path | None:
@@ -424,7 +487,8 @@ if __name__ == "__main__":
                "pass --source FILE.") if src == SOURCE else ""
         sys.exit(f"{src} not found.{why}")
     if "--docx" in sys.argv:
-        doc = build_docx(out=_option("--out"), source=src)
+        doc = build_docx(out=_option("--out"), source=src,
+                         line_numbers="--line-numbers" in sys.argv)
         print(f"wrote {doc}  ({doc.stat().st_size / 1024:,.0f} KB)")
     else:
         pdf = build(out=_option("--out") or OUTPUT, keep_html="--keep-html" in sys.argv,

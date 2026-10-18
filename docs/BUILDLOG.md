@@ -2013,3 +2013,12 @@ and a file of new figure legends and text changes, in `papers/scirep/`.
 **Checked.** Page size, embedded fonts and type size of every PDF; each figure and each
 supplement page looked at after rendering. The supplement's prediction tables tally 22
 predictions: 13 held, 5 held in part, 4 failed. **Tested.** `make check`.
+
+## The Scientific Reports manuscript, rebuilt with the changes (D-085)
+
+**Built, local only:** `papers/scirep/RETAINIQ_MANUSCRIPT_SCIREP.md`, rendered to Word (with
+page and line numbers) and to PDF. **Changed in the repository:** `papers/build_paper.py`
+(figure captions and the reference heading in any case; links never hyphenated;
+`--line-numbers` for Word). **Checked:** sentence-by-sentence comparison with the author's
+PDF in both directions; citations in order of first use, 1 to 26; three tables, five
+figures; main text 4,282 words; the Word file opens in Pages. **Tested:** `make check`.

@@ -3346,3 +3346,43 @@ as the journal requires, and gives the commit and time of each prediction docume
 the results it concerns, all from the git history. To build it, `papers/build_paper.py`
 gained a `--one-column` option, binds "Supplementary Table" captions to their tables as it
 already did "TABLE" ones, and no longer refuses a document that has no figures.
+
+---
+
+## D-085 — The Scientific Reports manuscript is rebuilt from the verified text, not patched
+
+**Date:** 18 October 2026.
+
+The author asked for the changes from D-084 and the check before it to be made in the
+paper. The paper they had was a PDF typeset in LaTeX elsewhere; its source is not on this
+machine. So the manuscript was rebuilt, as Markdown rendered to Word (the journal's
+preferred format) and to PDF, from the IEEE text that every number had been checked
+against, rearranged into the structure of the author's PDF.
+
+**The rebuild keeps the author's version, not ours.** The two texts were compared sentence
+by sentence in both directions. The author's version differed from ours only in its
+cross-references ("the Results" for "Section V-C"), its numbering of tables and figures,
+and a few better sentences: "the third column" of Table 2 where ours said "the fourth"
+while also saying "the second column qualifies the first", and a clearer description of
+Table 3's last column. All of those were kept. After the rebuild, the only sentences that
+differ from the author's PDF are the intended changes: the five new legends, the panel
+references (Fig. 1a, 2a, 2b, 5a), the P value beside "statistically significant", the
+AI-use statement, and the code-availability sentence. Every number in the rebuilt text
+appears in the checked text or in the new legends.
+
+**What changed.** The figures and legends of D-084. The AI-use statement no longer
+mentions appendices the article does not have, and now names the Supplementary
+Information as drafted by the AI system too, which it was. The code-availability statement
+cites release 2.0.1. References are in the journal's style, with the Lenta link corrected
+and each date given once. Minus signs are true minus signs. Every URL is a link.
+
+**Also corrected in the IEEE version,** which had the same column slip: its text now says
+"third column" in both places.
+
+**The build.** `papers/build_paper.py` now recognises figure captions and the reference
+heading in any case, never hyphenates inside a link (a hyphen added at a line break would
+be copied into the address), and with `--line-numbers` gives a Word file A4 pages, one-inch
+margins, continuous line numbers and a page number in the footer, which the journal asks
+authors to consider and reviewers rely on. The Word file was opened and exported in Pages
+to check that it is valid; Pages does not display Word line numbers, so those were checked
+in the file's XML only.
